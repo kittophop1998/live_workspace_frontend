@@ -4,6 +4,7 @@ import { Box } from "@mui/material";
 import { useEffect } from "react";
 import { useWorkspaceSync } from "@/lib/useWorkspaceSync";
 import { useResponseSchemaStore } from "@/lib/responseSchemas";
+import { useSchemaTreeStore } from "@/lib/schemaTree";
 import { TopBar } from "@/components/TopBar";
 import { LeftPanel } from "@/components/LeftPanel";
 import { CenterPanel } from "@/components/CenterPanel";
@@ -16,7 +17,12 @@ export function WorkspaceLayout() {
 
   // Load locally-persisted response schemas (api-spec.md §2 ResponseSchema) once.
   const hydrateResponseSchemas = useResponseSchemaStore((s) => s.hydrate);
-  useEffect(() => hydrateResponseSchemas(), [hydrateResponseSchemas]);
+  // Load locally-persisted Visual Builder schema trees once.
+  const hydrateSchemaTrees = useSchemaTreeStore((s) => s.hydrate);
+  useEffect(() => {
+    hydrateResponseSchemas();
+    hydrateSchemaTrees();
+  }, [hydrateResponseSchemas, hydrateSchemaTrees]);
 
   return (
     <Box sx={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "#F4F4F5" }}>

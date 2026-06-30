@@ -138,8 +138,8 @@ function deleteFrom(nodes: SchemaNode[], id: string): SchemaNode[] {
     if (n.children) next = { ...next, children: deleteFrom(n.children, id) };
     if (next.items) {
       if (next.items.id === id) {
-        const { items: _items, ...rest } = next;
-        next = rest;
+        next = { ...next };
+        delete next.items;
       } else {
         next = { ...next, items: deleteFrom([next.items], id)[0] };
       }
@@ -238,7 +238,9 @@ export const useSchemaTreeStore = create<SchemaTreeState>((set, get) => {
     trees: {},
     hydrated: false,
 
-    hydrate: () => set({ trees: load(), hydrated: true }),
+    // Merge persisted trees over current so any scope seeded before hydration
+    // (child effects run before the parent's hydrate effect) is not clobbered.
+    hydrate: () => set((s) => ({ trees: { ...s.trees, ...load() }, hydrated: true })),
 
     ensureSeed: (scope, seed) =>
       set((s) => {

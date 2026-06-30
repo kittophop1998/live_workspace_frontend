@@ -1,7 +1,6 @@
 "use client";
 
-import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, InputBase, Menu, MenuItem, Stack, TextField, Tooltip, Typography } from "@mui/material";
-import DataObjectIcon from "@mui/icons-material/DataObject";
+import { Box, Chip, InputBase, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -11,86 +10,12 @@ import SchemaOutlinedIcon from "@mui/icons-material/SchemaOutlined";
 import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
-import { FieldRow } from "@/components/FieldRow";
-import { ResponseSchemaPanel } from "@/components/ResponseSchemaPanel";
 import { ImportSpecDialog } from "@/components/ImportSpecDialog";
+import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
+import { ResponseAccordions } from "@/components/schema/ResponseAccordions";
 import { MonoTag, StateBadge, relativeTime, useNow } from "@/components/common";
-import { changeColor, line, methodColor } from "@/components/theme";
-import type { HttpMethod, JsonValue, Resource } from "@/lib/types";
-
-const JSON_PLACEHOLDER = `{
-  "id": "uuid",
-  "email": "string",
-  "profile": {
-    "name": "string",
-    "address": { "city": "string" }
-  }
-}`;
-
-// Paste a JSON object → fields are generated with inferred types. Nested objects
-// become `json` fields whose shape is preserved (and editable per field).
-function PasteJsonButton({ resourceId }: { resourceId: string }) {
-  const importJsonFields = useWorkspaceStore((s) => s.importJsonFields);
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  const close = () => {
-    setOpen(false);
-    setDraft("");
-    setError(null);
-  };
-
-  const apply = () => {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(draft);
-    } catch {
-      setError("Invalid JSON");
-      return;
-    }
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      setError('Paste a JSON object, e.g. { "id": "uuid" }');
-      return;
-    }
-    importJsonFields(resourceId, parsed as Record<string, JsonValue>);
-    close();
-  };
-
-  return (
-    <>
-      <Button variant="outlined" startIcon={<DataObjectIcon />} onClick={() => setOpen(true)}>
-        Paste JSON
-      </Button>
-      <Dialog open={open} onClose={close} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 800 }}>Paste JSON to add fields</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            multiline
-            minRows={10}
-            fullWidth
-            placeholder={JSON_PLACEHOLDER}
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              setError(null);
-            }}
-            error={Boolean(error)}
-            helperText={error ?? "Each top-level key becomes a field; existing keys are skipped."}
-            sx={{ mt: 1, "& textarea": { fontFamily: "var(--font-mono,monospace)", fontSize: 13 } }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={close}>Cancel</Button>
-          <Button variant="contained" onClick={apply} disabled={!draft.trim()}>
-            Add fields
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  );
-}
+import { line, methodColor } from "@/components/theme";
+import type { HttpMethod, Resource } from "@/lib/types";
 
 const KIND_LABEL: Record<Resource["kind"], string> = {
   endpoint: "API Endpoint",
@@ -208,7 +133,6 @@ function EditableName({ resource }: { resource: Resource }) {
 
 export function CenterPanel() {
   const resource = useWorkspaceStore((s) => s.resources.find((r) => r.id === s.selectedId));
-  const comments = useWorkspaceStore((s) => s.comments);
   const deleteResource = useWorkspaceStore((s) => s.deleteResource);
   useNow(); // keep "updated Xs ago" fresh
 
@@ -223,8 +147,9 @@ export function CenterPanel() {
     );
   }
 
-  const commentCountFor = (fieldId: string) => comments.filter((c) => c.resourceId === resource.id && c.fieldId === fieldId).length;
   const liveCount = resource.fields.filter((f) => f.change !== "removed").length;
+  const isEndpoint = resource.kind === "endpoint";
+  const bodyLabel = isEndpoint ? "Request Body" : resource.kind === "database" ? "Columns" : "Schema";
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "#F4F4F5" }}>
@@ -282,38 +207,14 @@ export function CenterPanel() {
         </Stack>
       </Box>
 
-      {/* Blueprint */}
+      {/* Editor — card-based schema workbench */}
       <Box sx={{ flex: 1, overflowY: "auto", p: 3 }}>
-        <Box sx={{ border: `2px solid ${line}`, borderRadius: "12px", overflow: "hidden", boxShadow: "4px 4px 0 #0A0A0A", bgcolor: "#fff" }}>
-          {/* Column header */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.25, py: 0.85, bgcolor: "#0A0A0A", color: "#fff" }}>
-            <Box sx={{ width: 190, flexShrink: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em", pl: 2.4 }}>KEY</Box>
-            <Box sx={{ width: 128, flexShrink: 0, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em" }}>TYPE</Box>
-            <Box sx={{ width: 26, flexShrink: 0, fontSize: 10.5, fontWeight: 800 }}>REQ</Box>
-            <Box sx={{ flex: 1, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em" }}>NOTES / DIFF</Box>
-            <Box sx={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.06em", pr: 9 }}>STATE</Box>
-          </Box>
-          {resource.fields.map((f) => (
-            <FieldRow key={f.id} resourceId={resource.id} field={f} commentCount={commentCountFor(f.id)} />
-          ))}
+        <Box sx={{ border: `2px solid ${line}`, borderRadius: "16px", boxShadow: "4px 4px 0 #0A0A0A", bgcolor: "#fff", p: 2.5 }}>
+          <Typography variant="h2" sx={{ mb: 2 }}>{bodyLabel}</Typography>
+          <SchemaWorkbench key={`${resource.id}::req`} scope={`${resource.id}::req`} seedFields={resource.fields} />
         </Box>
 
-        <Stack direction="row" spacing={2} sx={{ mt: 2, flexWrap: "wrap" }}>
-          <PasteJsonButton resourceId={resource.id} />
-          <Stack direction="row" spacing={1.5} sx={{ ml: "auto", alignItems: "center" }}>
-            {(["added", "modified", "removed"] as const).map((c) => (
-              <Stack key={c} direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-                <Box sx={{ width: 14, height: 6, bgcolor: changeColor[c], border: `1px solid ${line}` }} />
-                <Typography variant="caption" sx={{ textTransform: "capitalize", color: "#52525B" }}>
-                  {c}
-                </Typography>
-              </Stack>
-            ))}
-          </Stack>
-        </Stack>
-
-        {/* Bottom half — response schemas integrated into the endpoint view */}
-        {resource.kind === "endpoint" ? <ResponseSchemaPanel resourceId={resource.id} /> : null}
+        {isEndpoint ? <ResponseAccordions key={resource.id} resourceId={resource.id} /> : null}
       </Box>
     </Box>
   );
