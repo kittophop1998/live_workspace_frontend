@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p app/citizens app/buildings app/events app/policies)",
+      "Bash(cat)"
+    ]
+  }
+}

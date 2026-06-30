@@ -1,0 +1,31 @@
+# Dependencies
+node_modules
+
+# Next.js build output
+.next
+out
+
+# Version control
+.git
+.gitignore
+
+# Environment files (pass via --build-arg or docker run -e)
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor & OS
+.DS_Store
+.vscode
+*.swp
+*.swo
+
+# Test & coverage
+coverage
+__tests__
+
+# README
+README.md
