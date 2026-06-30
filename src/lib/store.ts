@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { apiErrorMessage, clearSession, setRoomCode, setToken } from "@/lib/api";
 import { workspaceApi, type RoomSession } from "@/services/workspace.service";
+import { inferField } from "@/lib/codegen";
 import type {
   ActivityEvent,
   Collaborator,
@@ -10,6 +11,7 @@ import type {
   ExportFormat,
   FieldState,
   HttpMethod,
+  JsonValue,
   Presence,
   Resource,
   ResourceKind,
@@ -70,6 +72,7 @@ interface StoreState {
 
   // Schema mutations (call the backend; state updates from the response + WS)
   addField: (resourceId: string) => void;
+  importJsonFields: (resourceId: string, obj: Record<string, JsonValue>) => void;
   updateField: (resourceId: string, fieldId: string, patch: Partial<SchemaField>) => void;
   cycleFieldState: (resourceId: string, fieldId: string) => void;
   removeField: (resourceId: string, fieldId: string) => void;
@@ -239,6 +242,36 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         get().upsertResource(rev, updated);
       } catch (err) {
         fail(err);
+      }
+    },
+
+    // Build fields straight from a pasted JSON object: each top-level key becomes
+    // a field with an inferred type; nested objects/arrays land as `json` + value.
+    // Keys that already exist are skipped (no destructive overwrite / 409s).
+    importJsonFields: async (resourceId, obj) => {
+      const resource = get().resources.find((r) => r.id === resourceId);
+      const existing = new Set((resource?.fields ?? []).map((f) => f.key));
+      for (const [key, raw] of Object.entries(obj)) {
+        if (existing.has(key)) continue;
+        existing.add(key);
+        const { type, value } = inferField(raw);
+        try {
+          const { rev, resource: updated } = await workspaceApi.addField(resourceId, {
+            key,
+            type,
+            required: false,
+            value,
+          });
+          // Re-apply nested value locally in case the backend doesn't persist it yet.
+          const merged =
+            value !== undefined
+              ? { ...updated, fields: updated.fields.map((f) => (f.key === key ? { ...f, value } : f)) }
+              : updated;
+          get().upsertResource(rev, merged);
+        } catch (err) {
+          fail(err);
+          return;
+        }
       }
     },
 

@@ -49,6 +49,21 @@ function tsTypeFromJson(v: JsonValue): string {
   }
 }
 
+// Reverse of codegen: infer a field's DataType (and nested `value`) from a sample
+// JSON value. Used when pasting a whole JSON object to build a schema at once.
+export function inferField(v: JsonValue): { type: DataType; value?: JsonValue } {
+  if (typeof v === "string") return { type: "string" };
+  if (typeof v === "number") return { type: "number" };
+  if (typeof v === "boolean") return { type: "boolean" };
+  if (Array.isArray(v)) {
+    if (v.length && v.every((x) => typeof x === "string")) return { type: "string[]" };
+    if (v.length && v.every((x) => typeof x === "number")) return { type: "number[]" };
+    return { type: "json", value: v }; // arrays of objects / mixed → nested json
+  }
+  if (v !== null && typeof v === "object") return { type: "json", value: v };
+  return { type: "string" }; // null → nullable string
+}
+
 // TS type for a field — a json field with a defined shape gets an inline literal.
 const fieldTsType = (f: SchemaField): string =>
   f.type === "json" && f.value !== undefined ? tsTypeFromJson(f.value) : TS_TYPE[f.type];

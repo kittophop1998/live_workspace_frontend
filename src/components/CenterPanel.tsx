@@ -1,7 +1,8 @@
 "use client";
 
-import { Box, Button, Chip, InputBase, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, InputBase, Menu, MenuItem, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import DataObjectIcon from "@mui/icons-material/DataObject";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -10,7 +11,81 @@ import { useWorkspaceStore } from "@/lib/store";
 import { FieldRow } from "@/components/FieldRow";
 import { MonoTag, StateBadge, relativeTime, useNow } from "@/components/common";
 import { changeColor, line, methodColor } from "@/components/theme";
-import type { HttpMethod, Resource } from "@/lib/types";
+import type { HttpMethod, JsonValue, Resource } from "@/lib/types";
+
+const JSON_PLACEHOLDER = `{
+  "id": "uuid",
+  "email": "string",
+  "profile": {
+    "name": "string",
+    "address": { "city": "string" }
+  }
+}`;
+
+// Paste a JSON object → fields are generated with inferred types. Nested objects
+// become `json` fields whose shape is preserved (and editable per field).
+function PasteJsonButton({ resourceId }: { resourceId: string }) {
+  const importJsonFields = useWorkspaceStore((s) => s.importJsonFields);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const close = () => {
+    setOpen(false);
+    setDraft("");
+    setError(null);
+  };
+
+  const apply = () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(draft);
+    } catch {
+      setError("Invalid JSON");
+      return;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setError('Paste a JSON object, e.g. { "id": "uuid" }');
+      return;
+    }
+    importJsonFields(resourceId, parsed as Record<string, JsonValue>);
+    close();
+  };
+
+  return (
+    <>
+      <Button variant="outlined" startIcon={<DataObjectIcon />} onClick={() => setOpen(true)}>
+        Paste JSON
+      </Button>
+      <Dialog open={open} onClose={close} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 800 }}>Paste JSON to add fields</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            multiline
+            minRows={10}
+            fullWidth
+            placeholder={JSON_PLACEHOLDER}
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setError(null);
+            }}
+            error={Boolean(error)}
+            helperText={error ?? "Each top-level key becomes a field; existing keys are skipped."}
+            sx={{ mt: 1, "& textarea": { fontFamily: "var(--font-mono,monospace)", fontSize: 13 } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={close}>Cancel</Button>
+          <Button variant="contained" onClick={apply} disabled={!draft.trim()}>
+            Add fields
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
 
 const KIND_LABEL: Record<Resource["kind"], string> = {
   endpoint: "API Endpoint",
@@ -208,6 +283,7 @@ export function CenterPanel() {
           <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addField(resource.id)}>
             Add Field
           </Button>
+          <PasteJsonButton resourceId={resource.id} />
           <Stack direction="row" spacing={1.5} sx={{ ml: "auto", alignItems: "center" }}>
             {(["added", "modified", "removed"] as const).map((c) => (
               <Stack key={c} direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
