@@ -174,8 +174,41 @@ export interface UpdateFieldInput {
   description?: string | null;
 }
 
+// ---- Room session (auth) -------------------------------------------------
+interface WireRoomSession {
+  access_token: string;
+  room_code: string;
+  collaborator: WireCollaborator;
+  session: WireSnapshot;
+}
+
+export interface RoomSession {
+  accessToken: string;
+  roomCode: string;
+  collaborator: Collaborator;
+  session: WorkspaceSnapshot;
+}
+
+const nRoomSession = (s: WireRoomSession): RoomSession => ({
+  accessToken: s.access_token,
+  roomCode: s.room_code,
+  collaborator: nCollaborator(s.collaborator),
+  session: nSnapshot(s.session),
+});
+
 // ---- API methods ----------------------------------------------------------
 export const workspaceApi = {
+  // Rooms (public — no token required). Both return the bearer token + snapshot.
+  async createRoom(name: string): Promise<RoomSession> {
+    const res = await apiClient.post("/rooms", { name });
+    return nRoomSession(unwrap<WireRoomSession>(res.data));
+  },
+
+  async joinRoom(roomCode: string, name: string): Promise<RoomSession> {
+    const res = await apiClient.post("/rooms/join", { room_code: roomCode, name });
+    return nRoomSession(unwrap<WireRoomSession>(res.data));
+  },
+
   async getSnapshot(): Promise<WorkspaceSnapshot> {
     const res = await apiClient.get("/workspace");
     return nSnapshot(unwrap<WireSnapshot>(res.data));

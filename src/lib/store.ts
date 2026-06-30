@@ -1,8 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { apiErrorMessage } from "@/lib/api";
-import { workspaceApi } from "@/services/workspace.service";
+import { apiErrorMessage, clearSession, setRoomCode, setToken } from "@/lib/api";
+import { workspaceApi, type RoomSession } from "@/services/workspace.service";
 import type {
   ActivityEvent,
   Collaborator,
@@ -41,9 +41,16 @@ interface StoreState {
   me: Collaborator | null;
   presences: Record<string, Presence>;
 
+  // Auth / room session
+  authed: boolean;
+  roomCode: string | null;
+
   // Hydration + real-time apply (called by useWorkspaceSync / realtime)
   applySnapshot: (snap: WorkspaceSnapshot) => void;
   setMe: (c: Collaborator) => void;
+  applyRoomSession: (s: RoomSession) => void;
+  restoreSession: (roomCode: string) => void;
+  signOut: () => void;
   upsertResource: (rev: number, resource: Resource, fromWs?: boolean) => void;
   removeResource: (rev: number, resourceId: string, fromWs?: boolean) => void;
   upsertComment: (rev: number, comment: Comment, fromWs?: boolean) => void;
@@ -100,6 +107,9 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
     me: null,
     presences: {},
 
+    authed: false,
+    roomCode: null,
+
     applySnapshot: (snap) =>
       set((s) => {
         const selectedId =
@@ -117,6 +127,37 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       }),
 
     setMe: (c) => set({ me: c }),
+
+    // Persist the bearer token + room, hydrate from the returned snapshot, and
+    // flip the auth gate so the workspace mounts.
+    applyRoomSession: (s) => {
+      setToken(s.accessToken);
+      setRoomCode(s.roomCode);
+      get().applySnapshot(s.session);
+      set({ me: s.collaborator, roomCode: s.roomCode, authed: true, apiError: null });
+    },
+
+    // Re-open the gate on reload when a token already exists in localStorage;
+    // useWorkspaceSync then re-hydrates from the backend.
+    restoreSession: (roomCode) => set({ authed: true, roomCode: roomCode || null }),
+
+    signOut: () => {
+      clearSession();
+      set({
+        authed: false,
+        roomCode: null,
+        me: null,
+        rev: 0,
+        resources: [],
+        comments: [],
+        activity: [],
+        collaborators: [],
+        presences: {},
+        selectedId: "",
+        activeFieldId: null,
+        apiError: null,
+      });
+    },
 
     upsertResource: (rev, resource, fromWs = false) =>
       set((s) => {

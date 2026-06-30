@@ -1,5 +1,5 @@
-import { WorkspaceLayout } from "@/components/WorkspaceLayout";
+import { AppRoot } from "@/components/AppRoot";
 
 export default function Page() {
-  return <WorkspaceLayout />;
+  return <AppRoot />;
 }

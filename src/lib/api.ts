@@ -5,10 +5,31 @@ import axios, { type AxiosInstance } from "axios";
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
 
 const TOKEN_KEY = "live-workspace:token";
+const ROOM_KEY = "live-workspace:room";
 
 export function getToken(): string {
   if (typeof window === "undefined") return "";
   return window.localStorage.getItem(TOKEN_KEY) ?? "";
+}
+
+export function setToken(token: string): void {
+  if (typeof window !== "undefined") window.localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function getRoomCode(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem(ROOM_KEY) ?? "";
+}
+
+export function setRoomCode(code: string): void {
+  if (typeof window !== "undefined") window.localStorage.setItem(ROOM_KEY, code);
+}
+
+// Clear room session (token + code) — used on sign out.
+export function clearSession(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(TOKEN_KEY);
+  window.localStorage.removeItem(ROOM_KEY);
 }
 
 // Primary client against our own backend. Bearer token is optional in dev

@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
-import { Box, Stack, Tooltip, Typography } from "@mui/material";
+import { useMemo, useState } from "react";
+import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import BoltIcon from "@mui/icons-material/Bolt";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CheckIcon from "@mui/icons-material/Check";
+import LogoutIcon from "@mui/icons-material/Logout";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar } from "@/components/common";
 import { line } from "@/components/theme";
@@ -11,6 +14,16 @@ export function TopBar() {
   const collaborators = useWorkspaceStore((s) => s.collaborators);
   const presences = useWorkspaceStore((s) => s.presences);
   const me = useWorkspaceStore((s) => s.me);
+  const roomCode = useWorkspaceStore((s) => s.roomCode);
+  const signOut = useWorkspaceStore((s) => s.signOut);
+  const [copied, setCopied] = useState(false);
+
+  const copyCode = () => {
+    if (!roomCode) return;
+    void navigator.clipboard?.writeText(roomCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   // Derive the online set here (memoized) so we never hand the store a fresh
   // object as a snapshot — doing that would loop infinitely.
@@ -50,7 +63,39 @@ export function TopBar() {
         </Box>
       </Box>
 
-      <Stack direction="row" spacing={0.75} sx={{ ml: "auto", alignItems: "center" }}>
+      {roomCode && (
+        <Tooltip title={copied ? "Copied!" : "Copy room code to share"}>
+          <Box
+            onClick={copyCode}
+            sx={{
+              ml: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              px: 1,
+              py: 0.4,
+              border: `2px solid ${line}`,
+              borderRadius: "8px",
+              bgcolor: "#F4F4F5",
+              cursor: "pointer",
+            }}
+          >
+            <Typography variant="caption" sx={{ color: "#71717A" }}>
+              Room
+            </Typography>
+            <Typography sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em" }}>
+              {roomCode}
+            </Typography>
+            {copied ? (
+              <CheckIcon sx={{ fontSize: 15, color: "#16A34A" }} />
+            ) : (
+              <ContentCopyIcon sx={{ fontSize: 14 }} />
+            )}
+          </Box>
+        </Tooltip>
+      )}
+
+      <Stack direction="row" spacing={0.75} sx={{ ml: roomCode ? 1.5 : "auto", alignItems: "center" }}>
         <Box
           sx={{
             display: "flex",
@@ -74,6 +119,14 @@ export function TopBar() {
             </Box>
           </Tooltip>
         ))}
+        <Tooltip title="Leave room">
+          <IconButton
+            onClick={signOut}
+            sx={{ ml: 1, border: `2px solid ${line}`, width: 34, height: 34 }}
+          >
+            <LogoutIcon sx={{ fontSize: 17 }} />
+          </IconButton>
+        </Tooltip>
       </Stack>
     </Box>
   );
