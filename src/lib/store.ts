@@ -250,8 +250,15 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
           required: patch.required,
           state: patch.state,
           description: patch.description,
+          value: patch.value,
         });
-        get().upsertResource(rev, resource);
+        // Backend may not yet persist `value` (frontend-only feature) — re-apply
+        // the edited JSON onto the echoed resource so the change always sticks.
+        const merged =
+          "value" in patch
+            ? { ...resource, fields: resource.fields.map((f) => (f.id === fieldId ? { ...f, value: patch.value } : f)) }
+            : resource;
+        get().upsertResource(rev, merged);
       } catch (err) {
         fail(err);
       }

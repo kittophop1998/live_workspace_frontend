@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Box, IconButton, InputBase, MenuItem, Select, Tooltip, Typography } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputBase, MenuItem, Select, TextField, Tooltip, Typography } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
 import KeyIcon from "@mui/icons-material/VpnKey";
 import { useWorkspaceStore } from "@/lib/store";
 import { StateBadge } from "@/components/common";
 import { changeColor, line } from "@/components/theme";
-import type { DataType, SchemaField } from "@/lib/types";
+import type { DataType, JsonValue, SchemaField } from "@/lib/types";
 
 const TYPES: DataType[] = [
   "string",
@@ -28,6 +28,92 @@ const CHANGE_LABEL: Record<SchemaField["change"], string> = {
   modified: "~ Modified",
   stable: "",
 };
+
+// Inline JSON editor for `json`-typed fields: a compact mono preview that opens
+// a dialog to edit the nested shape as raw, pretty-printed JSON.
+function JsonValueCell({ resourceId, field, disabled }: { resourceId: string; field: SchemaField; disabled: boolean }) {
+  const updateField = useWorkspaceStore((s) => s.updateField);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const preview = JSON.stringify(field.value ?? {});
+  const isEmpty = preview === "{}";
+
+  const openEditor = () => {
+    setDraft(JSON.stringify(field.value ?? {}, null, 2));
+    setError(null);
+    setOpen(true);
+  };
+
+  const save = () => {
+    let parsed: JsonValue;
+    try {
+      parsed = JSON.parse(draft);
+    } catch {
+      setError("Invalid JSON");
+      return;
+    }
+    updateField(resourceId, field.id, { value: parsed });
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Tooltip title={disabled ? "" : "Edit JSON value"}>
+        <Box
+          role="button"
+          onClick={() => !disabled && openEditor()}
+          sx={{
+            display: "inline-flex",
+            maxWidth: "100%",
+            cursor: disabled ? "default" : "pointer",
+            fontFamily: "var(--font-mono,monospace)",
+            fontSize: 11.5,
+            color: isEmpty ? "#A1A1AA" : "#52525B",
+            bgcolor: "#F4F4F5",
+            border: `1.5px solid ${line}`,
+            borderRadius: "6px",
+            px: 0.75,
+            py: 0.25,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {isEmpty ? "{ } edit JSON…" : preview}
+        </Box>
+      </Tooltip>
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 800, fontFamily: "var(--font-mono,monospace)" }}>
+          {field.key} — JSON
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            multiline
+            minRows={8}
+            fullWidth
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setError(null);
+            }}
+            error={Boolean(error)}
+            helperText={error ?? "Nested JSON shape / sample for this field"}
+            sx={{ mt: 1, "& textarea": { fontFamily: "var(--font-mono,monospace)", fontSize: 13 } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={save}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
 
 export function FieldRow({ resourceId, field, commentCount }: { resourceId: string; field: SchemaField; commentCount: number }) {
   const updateField = useWorkspaceStore((s) => s.updateField);
@@ -135,6 +221,9 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
           <Typography sx={{ fontSize: 11.5, color: "#71717A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {field.description}
           </Typography>
+        ) : null}
+        {field.type === "json" ? (
+          <JsonValueCell resourceId={resourceId} field={field} disabled={removed} />
         ) : null}
         {field.change !== "stable" ? (
           <Typography sx={{ fontSize: 10, fontWeight: 800, color: changeColor[field.change], textTransform: "uppercase" }}>

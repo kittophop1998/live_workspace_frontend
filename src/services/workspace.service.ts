@@ -10,6 +10,7 @@ import type {
   DataType,
   FieldState,
   HttpMethod,
+  JsonValue,
   Presence,
   Resource,
   ResourceKind,
@@ -27,6 +28,7 @@ interface WireField {
   state: string;
   change: string;
   description?: string | null;
+  value?: JsonValue | null;
 }
 interface WireResource {
   id: string;
@@ -84,6 +86,7 @@ export const nField = (f: WireField): SchemaField => ({
   state: f.state as FieldState,
   change: f.change as SchemaField["change"],
   description: f.description ?? undefined,
+  value: f.value ?? undefined,
 });
 
 export const nResource = (r: WireResource): Resource => ({
@@ -165,6 +168,7 @@ export interface AddFieldInput {
   required?: boolean;
   state?: FieldState;
   description?: string;
+  value?: JsonValue;
 }
 export interface UpdateFieldInput {
   key?: string;
@@ -172,6 +176,7 @@ export interface UpdateFieldInput {
   required?: boolean;
   state?: FieldState;
   description?: string | null;
+  value?: JsonValue | null;
 }
 
 // ---- Room session (auth) -------------------------------------------------

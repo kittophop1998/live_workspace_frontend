@@ -6,6 +6,15 @@ export type FieldState = "draft" | "ready" | "breaking";
 // Diff status drives the border / line-weight treatment in the blueprint.
 export type FieldChange = "added" | "removed" | "modified" | "stable";
 
+// Arbitrary nested JSON — used by `json`-typed fields to carry a real shape.
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 export type DataType =
   | "string"
   | "number"
@@ -25,6 +34,8 @@ export interface SchemaField {
   state: FieldState;
   change: FieldChange;
   description?: string;
+  // Only for `type: "json"` — the nested JSON shape/sample, edited as raw JSON.
+  value?: JsonValue;
 }
 
 export type ResourceKind = "endpoint" | "database" | "model";
