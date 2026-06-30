@@ -5,6 +5,8 @@ import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconBut
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
 import KeyIcon from "@mui/icons-material/VpnKey";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import { useWorkspaceStore } from "@/lib/store";
 import { StateBadge } from "@/components/common";
 import { changeColor, line } from "@/components/theme";
@@ -146,6 +148,8 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
         bgcolor: focused ? "#FFFBEB" : removed ? "#FAFAFA" : "#fff",
         opacity: removed ? 0.6 : 1,
         textDecoration: removed ? "line-through" : "none",
+        transition: "background-color .12s ease",
+        "&:hover": removed || focused ? {} : { bgcolor: "#FAFAFA" },
         "&:last-of-type": { borderBottom: "none" },
       }}
     >
@@ -198,21 +202,27 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
       </Select>
 
       {/* Required toggle */}
-      <Tooltip title={field.required ? "Required" : "Optional"}>
+      <Tooltip title={field.required ? "Required — click to make optional" : "Optional — click to make required"}>
         <Box
           role="button"
+          aria-label={field.required ? "Required" : "Optional"}
           onClick={() => !removed && updateField(resourceId, field.id, { required: !field.required })}
           sx={{
             width: 26,
-            textAlign: "center",
-            fontSize: 11,
-            fontWeight: 800,
+            display: "flex",
+            justifyContent: "center",
             cursor: removed ? "default" : "pointer",
-            color: field.required ? line : "#C4C4CC",
+            color: field.required ? "#16A34A" : "#C4C4CC",
             flexShrink: 0,
+            transition: "color .12s ease, transform .08s ease",
+            "&:hover": removed ? {} : { transform: "scale(1.15)" },
           }}
         >
-          REQ
+          {field.required ? (
+            <CheckCircleIcon sx={{ fontSize: 18 }} />
+          ) : (
+            <RadioButtonUncheckedIcon sx={{ fontSize: 18 }} />
+          )}
         </Box>
       </Tooltip>
 

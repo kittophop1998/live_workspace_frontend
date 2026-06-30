@@ -9,9 +9,11 @@ export const paper = "#FFFFFF";
 export const wash = "#F4F4F5"; // soft gray surface
 export const line = "#0A0A0A"; // structural border color
 
-// Flat, hard-edged shadows (no blur) for sharp boundaries.
-export const flatShadow = "4px 4px 0 #0A0A0A";
+// Flat, hard-edged shadows (no blur) for sharp boundaries — softened with a
+// faint ambient layer so surfaces read as "lifted" rather than purely graphic.
+export const flatShadow = "4px 4px 0 #0A0A0A, 6px 8px 18px rgba(10,10,10,0.10)";
 export const flatShadowSm = "2px 2px 0 #0A0A0A";
+export const softShadow = "0 1px 2px rgba(10,10,10,0.06), 0 4px 14px rgba(10,10,10,0.06)";
 
 // State accents — used as fills inside high-contrast bordered badges.
 export const stateColor = {
@@ -88,7 +90,22 @@ export const theme = createTheme({
     },
     MuiIconButton: {
       defaultProps: { disableRipple: true },
-      styleOverrides: { root: { borderRadius: 8 } },
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          transition: "background-color .12s ease, color .12s ease, transform .08s ease",
+          "&:hover": { backgroundColor: "#F4F4F5", transform: "translateY(-1px)" },
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          transition: "background-color .12s ease, color .12s ease",
+          "&:hover": { backgroundColor: "#FAFAFA" },
+          "& .MuiTab-iconWrapper": { marginRight: 6 },
+        },
+      },
     },
     MuiChip: {
       styleOverrides: {

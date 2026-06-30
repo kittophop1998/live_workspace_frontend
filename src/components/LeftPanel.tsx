@@ -110,8 +110,21 @@ export function LeftPanel() {
                 <Tooltip title={`New ${kind}`}>
                   <Box
                     role="button"
+                    aria-label={`New ${kind}`}
                     onClick={() => addResource(kind)}
-                    sx={{ display: "flex", cursor: "pointer", color: "#71717A", "&:hover": { color: line } }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 24,
+                      height: 24,
+                      borderRadius: "7px",
+                      border: "2px solid transparent",
+                      cursor: "pointer",
+                      color: "#71717A",
+                      transition: "all .12s ease",
+                      "&:hover": { color: line, borderColor: line, bgcolor: "#fff", boxShadow: "2px 2px 0 #0A0A0A" },
+                    }}
                   >
                     <AddIcon sx={{ fontSize: 16 }} />
                   </Box>

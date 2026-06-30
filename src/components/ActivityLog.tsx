@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Stack, Typography } from "@mui/material";
+import HistoryIcon from "@mui/icons-material/History";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar, relativeTime, useNow } from "@/components/common";
 import { line } from "@/components/theme";
@@ -17,7 +18,10 @@ export function ActivityLog() {
   return (
     <Box sx={{ p: 1.5, overflowY: "auto", height: "100%" }}>
       {activity.length === 0 ? (
-        <Typography sx={{ color: "#A1A1AA", fontSize: 13, textAlign: "center", mt: 4 }}>No activity yet.</Typography>
+        <Stack spacing={1} sx={{ alignItems: "center", mt: 5, color: "#A1A1AA" }}>
+          <HistoryIcon sx={{ fontSize: 32 }} />
+          <Typography sx={{ fontSize: 13 }}>No activity yet.</Typography>
+        </Stack>
       ) : (
         <Stack spacing={0}>
           {activity.map((a, i) => (

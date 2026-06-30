@@ -1,6 +1,9 @@
 "use client";
 
 import { Box, Tab, Tabs } from "@mui/material";
+import HistoryIcon from "@mui/icons-material/History";
+import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
+import CodeIcon from "@mui/icons-material/Code";
 import { useWorkspaceStore } from "@/lib/store";
 import { ActivityLog } from "@/components/ActivityLog";
 import { CommentThread } from "@/components/CommentThread";
@@ -21,16 +24,16 @@ export function RightPanel() {
         onChange={(_, v: RightTab) => setTab(v)}
         variant="fullWidth"
         sx={{
-          minHeight: 44,
+          minHeight: 46,
           borderBottom: `2px solid ${line}`,
-          "& .MuiTab-root": { minHeight: 44, fontWeight: 800, fontSize: 12.5, textTransform: "uppercase", letterSpacing: "0.04em" },
+          "& .MuiTab-root": { minHeight: 46, fontWeight: 800, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.03em", flexDirection: "row" },
           "& .Mui-selected": { color: `${line} !important`, bgcolor: "#F4F4F5" },
           "& .MuiTabs-indicator": { height: 3, bgcolor: line },
         }}
       >
-        <Tab value="activity" label="Activity" />
-        <Tab value="comments" label={`Comments${commentCount ? ` (${commentCount})` : ""}`} />
-        <Tab value="export" label="Export" />
+        <Tab value="activity" icon={<HistoryIcon sx={{ fontSize: 17 }} />} iconPosition="start" label="Activity" />
+        <Tab value="comments" icon={<ForumOutlinedIcon sx={{ fontSize: 17 }} />} iconPosition="start" label={`Comments${commentCount ? ` (${commentCount})` : ""}`} />
+        <Tab value="export" icon={<CodeIcon sx={{ fontSize: 17 }} />} iconPosition="start" label="Export" />
       </Tabs>
       <Box sx={{ flex: 1, minHeight: 0 }}>
         {tab === "activity" ? <ActivityLog /> : tab === "comments" ? <CommentThread /> : <CodeExport />}

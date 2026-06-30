@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Box, Button, Chip, IconButton, InputBase, Stack, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import CloseIcon from "@mui/icons-material/Close";
+import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar, MonoTag, relativeTime, useNow } from "@/components/common";
 import { line } from "@/components/theme";
@@ -55,9 +56,12 @@ export function CommentThread() {
 
       <Box sx={{ flex: 1, overflowY: "auto", p: 1.5 }}>
         {thread.length === 0 ? (
-          <Typography sx={{ color: "#A1A1AA", fontSize: 13, textAlign: "center", mt: 4 }}>
-            {activeField ? "No comments on this field yet." : "No comments yet. Start the discussion."}
-          </Typography>
+          <Stack spacing={1} sx={{ alignItems: "center", mt: 5, color: "#A1A1AA" }}>
+            <ForumOutlinedIcon sx={{ fontSize: 32 }} />
+            <Typography sx={{ fontSize: 13, textAlign: "center" }}>
+              {activeField ? "No comments on this field yet." : "No comments yet. Start the discussion."}
+            </Typography>
+          </Stack>
         ) : (
           <Stack spacing={1.5}>
             {thread.map((c) => {

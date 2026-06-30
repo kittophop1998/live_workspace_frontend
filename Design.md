@@ -1,212 +1,220 @@
-# Kingdom Manager — Frontend Design
+# Live Workspace — Frontend Design
 
-A cozy, idle, strategic kingdom-management dashboard. The player never controls a
-character — they **read numbers, watch bars fill, and nudge assignments**. The UI
-should feel like a living tiny kingdom rendered through cards, counters, and small
-2D/pixel-style icons. Clean and readable first, game-like second — **not** an admin
-panel.
+A real-time, in-browser **schema collaboration hub** for backend & frontend devs.
+Teams join a shared **room** to design, discuss, and export API contracts —
+endpoints, database tables, and schema models — together. The UI is a focused,
+**IDE-like three-column workspace**: explore on the left, edit a blueprint in the
+center, collaborate on the right.
+
+The feel is **modern-minimalist / neo-brutalist**: high-contrast structure,
+crisp dark borders, flat offset shadows, and **icons first**. Clean and
+glanceable — a developer tool, not a marketing page.
 
 ---
 
 ## 1. UI direction
 
-- **2D / pixel-inspired, but tidy.** Pixel/emoji-style icons for resources,
-  buildings and citizens; everything else is soft cards, rounded corners, gentle
-  shadows. No isometric engine, no animated tilemap, no pathfinding.
-- **Dashboard, not action game.** The "map" is a **village grid of building
-  cards**, not a moving scene.
-- **Cozy & warm.** Parchment background, amber/gold primary, woody and leafy
-  accents. Friendly, calm motion.
-- **Glanceable.** Resource rates, progress bars, and status badges readable in
-  under a second.
+- **Structure over decoration.** Boundaries are drawn with **2px ink borders**
+  (`#0A0A0A`) and **flat offset shadows** (no soft blur as the primary cue),
+  softened by a faint ambient layer so surfaces read as "lifted".
+- **Icon-forward.** Every action, tab, group, and status carries a MUI icon.
+  Text labels support icons, not the other way around.
+- **Glanceable diff & state.** Field `state` (draft / ready / breaking) and
+  `change` (added / modified / removed) are readable in under a second via color
+  + border weight, never buried in text.
+- **Inline, direct editing.** Click a name, path, key, type, or status to edit it
+  in place — no modal-heavy flows. Modals only for bulk/raw input (Paste JSON,
+  Import Spec).
+- **Calm motion.** Short transitions (80–250ms), subtle hover lifts, button
+  press-down. Respects `prefers-reduced-motion`.
 
 ---
 
 ## 2. Layout
 
-### Desktop (≥1024px)
+### Desktop (≥ md, 900px+)
 ```
-┌────────────────────────────────────────────────────────────┐
-│  TOP RESOURCE BAR  (gold · food · wood · stone · +rate)     │
-├───────┬────────────────────────────────────┬───────────────┤
-│ SIDE  │  KINGDOM HEADER (name·lvl·XP·badges)│  RIGHT PANEL  │
-│ NAV   │                                     │  ─ Citizens   │
-│       │  VILLAGE GRID                       │  ─ Task Queue │
-│ Village│  [ building cards … ]              │  ─ Events     │
-│ Citizens│                                   │               │
-│ Builds │                                    │               │
-│ Events │                                    │               │
-│ Policies│  QUICK ACTIONS row               │               │
-├───────┴────────────────────────────────────┴───────────────┤
-│  BOTTOM PANEL  — Activity Log  +  Stat cards                 │
-└────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ TOP BAR  ⚡ Live Workspace · [Room 123456 ⧉] · ●N online · avatars ⏏ │
+├────────────┬──────────────────────────────────────┬───────────────────┤
+│ LEFT 280px │  CENTER  (1fr)                        │  RIGHT 360px      │
+│ EXPLORER   │  ┌ header: icon · kind · name ──────┐ │  ┌ tabs ────────┐ │
+│            │  │ GET /path · N fields · updated…  │ │  │⟲ Activity     │ │
+│ ⊟ API      │  └──────────────────────────────────┘ │  │❝ Comments (N) │ │
+│   • User   │  BLUEPRINT TABLE                       │  │< > Export     │ │
+│   • Order  │   KEY · TYPE · REQ · NOTES · STATE     │  └──────────────┘ │
+│ ⊟ DB       │   [field rows w/ diff borders]         │   [tab content]   │
+│   • users  │   + Paste JSON      legend             │                   │
+│            │  RESPONSE SCHEMAS  [200][400][500] …   │                   │
+└────────────┴──────────────────────────────────────┴───────────────────┘
 ```
-- **Left sidebar**: section nav (Village / Citizens / Buildings / Events /
-  Policies). Persistent, icon + label.
-- **Center**: kingdom header → village grid → quick actions.
-- **Right panel**: stacked Citizens, Task Queue, Events (scrolls independently).
-- **Bottom panel**: Activity log feed + a row of StatCards (happiness, defense,
-  threat, citizens).
+- **Top bar** (`TopBar`, 56px): brand mark, shareable **room code** (click to
+  copy), live **presence** (online count + collaborator avatars, online ringed
+  green), leave-room.
+- **Left — Explorer** (`LeftPanel`): resources grouped by kind (API Endpoints,
+  Databases) with per-group counts and a `＋` add button; state-legend badges;
+  each row shows a state dot, name, path, and a colored method tag.
+- **Center — Blueprint** (`CenterPanel`): resource header (kind icon badge, kind
+  label, editable name, method/path, field count, last-updated) → the **field
+  table** → **Response Schemas** section (endpoints only).
+- **Right — Collaboration** (`RightPanel`): three tabs — **Activity** feed,
+  **Comments** thread (workspace- or field-scoped), **Export** (TypeScript / JSON
+  codegen).
 
-### Mobile-first (<768px)
-- Single column, sections **stacked vertically** in this order:
-  Resource bar (sticky top) → Kingdom header → Quick actions → Village grid →
-  Task queue → Events → Citizens → Activity log.
-- **Bottom navigation** (4–5 items: Village · Citizens · Tasks · Events · More)
-  jumps/scrolls to each section / switches the active screen.
-- Resource bar is horizontally scrollable chips if it overflows.
+### Mobile (< md)
+- Center panel only; left and right panels are hidden (`display: none`).
+- Room entry (`RoomGate`) is a single centered card.
 
-The shell reuses the existing centered responsive column (`max-w` widens from
-mobile to a wide desktop grid via Tailwind breakpoints).
+The shell is a CSS grid `280px minmax(0,1fr) 360px` on `md+`, collapsing to a
+single `1fr` column below.
 
 ---
 
-## 3. Main dashboard structure
+## 3. Surfaces & components
 
-| Region | Component | Shows |
-|--------|-----------|-------|
-| Top | `ResourceBar` | each resource: icon, amount (animated), `+rate/min`, capacity fill |
-| Header | `KingdomHeader` | kingdom name, level, XP bar, happiness/defense/threat badges |
-| Center | `VillageGrid` → `BuildingCard[]` | building grid |
-| Center bottom | `QuickActions` | build, collect offline, train guard, open market |
-| Right | `CitizenPanel` → `CitizenCard[]` | citizen roster + job assignment |
-| Right | `TaskQueue` | active build/upgrade tasks with progress + ETA |
-| Right | `EventPanel` | active events + choice buttons |
-| Bottom | `ActivityLog` | scrolling feed of production/build/combat lines |
-| Bottom | `StatCard[]` | happiness, defense, threat, citizen count |
+| Region | Component | Shows / does |
+|--------|-----------|--------------|
+| Gate | `RoomGate` | create / join a room (name + code), then mounts the workspace |
+| Top | `TopBar` | brand, room code copy, presence avatars, online count, sign out |
+| Left | `LeftPanel` | grouped resource explorer + add + state legend |
+| Center | `CenterPanel` | resource header + blueprint table + response schemas |
+| Center | `FieldRow` | one schema field (key, type, required, notes/diff, state, comment, delete) |
+| Center | `ResponseSchemaPanel` | per-status response schemas (200/400/500…) for endpoints |
+| Center | `ImportSpecDialog` | import OpenAPI / Postman to populate fields & responses |
+| Right | `RightPanel` | tab switcher (Activity / Comments / Export) |
+| Right | `ActivityLog` | newest-first feed of who-changed-what, relative time |
+| Right | `CommentThread` | comments on a resource or a specific field + composer |
+| Right | `CodeExport` | generated TypeScript / JSON for the selected resource |
+| Shared | `common.tsx` | `StateBadge`, `MonoTag`, `Avatar`, `useNow`, `relativeTime` |
 
-### ResourceBar
-- One chip per resource: pixel icon, **animated count-up** number, small
-  `+N/min` pill (green if positive, red if negative), thin capacity bar
-  underneath (`amount/capacity`).
-- On production tick: brief **floating `+N`** rises and fades above the chip.
+### Blueprint table (`CenterPanel` + `FieldRow`)
+- Bordered card with an **ink column header** (`KEY · TYPE · REQ · NOTES/DIFF ·
+  STATE`).
+- Each row: monospace **key** (inline-editable), **type** dropdown, **required**
+  toggle (✓ green `CheckCircle` / hollow `RadioButtonUnchecked`), description /
+  inline JSON value / diff label, a **state badge** (click to cycle), a
+  **comment** anchor with count badge, and a **delete** action.
+- **Diff treatment:** a left border whose weight (3px → 6px) and color encode the
+  field `change`; removed fields are struck through and dimmed; commented fields
+  get an amber focus tint.
+- **Required / primary** fields show a key icon in the key column.
 
-### VillageGrid
-- Responsive CSS grid of `BuildingCard`s (2 cols mobile → 3–4 desktop).
-- Empty plots render as dashed "＋ Build" tiles → opens build picker.
+### Explorer (`LeftPanel`)
+- Groups: **API Endpoints** (`ApiIcon`), **Databases** (`StorageIcon`), each with
+  a count and a bordered `＋` hover button.
+- Rows: state dot + name + (endpoint) mono path + method tag; active row is white
+  with a flat offset shadow.
 
-### BuildingCard
-- Pixel building icon + name, **Lv. badge**.
-- Worker pips `👷 3/4`, production line `+18 food/min`.
-- `status` ribbon: producing / upgrading (with mini progress) / idle.
-- Primary **Upgrade** button showing cost; disabled + reason tooltip when
-  unaffordable or busy.
+### Response Schemas (`ResponseSchemaPanel`)
+- Collapsible section under the endpoint blueprint.
+- Status tabs colored by class (**2xx** green, **4xx** amber, **5xx** red); each
+  is its own field table. Add common statuses from a menu; Paste JSON per status.
 
-### CitizenPanel / CitizenCard
-- Compact list. Each card: avatar, name, job chip, **energy bar**, **happiness
-  bar**, status dot (working/resting/idle/sick).
-- Job dropdown / segmented control to reassign (calls assign API).
-- Bulk-assign control at the top ("Send 2 idle → Farm").
-
-### TaskQueue
-- Rows with label, `ProgressBar`, remaining time counting down, cancel.
-- Shows used/total slots (e.g. `2/3`).
-
-### ActivityLog
-- Newest-first feed; colored left border by `type`; relative timestamps.
-- New lines slide in from top.
-
-### EventPanel
-- Event card: severity color, title, description, countdown to `expires_at`,
-  one button per `choice` (disabled if `requires` unmet).
-
-### QuickActions
-- Big friendly buttons: **Build**, **Collect Offline**, **Train Guard**,
-  **Market**. Icon over label.
+### Collaboration (`RightPanel`)
+- Tabs carry icons: **Activity** (`History`), **Comments** (`ForumOutlined`),
+  **Export** (`Code`).
+- Empty states are icon + one-line message, not bare text.
 
 ---
 
 ## 4. Visual style
 
-### Color palette (cozy kingdom)
+Design tokens live in `src/components/theme.ts` (MUI theme) and `app/globals.css`.
+
+### Color
 | token | hex | use |
 |-------|-----|-----|
-| parchment / bg | `#F5ECD8` | app background |
-| surface | `#FFFDF6` | cards |
-| primary (gold) | `#D9A441` | CTAs, level, active |
-| primary dark | `#B9842B` | hover |
-| food / leaf | `#6FAE5E` | food, success, energy |
-| wood / oak | `#B07a4b` | wood resource |
-| stone / slate | `#8B95A5` | stone resource |
-| info blue | `#5B8DD9` | tasks, info |
-| threat / danger | `#D9534F` | threat, danger events |
-| happiness | `#E8B84B` | happiness/sun |
-| ink (text) | `#3B3026` | primary text |
-| muted | `#857a6b` | secondary text |
-| border | `#E7DCC2` | card borders/dividers |
+| ink / line / primary | `#0A0A0A` | text, borders, primary fills |
+| paper | `#FFFFFF` | cards / panels |
+| wash | `#F4F4F5` | app background, inset surfaces |
+| text secondary | `#52525B` | secondary text |
+| muted | `#71717A` / `#A1A1AA` | captions, placeholders |
 
-Resource colors: **gold** `#D9A441`, **food** `#6FAE5E`, **wood** `#B07a4b`,
-**stone** `#8B95A5`.
+**Field state** (bordered badge fills):
+draft `#FEF3C7`/`#92400E` · ready `#DCFCE7`/`#166534` · breaking `#FEE2E2`/`#991B1B`.
+
+**Diff / change:** added `#16A34A` · removed `#DC2626` · modified `#D97706` ·
+stable `#0A0A0A`.
+
+**HTTP method:** GET `#2563EB` · POST `#16A34A` · PUT `#D97706` ·
+PATCH `#7C3AED` · DELETE `#DC2626`.
 
 ### Typography
-- UI font: the project's existing **Noto Sans Thai / Prompt** stack (loaded via
-  `--font-prompt`) — round, friendly, supports TH+EN.
-- **Numbers** (resource counters, levels) use a slightly heavier weight /
-  tabular alignment so changing digits don't jiggle (`font-variant-numeric:
-  tabular-nums`).
-- Headings 600–800; body 400–500; tiny caption for rates/timestamps.
-
-### Iconography
-- Emoji / pixel glyphs as MVP icons (🪙 🌾 🪵 🪨 🏠 🌱 ⚒️ 🛡️ 🏰 🏹 👷 🧑‍🌾).
-  Easy to swap for a pixel sprite sheet later without layout change.
+- **UI:** Noto Sans Thai via `--font-prompt` (TH + EN), weights 100–900.
+- **Code:** monospace via `--font-mono` (SFMono / ui-monospace) for keys, types,
+  paths, JSON, room code, and export output.
+- Scale: `h1` 22/800, `h2` 17/800, `h3` 13/800 uppercase tracked, `body1` 14,
+  `body2` 13, `caption` 11/600. Buttons 700, no uppercase transform by default.
 
 ### Shape & elevation
-- Radius `14–16px` cards, `999px` chips. Soft shadow `0 4px 16px rgba(0,0,0,.06)`.
-  Pixel accent borders allowed on building tiles.
+- Base radius **8px**; cards/blueprints **10–12px**; chips/tags **6px**;
+  avatars / pills **999px**.
+- `flatShadow` = `4px 4px 0 #0A0A0A` + faint ambient layer (cards, dialogs,
+  active surfaces); `flatShadowSm` = `2px 2px 0 #0A0A0A` (buttons, small tags);
+  `softShadow` for subtle depth.
+- Inputs, chips, buttons all carry the 2px ink border treatment.
+
+### Iconography (MUI `@mui/icons-material`)
+- Brand `Bolt`; kinds `Api` / `Storage` / `SchemaOutlined`; tabs `History` /
+  `ForumOutlined` / `Code`; required `CheckCircle` / `RadioButtonUnchecked`;
+  actions `Add`, `EditOutlined`, `DeleteOutline`, `ContentCopy`, `Check`,
+  `Logout`, `DataObject`, `Send`, `ExpandMore`. Empty states reuse the section's
+  icon at large size in a dashed/ghost frame.
 
 ---
 
-## 5. Component list
+## 5. Interaction patterns
 
-```
-GameLayout        # responsive shell: resource bar + sidebar/bottom-nav + slots
-ResourceBar       # top resource chips
-KingdomHeader     # name, level, XP, stat badges
-VillageGrid       # grid container of buildings + empty plots
-BuildingCard      # one building
-CitizenPanel      # roster container + bulk assign
-CitizenCard       # one citizen
-TaskQueue         # active tasks
-ActivityLog       # event/production feed
-EventPanel        # active events + choices
-QuickActions      # primary action buttons
-StatCard          # one kingdom stat (happiness/defense/threat/citizens)
-ProgressBar       # reusable labeled progress/fill bar
-AnimatedNumber    # count-up number with tabular-nums
-FloatingNumber    # transient +N that rises & fades
-StatusBadge / Chip helpers
-```
+- **Inline edit:** click resource name, endpoint path, field key/type/required,
+  or response description to edit in place; Enter / blur commits.
+- **Method picker:** mono method tag opens a colored dropdown (GET…DELETE).
+- **State cycling:** click a state badge to cycle draft → ready → breaking.
+- **Paste JSON:** paste a JSON object → fields are generated with inferred types;
+  nested objects become editable `json` fields.
+- **Import spec:** load OpenAPI / Postman to populate fields and response schemas.
+- **Comments:** anchor to a field via its comment icon, or thread on the whole
+  resource; composer posts as the current collaborator (⌘/Ctrl+Enter).
+- **Presence & sharing:** copy the room code from the top bar; avatars show who's
+  online in real time.
+- **Export:** switch the resource to TypeScript or JSON in the Export tab.
 
 ---
 
-## 6. State handling plan
+## 6. State & data
 
-- **Single Zustand store** `useKingdomStore` (matches existing project pattern):
-  holds `kingdom`, `resources`, `citizens`, `buildings`, `tasks`, `logs`,
-  `events`, `policies`, plus UI `screen`/`tab` and `apiLoading`/`apiError`.
-- **Service layer** `src/services/kingdom.service.ts` returns typed data; for MVP
-  it resolves from `src/data/mock.ts` (and is structured so each method maps 1:1
-  to an api-spec endpoint).
-- **Navigation**: store-based `screen` + `kingdom:navigate` custom event synced to
-  the URL in `GameLayout` (mirrors the original AppShell pattern). Sections:
-  `village | citizens | buildings | events | policies`.
-- **Tick loop**: a `useGameTick` hook ticks every ~3s, advancing resource
-  `amount` by `rate_per_min` for smooth counters and emitting occasional log
-  lines + floating numbers. In production this is replaced by `GET /game/tick`.
-- **Derived, not stored**: affordability, progress %, totals — computed in
-  selectors/components from store data, never persisted.
-- **Actions** (`assignCitizen`, `upgradeBuilding`, `resolveEvent`, …) call the
-  service, then patch the store optimistically and reconcile with the response.
+- **Stores (Zustand):** `useWorkspaceStore` (`src/lib/store.ts`) holds resources,
+  comments, activity, collaborators, presence, room/session, and UI selection
+  (`selectedId`, `activeFieldId`, `rightTab`). Response schemas live in a separate
+  client-local store (`src/lib/responseSchemas.ts`, persisted to localStorage).
+- **Service layer:** `src/services/workspace.service.ts` is the only place that
+  knows the wire format — typed methods + snake_case→camelCase normalizers against
+  `api-spec.md`.
+- **Realtime:** `src/lib/realtime.ts` — WebSocket client with reconnect and a
+  presence heartbeat; remote events merge by `rev`. Hydration via
+  `src/lib/useWorkspaceSync.ts` (`GET /workspace` + `/me`).
+- **Domain types:** `src/lib/types.ts` — `Resource` (`endpoint | database |
+  model`) with `SchemaField[]`, plus `Comment`, `ActivityEvent`, `Collaborator`,
+  `Presence`, `ResponseSchema`.
+- **Codegen:** `src/lib/codegen.ts` turns a resource into TypeScript / JSON.
+- **Derived, not stored:** counts, diff styling, affordability of actions, and
+  status colors are computed in components/selectors, never persisted.
 
 ---
 
-## 7. Animation ideas
+## 7. Motion
 
-- **Count-up** on resource numbers when they change (ease-out, ~400ms).
-- **Floating `+N`** above resource chips / building cards on production.
-- **Progress bars** animate width transitions; task bars tick down live.
-- **Card hover lift** on building/quick-action cards.
-- **New log line** slides + fades in at the top of the feed.
-- **Event arrival** gentle shake / glow on the Events badge.
-- **Upgrade complete** brief sparkle + level-badge pop.
-- All motion respects `prefers-reduced-motion` (reuse existing media guard).
+- **Hover lift** on buttons / icon buttons (`translate(-1px,-1px)` + shadow grow);
+  **press-down** (`translate(2px,2px)`, shadow collapse).
+- **Row hover** tint on field rows (white → `#FAFAFA`).
+- **New activity line** slides/fades in (`@keyframes log-in`, ~250ms).
+- **Required toggle** scales on hover; **response section** chevron rotates on
+  fold.
+- All transitions stay in the 80–250ms range and honor `prefers-reduced-motion`.
+
+---
+
+> **Scope guardrails:** pure client + REST/WS backend per `api-spec.md`. No game
+> engine, no real LLM/AI (rule-based only), no separate router (selection state
+> drives the view). Keep the neo-brutalist, icon-forward language consistent when
+> adding surfaces; reuse `StateBadge` / `MonoTag` / `Avatar` and the theme tokens
+> rather than introducing new colors or shadow styles.

@@ -5,6 +5,10 @@ import DataObjectIcon from "@mui/icons-material/DataObject";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import ApiIcon from "@mui/icons-material/Api";
+import StorageIcon from "@mui/icons-material/Storage";
+import SchemaOutlinedIcon from "@mui/icons-material/SchemaOutlined";
+import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { FieldRow } from "@/components/FieldRow";
@@ -92,6 +96,12 @@ const KIND_LABEL: Record<Resource["kind"], string> = {
   endpoint: "API Endpoint",
   database: "Database Table",
   model: "Schema Model",
+};
+
+const KIND_ICON: Record<Resource["kind"], React.ReactNode> = {
+  endpoint: <ApiIcon sx={{ fontSize: 18 }} />,
+  database: <StorageIcon sx={{ fontSize: 18 }} />,
+  model: <SchemaOutlinedIcon sx={{ fontSize: 18 }} />,
 };
 
 const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -204,8 +214,11 @@ export function CenterPanel() {
 
   if (!resource) {
     return (
-      <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#A1A1AA" }}>
-        <Typography>Select a schema from the left to inspect it.</Typography>
+      <Box sx={{ height: "100%", display: "flex", flexDirection: "column", gap: 1.5, alignItems: "center", justifyContent: "center", color: "#A1A1AA" }}>
+        <Box sx={{ width: 64, height: 64, borderRadius: "16px", border: `2px dashed #C4C4CC`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <LayersOutlinedIcon sx={{ fontSize: 30 }} />
+        </Box>
+        <Typography sx={{ fontWeight: 600 }}>Select a schema from the left to inspect it.</Typography>
       </Box>
     );
   }
@@ -218,12 +231,17 @@ export function CenterPanel() {
       {/* Header */}
       <Box sx={{ p: 3, pb: 2, borderBottom: `2px solid ${line}`, bgcolor: "#fff" }}>
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1 }}>
-          <Box>
-            <Typography variant="caption" sx={{ color: "#71717A", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-              {KIND_LABEL[resource.kind]}
-            </Typography>
-            <EditableName resource={resource} key={resource.id} />
-          </Box>
+          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+            <Box sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: "10px", border: `2px solid ${line}`, bgcolor: "#F4F4F5", color: line, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "2px 2px 0 #0A0A0A" }}>
+              {KIND_ICON[resource.kind]}
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="caption" sx={{ color: "#71717A", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                {KIND_LABEL[resource.kind]}
+              </Typography>
+              <EditableName resource={resource} key={resource.id} />
+            </Box>
+          </Stack>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
             {resource.kind === "endpoint" ? <ImportSpecDialog resourceId={resource.id} /> : null}
             <StateBadge state={resource.state} sx={{ fontSize: 12, py: 0.4 }} />
