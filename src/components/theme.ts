@@ -2,91 +2,114 @@
 
 import { createTheme } from "@mui/material";
 
-// Kingdom Manager Design System — cozy, warm, medieval. Single source of truth
-// for brand colors (see Design.md §4).
-export const palette = {
-  primary: "#D9A441", // gold — CTAs, level, active
-  primaryHover: "#B9842B",
-  primaryLight: "#FBF1D8",
-  food: "#6FAE5E",
-  foodLight: "#EAF6E4",
-  wood: "#B07A4B",
-  stone: "#8B95A5",
-  blue: "#5B8DD9",
-  blueLight: "#E9F0FB",
-  background: "#F5ECD8",
-  surface: "#FFFDF6",
-  border: "#E7DCC2",
-  divider: "#EFE7D2",
-  text: "#3B3026",
-  muted: "#857A6B",
-  placeholder: "#B3A892",
-  disabled: "#C4BAA6",
-  success: "#6FAE5E",
-  successSoft: "#EAF6E4",
-  warning: "#E8A23C",
-  warningSoft: "#FBEFD6",
-  error: "#D9534F",
-  errorSoft: "#FBE4E3",
-  info: "#5B8DD9",
-  infoSoft: "#E9F0FB",
+// Live Workspace design system — modern minimalist, high-contrast structure.
+// Crisp dark borders + flat offset shadows define boundaries instead of color.
+export const ink = "#0A0A0A";
+export const paper = "#FFFFFF";
+export const wash = "#F4F4F5"; // soft gray surface
+export const line = "#0A0A0A"; // structural border color
+
+// Flat, hard-edged shadows (no blur) for sharp boundaries.
+export const flatShadow = "4px 4px 0 #0A0A0A";
+export const flatShadowSm = "2px 2px 0 #0A0A0A";
+
+// State accents — used as fills inside high-contrast bordered badges.
+export const stateColor = {
+  draft: { bg: "#FEF3C7", fg: "#92400E" }, // amber
+  ready: { bg: "#DCFCE7", fg: "#166534" }, // green
+  breaking: { bg: "#FEE2E2", fg: "#991B1B" }, // red
 } as const;
 
-export const radii = { app: 16, input: 14, chip: 999 } as const;
-
-export const shadows = {
-  card: "0 4px 16px rgba(59,48,38,0.06)",
-  floating: "0 8px 22px rgba(217,164,65,0.28)",
-  soft: "0 8px 24px rgba(59,48,38,0.08)",
+export const changeColor = {
+  added: "#16A34A",
+  removed: "#DC2626",
+  modified: "#D97706",
+  stable: "#0A0A0A",
 } as const;
+
+export const methodColor: Record<string, string> = {
+  GET: "#2563EB",
+  POST: "#16A34A",
+  PUT: "#D97706",
+  PATCH: "#7C3AED",
+  DELETE: "#DC2626",
+};
 
 export const theme = createTheme({
   palette: {
-    primary: { main: palette.primary, dark: palette.primaryHover, light: palette.primaryLight, contrastText: "#3B3026" },
-    secondary: { main: palette.food, light: palette.foodLight, contrastText: "#FFFFFF" },
-    success: { main: palette.success },
-    warning: { main: palette.warning },
-    error: { main: palette.error },
-    info: { main: palette.info },
-    background: { default: palette.background, paper: palette.surface },
-    text: { primary: palette.text, secondary: palette.muted, disabled: palette.disabled },
-    divider: palette.border,
+    mode: "light",
+    primary: { main: ink, contrastText: "#FFFFFF" },
+    secondary: { main: "#2563EB" },
+    success: { main: "#16A34A" },
+    warning: { main: "#D97706" },
+    error: { main: "#DC2626" },
+    background: { default: wash, paper },
+    text: { primary: ink, secondary: "#52525B" },
+    divider: ink,
   },
   typography: {
     fontFamily:
-      'var(--font-prompt), "Noto Sans Thai", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
-    h1: { fontSize: 26, fontWeight: 800, lineHeight: 1.25, letterSpacing: "-0.01em" },
-    h2: { fontSize: 20, fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.01em" },
-    h3: { fontSize: 16, fontWeight: 700, lineHeight: 1.35 },
-    body1: { fontSize: 15, lineHeight: 1.55 },
-    body2: { fontSize: 13.5, lineHeight: 1.5 },
-    caption: { fontSize: 11.5, fontWeight: 500, lineHeight: 1.4, color: palette.muted },
+      'var(--font-prompt), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
+    h1: { fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" },
+    h2: { fontSize: 17, fontWeight: 800, letterSpacing: "-0.01em" },
+    h3: { fontSize: 13, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" },
+    body1: { fontSize: 14, lineHeight: 1.55 },
+    body2: { fontSize: 13, lineHeight: 1.5 },
+    caption: { fontSize: 11, fontWeight: 600 },
     button: { textTransform: "none", fontWeight: 700 },
   },
-  shape: { borderRadius: radii.input },
+  shape: { borderRadius: 8 },
   components: {
+    MuiPaper: {
+      defaultProps: { elevation: 0 },
+      styleOverrides: { root: { backgroundImage: "none" } },
+    },
     MuiCard: {
+      defaultProps: { elevation: 0 },
       styleOverrides: {
-        root: { border: `1px solid ${palette.border}`, borderRadius: radii.app, boxShadow: shadows.card, backgroundColor: palette.surface },
+        root: { border: `2px solid ${line}`, borderRadius: 10, boxShadow: flatShadow, backgroundColor: paper },
       },
     },
     MuiButton: {
-      defaultProps: { disableElevation: true },
+      defaultProps: { disableElevation: true, disableRipple: true },
       styleOverrides: {
         root: {
-          borderRadius: radii.input,
-          minHeight: 42,
-          textTransform: "none",
+          borderRadius: 8,
           fontWeight: 700,
-          boxShadow: "none",
-          "&.MuiButton-containedPrimary": {
-            boxShadow: shadows.floating,
-            "&:hover": { backgroundColor: palette.primaryHover, boxShadow: shadows.floating },
-          },
+          border: `2px solid ${line}`,
+          boxShadow: flatShadowSm,
+          transition: "transform .08s ease, box-shadow .08s ease",
+          "&:hover": { boxShadow: flatShadow, transform: "translate(-1px,-1px)" },
+          "&:active": { boxShadow: "0 0 0 #0A0A0A", transform: "translate(2px,2px)" },
+          "&.MuiButton-containedPrimary": { backgroundColor: ink, color: "#fff", "&:hover": { backgroundColor: "#000" } },
+          "&.MuiButton-outlined": { backgroundColor: paper },
         },
       },
     },
-    MuiChip: { styleOverrides: { root: { fontWeight: 700, borderRadius: radii.chip } } },
-    MuiLinearProgress: { styleOverrides: { root: { borderRadius: 999 } } },
+    MuiIconButton: {
+      defaultProps: { disableRipple: true },
+      styleOverrides: { root: { borderRadius: 8 } },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: { fontWeight: 700, border: `2px solid ${line}`, borderRadius: 6 },
+        outlined: { backgroundColor: paper },
+      },
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: { backgroundColor: ink, fontSize: 11, fontWeight: 600, border: `1px solid ${line}` },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          backgroundColor: paper,
+          "& fieldset": { borderColor: line, borderWidth: 2 },
+          "&:hover fieldset": { borderColor: line },
+          "&.Mui-focused fieldset": { borderColor: line, borderWidth: 2 },
+        },
+      },
+    },
   },
 });

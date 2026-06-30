@@ -1,8 +1,17 @@
-# Kingdom Manager — API Specification (v1)
+# Live Workspace — API Specification (v1)
 
-Backend: **Go** (future). This document is the **contract** the frontend is built
-against. The frontend currently runs on **mock data** that mirrors every shape
-below, so swapping mocks for the real API is a drop-in change.
+Backend: **TBD** (Go / Node / etc.). This document is the **contract** the frontend
+is built against. The frontend currently runs **fully client-side** — the shared
+document lives in `localStorage` and syncs across tabs via `BroadcastChannel`
+(`src/lib/sync.ts`). Implementing this API replaces that local layer with real
+multi-user, multi-device persistence; the wire shapes below mirror the frontend
+domain types in `src/lib/types.ts` (snake_case on the wire, camelCase in the app —
+the service layer normalizes).
+
+> **What the backend owns:** persistence of the workspace document (resources,
+> fields, comments, activity), identity/presence, and broadcasting changes.
+> **What stays client-side:** code generation (TypeScript / JSON mock) is computed
+> in the browser from the schema (`src/lib/codegen.ts`) — no endpoint needed.
 
 ---
 
@@ -14,42 +23,35 @@ below, so swapping mocks for the real API is a drop-in change.
 ```
 Configured via `NEXT_PUBLIC_API_URL` (default `http://localhost:8080/api/v1`).
 
-### Authentication (assumption)
-- MVP is **single-player, single-kingdom**. A player owns exactly one kingdom.
-- Auth is **Bearer JWT**, optional for local dev. When present:
+### Authentication
+- **Bearer JWT**, optional for local dev:
   ```
   Authorization: Bearer <access_token>
   ```
-- Every gameplay endpoint resolves the kingdom from the token. For local/mock
-  mode a fixed `kingdomId = "kgd_demo"` is assumed.
+- The token resolves the current **Collaborator** (the "me" identity). For
+  local/mock mode a fixed collaborator is assumed (e.g. `col_demo`).
+- A workspace is the single shared document for MVP (`workspace_id = "wsp_demo"`).
+  Multi-workspace is a future extension (prefix routes with `/workspaces/{id}`).
 
-### Server-authoritative time
-- The **backend owns all resource math**. The client never computes final
-  resource totals.
-- Production is integrated from `last_updated_at` → `server_time` on every read
-  ("lazy tick"). The client only *displays* `rate_per_min` to animate counters
-  between polls; the next authoritative read corrects any drift.
-- All timestamps are ISO‑8601 UTC (`2026-06-29T08:00:00Z`).
+### Timestamps
+All timestamps are ISO-8601 UTC (`2026-06-30T08:00:00Z`). Presence heartbeats may
+additionally carry an epoch-ms `ts` for TTL math.
 
 ### Common response envelope
 Every response uses the same envelope (frontend `unwrap()` returns `data`):
 ```json
-{
-  "success": true,
-  "message": "OK",
-  "data": { }
-}
+{ "success": true, "message": "OK", "data": { } }
 ```
 
 ### Error format
 ```json
 {
   "success": false,
-  "message": "Not enough resources to upgrade",
+  "message": "Field key already exists on this resource",
   "data": null,
   "error": {
-    "code": "INSUFFICIENT_RESOURCES",
-    "details": { "required": { "wood": 120 }, "available": { "wood": 80 } }
+    "code": "VALIDATION_ERROR",
+    "details": { "key": "email" }
   }
 }
 ```
@@ -57,381 +59,329 @@ HTTP status mirrors the class of error (400/401/403/404/409/422/500).
 
 | code | meaning |
 |------|---------|
-| `INSUFFICIENT_RESOURCES` | not enough gold/food/wood/stone |
-| `CAPACITY_EXCEEDED` | citizen limit or building worker slots full |
-| `INVALID_ASSIGNMENT` | citizen/job/building mismatch |
-| `BUILDING_BUSY` | already upgrading/under construction |
-| `EVENT_EXPIRED` | event resolution arrived too late |
-| `NOT_FOUND` | unknown id |
-| `VALIDATION_ERROR` | malformed body |
+| `VALIDATION_ERROR` | malformed body / duplicate key / bad enum value |
+| `NOT_FOUND` | unknown resource, field, or comment id |
+| `REV_CONFLICT` | optimistic-concurrency rev mismatch (stale write) |
+| `UNAUTHORIZED` | missing/invalid token |
+| `FORBIDDEN` | authenticated but not allowed |
+
+### Optimistic concurrency (`rev`)
+The workspace document carries a monotonically increasing integer `rev`. Every
+mutation **bumps `rev` by 1** and returns the new value. Mutating requests **may**
+send the `rev` they last saw via header `If-Match: <rev>`; if it is stale the
+server responds `409 REV_CONFLICT` with the current `data` snapshot so the client
+can rebase. This mirrors the client's existing `rev`-based merge in `store.ts`.
 
 ### Pagination
-List endpoints accept `?page=1&limit=20` and return `data.items` + `data.page_info`.
+List endpoints accept `?page=1&limit=50` and return `data.items` + `data.page_info`
+(`{ "page": 1, "limit": 50, "total": 84 }`).
 
-### Future WebSocket (not required for MVP)
-- Channel: `GET /api/v1/stream` (upgrade) pushing `tick`, `event`, `log`,
-  `task_complete` messages with the **same payload shapes** as the REST models.
-- MVP uses polling: `GET /game/tick` every ~5s + targeted refetch after actions.
+### Real-time (WebSocket) — REQUIRED for collaboration
+Replaces the current `BroadcastChannel` layer. See §4. Without it the app degrades
+to request/response (no live presence, manual refetch).
 
 ---
 
 ## 2. Data Models
 
+### Collaborator
+```json
+{
+  "id": "col_ava",
+  "name": "Ava Chen",
+  "role": "backend",         // backend | frontend
+  "color": "#2563EB"         // hex, for avatars/cursors
+}
+```
+
+### SchemaField
+```json
+{
+  "id": "fld_email",
+  "key": "email",
+  "type": "string",          // see Field Types
+  "required": true,
+  "state": "ready",          // draft | ready | breaking
+  "change": "stable",        // stable | added | modified | removed
+  "description": "Primary login email"   // optional, may be omitted/null
+}
+```
+
+**Field Types** (`type`)
+| type | TS mapping | JSON-mock sample |
+|------|-----------|------------------|
+| `string` | `string` | `"sample_<key>"` |
+| `number` | `number` | `0` |
+| `boolean` | `boolean` | `false` |
+| `uuid` | `string` | `"0000...-...0000"` |
+| `timestamp` | `string` | ISO-8601 |
+| `json` | `Record<string, unknown>` | `{}` |
+| `string[]` | `string[]` | `["sample"]` |
+| `number[]` | `number[]` | `[0]` |
+| `enum` | `string` | first token of `description` |
+
+**State** (`state`) — `draft` (work in progress) · `ready` (agreed/stable) ·
+`breaking` (a change that breaks existing clients). Drives the `[Draft] [Ready]
+[Breaking Change]` badges.
+
+**Change** (`change`) — diff status vs the last agreed version, drives the
+blueprint's line-weight/colour: `added` (green) · `modified` (amber) · `removed`
+(red, soft-deleted — kept for the diff but excluded from generated code) ·
+`stable` (no diff).
+
 ### Resource
+A unit in the explorer: an API endpoint, a database table, or a schema model.
 ```json
 {
-  "type": "gold",            // gold | food | wood | stone
-  "amount": 1240.5,          // current (server-calculated)
-  "capacity": 5000,          // storage cap; null = uncapped
-  "rate_per_min": 36.0,      // net production per minute (can be negative)
-  "icon": "coin"
+  "id": "res_create_order",
+  "name": "createOrder",
+  "kind": "endpoint",        // endpoint | database | model
+  "method": "POST",          // endpoints only: GET|POST|PUT|PATCH|DELETE (null otherwise)
+  "path": "/api/v1/orders",  // endpoints only (null otherwise)
+  "state": "breaking",       // rollup = worst state among live (non-removed) fields
+  "fields": [ "...SchemaField" ],
+  "updated_at": "2026-06-30T08:00:00Z",
+  "updated_by": "Noah Reed"  // collaborator display name
+}
+```
+> `state` is **server-derived** from the fields (breaking > draft > ready). Clients
+> display it; they do not author it directly. `updated_at` / `updated_by` are set
+> by the server on every mutation.
+
+### Comment
+Inline discussion, optionally anchored to a single field.
+```json
+{
+  "id": "cmt_8842",
+  "resource_id": "res_create_order",
+  "field_id": "fld_currency",   // null = comment on the whole resource
+  "author": "Liam Park",
+  "role": "frontend",           // author's role at post time
+  "body": "This breaks the web client — can we default to USD for one release?",
+  "at": "2026-06-30T07:58:10Z"
 }
 ```
 
-### KingdomStats
+### ActivityEvent
+Append-only audit feed. Emitted by the server on every mutation.
 ```json
 {
-  "happiness": 78,           // 0..100
-  "defense": 42,             // abstract points
-  "threat_level": 23,        // 0..100, drives event probability
-  "citizen_count": 12,
-  "citizen_limit": 16
+  "id": "act_551",
+  "actor": "Ava Chen",
+  "verb": "added",              // added|edited|removed|renamed|set draft|set ready|set breaking|flagged|created|commented on
+  "target": "avatarUrl",       // field key, "old → new", or resource name
+  "resource_id": "res_user",
+  "at": "2026-06-30T07:55:00Z"
 }
 ```
 
-### Kingdom (overview)
+### WorkspaceSnapshot
+Everything needed to hydrate the UI in one call (mirrors the client `WorkspaceDoc`
+plus the roster).
 ```json
 {
-  "id": "kgd_demo",
-  "name": "Rivervale",
-  "level": 4,
-  "xp": 320,
-  "xp_to_next": 500,
-  "stats": { "...": "KingdomStats" },
+  "rev": 42,
+  "workspace_id": "wsp_demo",
   "resources": [ "...Resource" ],
-  "last_updated_at": "2026-06-29T07:59:55Z",
-  "server_time": "2026-06-29T08:00:00Z"
+  "comments": [ "...Comment" ],
+  "activity": [ "...ActivityEvent" ],
+  "collaborators": [ "...Collaborator" ],
+  "server_time": "2026-06-30T08:00:00Z"
 }
 ```
 
-### Citizen
+### Presence (real-time only — not persisted)
 ```json
 {
-  "id": "ctz_001",
-  "name": "Bram",
-  "avatar": "peasant_m_01",
-  "job": "farmer",           // farmer|lumberjack|miner|guard|builder|idle
-  "level": 2,
-  "energy": 64,              // 0..100, drops while working, recovers while resting
-  "happiness": 80,           // 0..100
-  "status": "working",       // working|resting|idle|sick
-  "assigned_building_id": "bld_farm_1",
-  "output_per_min": 6.0      // this citizen's contribution at current job
-}
-```
-
-### Building
-```json
-{
-  "id": "bld_farm_1",
-  "type": "farm",            // see Building Types
-  "name": "Riverside Farm",
-  "level": 2,
-  "max_level": 10,
-  "workers": 3,
-  "max_workers": 4,
-  "produces": "food",        // resource type or null (e.g. house/town_center)
-  "production_per_min": 18.0,
-  "status": "producing",     // idle|producing|upgrading|constructing
-  "grid": { "row": 1, "col": 2 },
-  "icon": "farm",
-  "effects": { "food_capacity": 0, "citizen_limit": 0, "defense": 0 },
-  "upgrade": {
-    "next_level": 3,
-    "cost": { "gold": 200, "wood": 120, "stone": 40 },
-    "duration_sec": 90,
-    "delta": { "production_per_min": 8, "max_workers": 1 }
-  }
-}
-```
-
-**Building Types & roles**
-| type | role |
-|------|------|
-| `town_center` | kingdom level, governs upgrades, base citizen limit |
-| `house` | +citizen_limit |
-| `farm` | produces food |
-| `lumber_camp` | produces wood |
-| `quarry` | produces stone |
-| `barracks` | houses guards, +defense, trains units |
-| `market` | converts/sells resources → gold, +gold rate |
-| `watch_tower` | +defense, lowers threat impact, early warning |
-
-### Task (queue item)
-```json
-{
-  "id": "tsk_01",
-  "type": "upgrade",         // build|upgrade|train|repair
-  "label": "Upgrade Riverside Farm → Lv.3",
-  "target_building_id": "bld_farm_1",
-  "started_at": "2026-06-29T07:59:00Z",
-  "ends_at": "2026-06-29T08:00:30Z",
-  "duration_sec": 90,
-  "progress": 0.66,          // 0..1, server-computed snapshot
-  "remaining_sec": 30,
-  "status": "in_progress"    // queued|in_progress|done|cancelled
-}
-```
-
-### ActivityLog
-```json
-{
-  "id": "log_8842",
-  "at": "2026-06-29T07:58:10Z",
-  "type": "production",      // production|build|event|combat|system|trade
-  "icon": "wheat",
-  "message": "Riverside Farm produced +18 food",
-  "delta": { "food": 18 }    // optional, drives floating +N numbers
-}
-```
-
-### GameEvent
-```json
-{
-  "id": "evt_551",
-  "type": "bandit_attack",   // bandit_attack|drought|merchant|migration|festival|plague
-  "severity": "warning",     // info|warning|danger
-  "title": "Bandits on the road",
-  "description": "A small band threatens the eastern fields.",
-  "started_at": "2026-06-29T07:55:00Z",
-  "expires_at": "2026-06-29T08:10:00Z",
-  "auto_resolve": "lose_resources",   // applied if it expires unhandled
-  "choices": [
-    {
-      "id": "fight",
-      "label": "Send the guards",
-      "requires": { "defense": 30 },
-      "effects": [
-        { "stat": "threat_level", "delta": -15 },
-        { "resource": "gold", "delta": -50 }
-      ]
-    },
-    {
-      "id": "pay",
-      "label": "Pay them off",
-      "requires": { "gold": 120 },
-      "effects": [ { "resource": "gold", "delta": -120 } ]
-    }
-  ]
-}
-```
-
-### PolicyRule (rule-based "AI", NOT an LLM)
-```json
-{
-  "id": "pol_01",
-  "name": "Feed the people first",
-  "enabled": true,
-  "when": { "metric": "food", "op": "lt", "value": 100 },
-  "then": { "action": "reassign", "job": "farmer", "count": 2 },
-  "priority": 1,
-  "description": "If food drops below 100, move 2 idle citizens to farming."
-}
-```
-Allowed `metric`: any resource type, `happiness`, `threat_level`,
-`citizen_count`. `op`: `lt|lte|gt|gte|eq`. `action`: `reassign|build|upgrade|
-notify`. Evaluated server-side each tick — deterministic, no AI.
-
-### OfflineProgress
-```json
-{
-  "elapsed_sec": 7320,
-  "capped_at_sec": 28800,    // offline accrual cap (e.g. 8h)
-  "gains": { "gold": 120, "food": 240, "wood": 90, "stone": 30 },
-  "events": [ "...GameEvent (queued while away)" ],
-  "logs": [ "...ActivityLog (summarised)" ]
-}
-```
-
-### TickState
-```json
-{
-  "server_time": "2026-06-29T08:00:00Z",
-  "last_updated_at": "2026-06-29T07:59:55Z",
-  "next_tick_at": "2026-06-29T08:00:05Z",
-  "tick_interval_sec": 5,
-  "resources": [ "...Resource" ],
-  "stats": { "...KingdomStats" },
-  "active_tasks": 2,
-  "pending_events": 1
+  "client_id": "c_9f3a2b",      // per-tab id
+  "collaborator_id": "col_ava",
+  "ts": 1782547200000           // epoch ms of last heartbeat; online if within TTL (~8s)
 }
 ```
 
 ---
 
-## 3. Endpoints
+## 3. REST Endpoints
 
-> All paths are relative to `/api/v1`. All wrap responses in the §1 envelope.
+> All paths relative to `/api/v1`; all responses use the §1 envelope. Mutations
+> bump `rev`, set `updated_at`/`updated_by`, append an `ActivityEvent`, and push
+> the change over WebSocket (§4).
 
-### Kingdom & state
+### Workspace
 | method | path | purpose |
 |--------|------|---------|
-| GET | `/kingdom` | Kingdom overview (header, level, stats, resources) |
-| GET | `/kingdom/resources` | Resources only (light poll) |
-| GET | `/game/tick` | Authoritative tick snapshot (poll loop) |
-| POST | `/game/collect-offline` | Claim idle/offline accrual |
+| GET | `/workspace` | Full `WorkspaceSnapshot` (initial hydrate) |
+| GET | `/workspace/collaborators` | Team roster (`Collaborator[]`) |
+| GET | `/me` | The current authenticated `Collaborator` |
 
-### Citizens
+### Resources
 | method | path | purpose |
 |--------|------|---------|
-| GET | `/citizens` | List citizens |
-| POST | `/citizens/{id}/assign` | Assign one citizen to a job/building |
-| POST | `/citizens/bulk-assign` | Reassign many at once |
+| GET | `/resources` | List resources (`?kind=endpoint\|database\|model` optional) |
+| GET | `/resources/{id}` | One resource (with fields) |
+| POST | `/resources` | Create a resource |
+| PATCH | `/resources/{id}` | Rename / set `method` / `path` |
+| DELETE | `/resources/{id}` | Delete a resource |
 
-### Buildings
+### Fields
 | method | path | purpose |
 |--------|------|---------|
-| GET | `/buildings` | List buildings (village grid) |
-| POST | `/buildings` | Build a new building |
-| POST | `/buildings/{id}/upgrade` | Queue an upgrade |
+| POST | `/resources/{id}/fields` | Add a field |
+| PATCH | `/resources/{id}/fields/{field_id}` | Update key/type/required/state/description |
+| DELETE | `/resources/{id}/fields/{field_id}` | Remove a field (see soft-delete rule) |
 
-### Tasks / Logs / Events
+### Comments
 | method | path | purpose |
 |--------|------|---------|
-| GET | `/tasks` | Task queue |
-| GET | `/logs?limit=50` | Activity logs |
-| GET | `/events` | Current/active events |
-| POST | `/events/{id}/resolve` | Resolve an event with a choice |
+| GET | `/resources/{id}/comments` | Comments for a resource (`?field_id=` to filter) |
+| POST | `/resources/{id}/comments` | Add a comment (optionally anchored to a field) |
+| DELETE | `/comments/{id}` | Delete a comment (author/admin) |
 
-### Policies (rule-based automation)
+### Activity
 | method | path | purpose |
 |--------|------|---------|
-| GET | `/policies` | Available + active policy rules |
-| POST | `/policies` | Create a rule |
-| PUT | `/policies/{id}` | Update / toggle a rule |
-| DELETE | `/policies/{id}` | Delete a rule |
+| GET | `/activity` | Activity feed, newest first (`?limit=50&resource_id=` optional) |
 
 ---
 
-## 4. Examples
+## 4. Real-time (WebSocket)
 
-### GET `/kingdom`
+```
+GET /api/v1/stream      (HTTP upgrade; auth via ?token= or Authorization header)
+```
+
+### Client → server
+| type | payload | purpose |
+|------|---------|---------|
+| `presence.heartbeat` | `{ "client_id", "collaborator_id" }` | keep-alive every ~3s |
+| `presence.leave` | `{ "client_id" }` | sent on tab close |
+
+### Server → client
+All payloads reuse the §2 models. Clients merge by `rev` (ignore `rev <= local`).
+
+| type | payload |
+|------|---------|
+| `snapshot` | `WorkspaceSnapshot` (sent on connect) |
+| `resource.created` / `resource.updated` / `resource.deleted` | `{ "rev", "resource": Resource }` (deleted → `{ "rev", "resource_id" }`) |
+| `field.created` / `field.updated` / `field.removed` | `{ "rev", "resource": Resource }` (send the whole updated resource so `state` rollup + fields stay consistent) |
+| `comment.created` / `comment.deleted` | `{ "rev", "comment": Comment }` / `{ "rev", "comment_id" }` |
+| `activity.created` | `{ "activity": ActivityEvent }` |
+| `presence.update` | `Presence` (a peer's heartbeat) |
+| `presence.leave` | `{ "client_id" }` |
+
+> Online roster = collaborators with a `Presence` heartbeat newer than the TTL
+> (~8s). The server prunes stale beacons and emits `presence.leave`.
+
+---
+
+## 5. Examples
+
+### GET `/workspace`
 ```json
 {
   "success": true, "message": "OK",
   "data": {
-    "id": "kgd_demo", "name": "Rivervale", "level": 4,
-    "xp": 320, "xp_to_next": 500,
-    "stats": { "happiness": 78, "defense": 42, "threat_level": 23,
-               "citizen_count": 12, "citizen_limit": 16 },
+    "rev": 42, "workspace_id": "wsp_demo",
     "resources": [
-      { "type": "gold", "amount": 1240, "capacity": 5000, "rate_per_min": 12, "icon": "coin" },
-      { "type": "food", "amount": 860,  "capacity": 2000, "rate_per_min": 22, "icon": "wheat" },
-      { "type": "wood", "amount": 540,  "capacity": 2000, "rate_per_min": 14, "icon": "log" },
-      { "type": "stone","amount": 300,  "capacity": 1500, "rate_per_min": 8,  "icon": "rock" }
+      {
+        "id": "res_user", "name": "User", "kind": "model",
+        "method": null, "path": null, "state": "ready",
+        "fields": [
+          { "id": "fld_id", "key": "id", "type": "uuid", "required": true,
+            "state": "ready", "change": "stable" },
+          { "id": "fld_avatar", "key": "avatarUrl", "type": "string",
+            "required": false, "state": "draft", "change": "added",
+            "description": "Proposed — CDN URL" }
+        ],
+        "updated_at": "2026-06-30T07:52:00Z", "updated_by": "Ava Chen"
+      }
     ],
-    "last_updated_at": "2026-06-29T07:59:55Z",
-    "server_time": "2026-06-29T08:00:00Z"
+    "comments": [ "...Comment" ],
+    "activity": [ "...ActivityEvent" ],
+    "collaborators": [ "...Collaborator" ],
+    "server_time": "2026-06-30T08:00:00Z"
   }
 }
 ```
 
-### POST `/citizens/{id}/assign`
+### POST `/resources`
 Request:
 ```json
-{ "job": "farmer", "building_id": "bld_farm_1" }
+{ "name": "createOrder", "kind": "endpoint", "method": "POST", "path": "/api/v1/orders" }
 ```
-Response `data`: the updated `Citizen` + a `delta` summary:
-```json
-{
-  "citizen": { "...Citizen": "..." },
-  "resource_rate_delta": { "food": 6 }
-}
-```
+Response `data`: the created `Resource` (server seeds an `id` field, `state:"draft"`).
 
-### POST `/citizens/bulk-assign`
+### PATCH `/resources/{id}`
+Request (any subset):
+```json
+{ "name": "createOrderV2", "path": "/api/v1/v2/orders" }
+```
+Response `data`: `{ "rev": 43, "resource": { "...Resource" } }`
+
+### POST `/resources/{id}/fields`
 Request:
 ```json
-{
-  "assignments": [
-    { "citizen_id": "ctz_003", "job": "miner", "building_id": "bld_quarry_1" },
-    { "citizen_id": "ctz_004", "job": "miner", "building_id": "bld_quarry_1" }
-  ]
-}
+{ "key": "couponCode", "type": "string", "required": false }
 ```
-Response `data`: `{ "updated": 2, "citizens": [ "...Citizen" ], "stats": { "...KingdomStats" } }`
+- `state` defaults to `draft`, `change` to `added`.
+- `409 VALIDATION_ERROR` if `key` already exists on the resource.
 
-### POST `/buildings`
+Response `data`: `{ "rev": 44, "resource": { "...Resource" } }` (full resource so
+the client refreshes the `state` rollup).
+
+### PATCH `/resources/{id}/fields/{field_id}`
+Request (any subset of `key`, `type`, `required`, `state`, `description`):
+```json
+{ "type": "number", "state": "breaking", "description": "now integer cents" }
+```
+- Editing a field that was `change:"stable"` flips it to `change:"modified"`; an
+  `added` field stays `added`.
+- Response `data`: `{ "rev", "resource": { "...Resource" } }`
+
+### DELETE `/resources/{id}/fields/{field_id}`
+**Soft-delete rule (matches the client):**
+- If the field's `change` is `added` (never shipped) → hard-remove it.
+- Otherwise → set `change:"removed"` + `state:"breaking"` (kept in the diff,
+  excluded from generated code).
+
+Response `data`: `{ "rev", "resource": { "...Resource" } }`
+
+### POST `/resources/{id}/comments`
 Request:
 ```json
-{ "type": "house", "grid": { "row": 2, "col": 0 } }
+{ "field_id": "fld_currency", "body": "Can we default to USD for one release?" }
 ```
-Response `data`: `{ "building": { "...Building" }, "task": { "...Task" }, "resources": [ "...Resource" ] }`
+`author`/`role`/`at` are set server-side from the token. `field_id` optional.
 
-### POST `/buildings/{id}/upgrade`
-Request: `{}` (cost taken from the building's `upgrade.cost`).
-Response `data`: `{ "task": { "...Task" }, "resources": [ "...Resource" ] }`
-Errors: `INSUFFICIENT_RESOURCES`, `BUILDING_BUSY`, `CAPACITY_EXCEEDED`.
+Response `data`: `{ "rev", "comment": { "...Comment" } }`
 
-### GET `/tasks`
+### GET `/activity?limit=50`
 ```json
 { "success": true, "message": "OK",
-  "data": { "items": [ "...Task" ], "active": 2, "slots": 3 } }
+  "data": { "items": [ "...ActivityEvent" ],
+            "page_info": { "page": 1, "limit": 50, "total": 128 } } }
 ```
-
-### GET `/events`
-```json
-{ "success": true, "message": "OK", "data": { "items": [ "...GameEvent" ] } }
-```
-
-### POST `/events/{id}/resolve`
-Request:
-```json
-{ "choice_id": "fight" }
-```
-Response `data`:
-```json
-{
-  "resolved": true,
-  "applied_effects": [
-    { "stat": "threat_level", "delta": -15 },
-    { "resource": "gold", "delta": -50 }
-  ],
-  "stats": { "...KingdomStats" },
-  "resources": [ "...Resource" ],
-  "log": { "...ActivityLog" }
-}
-```
-
-### POST `/game/collect-offline`
-Request: `{}`
-Response `data`: an `OfflineProgress` object (§2).
-
-### GET `/game/tick`
-Response `data`: a `TickState` object (§2). Poll every `tick_interval_sec`.
-
-### POST `/policies`
-Request: a `PolicyRule` without `id`. Response `data`: the created `PolicyRule`.
 
 ---
 
-## 5. Frontend rendering contract (what the UI needs)
+## 6. Frontend rendering contract (what the UI needs)
 
 | UI element | source field(s) |
 |------------|-----------------|
-| Resource bar amounts | `Resource.amount` |
-| Resource per-minute badge | `Resource.rate_per_min` |
-| Resource progress fill | `amount / capacity` |
-| Floating `+N` numbers | `ActivityLog.delta` / assign `resource_rate_delta` |
-| Kingdom level + XP bar | `Kingdom.level`, `xp`, `xp_to_next` |
-| Happiness / Defense / Threat badges | `KingdomStats` |
-| Building card | full `Building` (level, workers, production, upgrade) |
-| Upgrade button enabled? | compare `Resource.amount` vs `upgrade.cost` |
-| Citizen card | `Citizen` (job, energy, happiness, status) |
-| Task queue rows | `Task.progress`, `remaining_sec` |
-| Event panel | `GameEvent` + `choices` |
-| Quick actions availability | derived from resources + capacity |
+| Left explorer groups | `Resource.kind` (`endpoint` / `database` / `model`) |
+| Endpoint method tag + path | `Resource.method`, `Resource.path` |
+| Resource state dot / badge | `Resource.state` (server rollup) |
+| Blueprint field row | `SchemaField` (`key`, `type`, `required`, `description`) |
+| `[Draft] [Ready] [Breaking Change]` badge | `SchemaField.state` |
+| Diff line-weight / colour | `SchemaField.change` |
+| Field comment count | `Comment[]` where `resource_id` + `field_id` match |
+| "updated 2m ago by X" | `Resource.updated_at`, `updated_by` |
+| Right · Activity tab | `ActivityEvent[]` (newest first) |
+| Right · Comments tab | `Comment[]` (filtered by selected resource / focused field) |
+| Right · Export tab | computed client-side from `Resource.fields` (`codegen.ts`) — **no API** |
+| Top bar presence avatars | `Collaborator[]` + live `Presence` (online if heartbeat within TTL) |
 
-The client treats every list endpoint as the **single source of truth** and never
-persists derived totals; between polls it interpolates counters from
-`rate_per_min` only for smooth UI, never for game decisions.
+The client treats each read/WS payload as the **single source of truth**, merges
+mutations by `rev` (last-writer-wins on conflict, with `409` rebase), and never
+authors `state` rollups, `updated_at`, or `activity` — those are server-owned.
+```

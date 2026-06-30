@@ -1,5 +1,5 @@
-import { DashboardScreen } from "@/modules/DashboardScreen";
+import { WorkspaceLayout } from "@/components/WorkspaceLayout";
 
 export default function Page() {
-  return <DashboardScreen />;
+  return <WorkspaceLayout />;
 }

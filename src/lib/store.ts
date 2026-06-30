@@ -1,315 +1,264 @@
 "use client";
 
 import { create } from "zustand";
-import { screenPaths, tabForScreen, tabScreens } from "@/lib/routes";
-import { kingdomService } from "@/services/kingdom.service";
-import {
-  type ActivityLog,
-  type Building,
-  type Citizen,
-  type GameEvent,
-  type JobType,
-  type Kingdom,
-  type PolicyRule,
-  type Resource,
-  type ResourceType,
-  type Task,
+import { SEED_ACTIVITY, SEED_COLLABORATORS, SEED_COMMENTS, SEED_RESOURCES } from "@/data/mock";
+import { broadcastDoc, persistDoc } from "@/lib/sync";
+import type {
+  ActivityEvent,
+  Collaborator,
+  Comment,
+  ExportFormat,
+  FieldState,
+  Presence,
+  Resource,
+  ResourceKind,
+  RightTab,
+  SchemaField,
+  WorkspaceDoc,
 } from "@/lib/types";
 
-export type Tab = "village" | "citizens" | "buildings" | "events" | "policies";
-export type Screen = Tab;
+const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+const now = () => new Date().toISOString();
 
-// --- navigation ---
-function pushScreen(screen: Screen) {
-  if (typeof window === "undefined") return;
-  const path = screenPaths[screen];
-  if (path && window.location.pathname !== path) {
-    window.dispatchEvent(new CustomEvent("kingdom:navigate", { detail: { path } }));
-  }
+const FIELD_STATE_CYCLE: FieldState[] = ["draft", "ready", "breaking"];
+
+// Overall resource status is the worst state among its live fields.
+function rollupState(fields: SchemaField[]): FieldState {
+  const live = fields.filter((f) => f.change !== "removed");
+  if (live.some((f) => f.state === "breaking")) return "breaking";
+  if (live.some((f) => f.state === "draft")) return "draft";
+  return "ready";
 }
 
-// --- mock game-logic helpers (the live backend owns this math; we approximate it
-// client-side so the dashboard feels alive on mock data). ---
-const JOB_RESOURCE: Partial<Record<JobType, ResourceType>> = { farmer: "food", lumberjack: "wood", miner: "stone" };
-const JOB_BUILDING: Partial<Record<JobType, Building["type"]>> = {
-  farmer: "farm",
-  lumberjack: "lumber_camp",
-  miner: "quarry",
-  guard: "barracks",
-};
+interface StoreState extends WorkspaceDoc {
+  // UI / session (not part of the synced doc)
+  selectedId: string;
+  activeFieldId: string | null; // field anchored in the comments tab
+  rightTab: RightTab;
+  exportFormat: ExportFormat;
+  kindFilter: ResourceKind | "all";
 
-const citizenOutput = (job: JobType, level: number): number => (JOB_RESOURCE[job] ? 3 + level * 2 : 0);
+  // Identity & presence
+  collaborators: Collaborator[];
+  me: Collaborator | null;
+  presences: Record<string, Presence>;
 
-function recomputeRates(resources: Resource[], citizens: Citizen[], buildings: Building[]): Resource[] {
-  const sums: Record<ResourceType, number> = { gold: 0, food: 0, wood: 0, stone: 0 };
-  for (const c of citizens) {
-    const res = JOB_RESOURCE[c.job];
-    if (res && c.status === "working") sums[res] += c.outputPerMin;
-  }
-  // Gold is driven by the market building, not citizen jobs.
-  const market = buildings.find((b) => b.type === "market" && b.status !== "upgrading");
-  sums.gold = market ? market.productionPerMin : 0;
-  return resources.map((r) => ({ ...r, ratePerMin: Math.round(sums[r.type]) }));
+  // Hydration / sync internals
+  hydrate: () => void;
+  applyRemoteDoc: (doc: WorkspaceDoc) => void;
+  upsertPresence: (p: Presence) => void;
+  dropPresence: (clientId: string) => void;
+  prunePresences: () => void;
+  setMe: (c: Collaborator) => void;
+
+  // UI actions
+  select: (id: string) => void;
+  focusComment: (fieldId: string | null) => void;
+  setRightTab: (t: RightTab) => void;
+  setExportFormat: (f: ExportFormat) => void;
+  setKindFilter: (k: ResourceKind | "all") => void;
+
+  // Schema mutations
+  addField: (resourceId: string) => void;
+  updateField: (resourceId: string, fieldId: string, patch: Partial<SchemaField>) => void;
+  cycleFieldState: (resourceId: string, fieldId: string) => void;
+  removeField: (resourceId: string, fieldId: string) => void;
+  addResource: (kind: ResourceKind) => void;
+  renameResource: (resourceId: string, name: string) => void;
+  addComment: (resourceId: string, fieldId: string | undefined, body: string) => void;
 }
 
-function recomputeWorkers(buildings: Building[], citizens: Citizen[]): Building[] {
-  return buildings.map((b) => ({ ...b, workers: citizens.filter((c) => c.assignedBuildingId === b.id && c.status === "working").length }));
-}
-
-function logEntry(type: ActivityLog["type"], icon: string, message: string, delta?: ActivityLog["delta"]): ActivityLog {
-  return { id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, at: new Date().toISOString(), type, icon, message, delta };
-}
-
-function canAfford(resources: Resource[], cost: Partial<Record<ResourceType, number>>): boolean {
-  return (Object.entries(cost) as [ResourceType, number][]).every(([k, v]) => (resources.find((r) => r.type === k)?.amount ?? 0) >= v);
-}
-
-function spend(resources: Resource[], cost: Partial<Record<ResourceType, number>>): Resource[] {
-  return resources.map((r) => ({ ...r, amount: r.amount - (cost[r.type] ?? 0) }));
-}
-
-type KingdomState = {
-  ready: boolean;
-  apiLoading: boolean;
-  apiError: string;
-  tab: Tab;
-  screen: Screen;
-  kingdom: Kingdom | null;
-  resources: Resource[];
-  citizens: Citizen[];
-  buildings: Building[];
-  tasks: Task[];
-  logs: ActivityLog[];
-  events: GameEvent[];
-  policies: PolicyRule[];
-  _gainAccum: Partial<Record<ResourceType, number>>;
-  _tickCount: number;
-
-  setTab: (tab: Tab) => void;
-  go: (screen: Screen) => void;
-  loadGame: () => Promise<void>;
-  tick: (dtSec: number) => void;
-  assignCitizen: (citizenId: string, job: JobType) => void;
-  bulkAssignIdle: (job: JobType, count: number) => void;
-  upgradeBuilding: (buildingId: string) => void;
-  resolveEvent: (eventId: string, choiceId: string) => void;
-  collectOffline: () => void;
-  togglePolicy: (policyId: string) => void;
-};
-
-export const useKingdomStore = create<KingdomState>((set, get) => ({
-  ready: false,
-  apiLoading: false,
-  apiError: "",
-  tab: "village",
-  screen: "village",
-  kingdom: null,
-  resources: [],
-  citizens: [],
-  buildings: [],
-  tasks: [],
-  logs: [],
-  events: [],
-  policies: [],
-  _gainAccum: {},
-  _tickCount: 0,
-
-  setTab: (tab) => {
-    const screen = tabScreens[tab];
-    pushScreen(screen);
-    set({ tab, screen });
-  },
-  go: (screen) => {
-    pushScreen(screen);
-    set({ screen, tab: tabForScreen(screen), apiError: "" });
-  },
-
-  loadGame: async () => {
-    if (get().ready || get().apiLoading) return;
-    set({ apiLoading: true, apiError: "" });
-    try {
-      const [{ kingdom, resources }, citizens, buildings, tasks, logs, events, policies] = await Promise.all([
-        kingdomService.getKingdom(),
-        kingdomService.getCitizens(),
-        kingdomService.getBuildings(),
-        kingdomService.getTasks(),
-        kingdomService.getLogs(),
-        kingdomService.getEvents(),
-        kingdomService.getPolicies(),
-      ]);
-      set({ kingdom, resources, citizens, buildings, tasks, logs, events, policies, ready: true, apiLoading: false });
-    } catch {
-      set({ apiError: "ไม่สามารถโหลดข้อมูลอาณาจักรได้", apiLoading: false });
-    }
-  },
-
-  // Local production tick (replaced by GET /game/tick against the backend).
-  tick: (dtSec) => {
+export const useWorkspaceStore = create<StoreState>((set, get) => {
+  // Commit a new document version: bump rev, persist, broadcast to other tabs.
+  function commit(next: Partial<WorkspaceDoc>) {
     const s = get();
-    if (!s.ready) return;
-    const factor = dtSec / 60;
-    const accum = { ...s._gainAccum };
-    const resources = s.resources.map((r) => {
-      if (r.ratePerMin <= 0) return r;
-      const gain = r.ratePerMin * factor;
-      const next = r.capacity != null ? Math.min(r.capacity, r.amount + gain) : r.amount + gain;
-      accum[r.type] = (accum[r.type] ?? 0) + (next - r.amount);
-      return { ...r, amount: next };
-    });
-
-    // advance tasks, complete finished ones
-    let buildings = s.buildings;
-    let logs = s.logs;
-    let kingdom = s.kingdom;
-    const remainingTasks: Task[] = [];
-    for (const t of s.tasks) {
-      const remaining = Math.max(0, t.remainingSec - dtSec);
-      const progress = t.durationSec > 0 ? Math.min(1, 1 - remaining / t.durationSec) : 1;
-      if (remaining <= 0 && t.status === "in_progress") {
-        if (t.type === "upgrade" && t.targetBuildingId) {
-          buildings = buildings.map((b) => {
-            if (b.id !== t.targetBuildingId || !b.upgrade) return b;
-            const up = b.upgrade;
-            return {
-              ...b,
-              level: up.nextLevel,
-              productionPerMin: b.productionPerMin + (up.delta.productionPerMin ?? 0),
-              maxWorkers: b.maxWorkers + (up.delta.maxWorkers ?? 0),
-              status: b.produces ? "producing" : "idle",
-              upgrade: b.level + 1 < b.maxLevel ? { ...up, nextLevel: up.nextLevel + 1, cost: scaleCost(up.cost), durationSec: Math.round(up.durationSec * 1.25) } : null,
-            };
-          });
-          const b = buildings.find((x) => x.id === t.targetBuildingId);
-          logs = [logEntry("build", "✅", `${b?.name ?? "Building"} upgraded to Lv.${b?.level ?? ""}`), ...logs];
-        } else if (t.type === "train" && kingdom) {
-          kingdom = { ...kingdom, stats: { ...kingdom.stats, defense: kingdom.stats.defense + 5 } };
-          logs = [logEntry("combat", "🛡️", "A new guard finished training (+5 defense)"), ...logs];
-        }
-      } else {
-        remainingTasks.push({ ...t, remainingSec: remaining, progress });
-      }
-    }
-
-    // periodic floating-number + production log (~ every 4 ticks)
-    let tickCount = s._tickCount + 1;
-    let gainAccum = accum;
-    if (tickCount >= 4) {
-      const rounded = Object.fromEntries(
-        (Object.entries(accum) as [ResourceType, number][]).map(([k, v]) => [k, Math.round(v)]).filter(([, v]) => (v as number) > 0),
-      ) as Partial<Record<ResourceType, number>>;
-      if (Object.keys(rounded).length && typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("kingdom:gain", { detail: rounded }));
-      }
-      tickCount = 0;
-      gainAccum = {};
-    }
-
-    set({ resources, tasks: remainingTasks, buildings, logs, kingdom, _gainAccum: gainAccum, _tickCount: tickCount });
-  },
-
-  assignCitizen: (citizenId, job) => {
-    const s = get();
-    const buildingId = JOB_BUILDING[job] ? s.buildings.find((b) => b.type === JOB_BUILDING[job])?.id ?? null : null;
-    const citizens = s.citizens.map((c) =>
-      c.id === citizenId
-        ? { ...c, job, status: (job === "idle" ? "idle" : "working") as Citizen["status"], assignedBuildingId: buildingId, outputPerMin: citizenOutput(job, c.level) }
-        : c,
-    );
-    const buildings = recomputeWorkers(s.buildings, citizens);
-    const resources = recomputeRates(s.resources, citizens, buildings);
-    const c = citizens.find((x) => x.id === citizenId);
-    const logs = [logEntry("system", "👷", `${c?.name ?? "Citizen"} reassigned to ${job}`), ...s.logs];
-    set({ citizens, buildings, resources, logs });
-  },
-
-  bulkAssignIdle: (job, count) => {
-    const s = get();
-    const idle = s.citizens.filter((c) => c.status === "idle").slice(0, count);
-    if (!idle.length) return;
-    const ids = new Set(idle.map((c) => c.id));
-    const buildingId = JOB_BUILDING[job] ? s.buildings.find((b) => b.type === JOB_BUILDING[job])?.id ?? null : null;
-    const citizens = s.citizens.map((c) =>
-      ids.has(c.id) ? { ...c, job, status: "working" as Citizen["status"], assignedBuildingId: buildingId, outputPerMin: citizenOutput(job, c.level) } : c,
-    );
-    const buildings = recomputeWorkers(s.buildings, citizens);
-    const resources = recomputeRates(s.resources, citizens, buildings);
-    const logs = [logEntry("system", "👥", `Sent ${idle.length} idle citizen(s) to ${job}`), ...s.logs];
-    set({ citizens, buildings, resources, logs });
-  },
-
-  upgradeBuilding: (buildingId) => {
-    const s = get();
-    const b = s.buildings.find((x) => x.id === buildingId);
-    if (!b || !b.upgrade) return;
-    if (b.status === "upgrading" || b.status === "constructing") {
-      set({ apiError: "อาคารนี้กำลังอัปเกรดอยู่" });
-      return;
-    }
-    if (!canAfford(s.resources, b.upgrade.cost)) {
-      set({ apiError: "ทรัพยากรไม่พอสำหรับอัปเกรด" });
-      return;
-    }
-    const resources = spend(s.resources, b.upgrade.cost);
-    const buildings = s.buildings.map((x) => (x.id === buildingId ? { ...x, status: "upgrading" as Building["status"] } : x));
-    const startedAt = new Date().toISOString();
-    const endsAt = new Date(Date.now() + b.upgrade.durationSec * 1000).toISOString();
-    const task: Task = {
-      id: `tsk_${Date.now()}`,
-      type: "upgrade",
-      label: `Upgrade ${b.name} → Lv.${b.upgrade.nextLevel}`,
-      targetBuildingId: b.id,
-      startedAt,
-      endsAt,
-      durationSec: b.upgrade.durationSec,
-      progress: 0,
-      remainingSec: b.upgrade.durationSec,
-      status: "in_progress",
+    const doc: WorkspaceDoc = {
+      rev: s.rev + 1,
+      resources: next.resources ?? s.resources,
+      activity: next.activity ?? s.activity,
+      comments: next.comments ?? s.comments,
     };
-    const logs = [logEntry("build", "🔨", `Started upgrade: ${b.name} → Lv.${b.upgrade.nextLevel}`), ...s.logs];
-    set({ resources, buildings, tasks: [...s.tasks, task], logs, apiError: "" });
-  },
+    set(doc);
+    persistDoc(doc);
+    broadcastDoc(doc);
+  }
 
-  resolveEvent: (eventId, choiceId) => {
-    const s = get();
-    const evt = s.events.find((e) => e.id === eventId);
-    const choice = evt?.choices.find((c) => c.id === choiceId);
-    if (!evt || !choice || !s.kingdom) return;
-    let resources = s.resources;
-    const stats = { ...s.kingdom.stats };
-    for (const eff of choice.effects) {
-      if (eff.resource) resources = resources.map((r) => (r.type === eff.resource ? { ...r, amount: Math.max(0, r.amount + eff.delta) } : r));
-      if (eff.stat === "threat_level") stats.threatLevel = Math.max(0, Math.min(100, stats.threatLevel + eff.delta));
-      if (eff.stat === "happiness") stats.happiness = Math.max(0, Math.min(100, stats.happiness + eff.delta));
-      if (eff.stat === "defense") stats.defense = Math.max(0, stats.defense + eff.delta);
-    }
-    const events = s.events.filter((e) => e.id !== eventId);
-    const logs = [logEntry("event", "📜", `Resolved "${evt.title}" — ${choice.label}`), ...s.logs];
-    set({ resources, kingdom: { ...s.kingdom, stats }, events, logs });
-  },
+  function log(verb: string, target: string, resourceId: string): ActivityEvent {
+    return { id: uid("a"), actor: get().me?.name ?? "Someone", verb, target, resourceId, at: now() };
+  }
 
-  collectOffline: () => {
-    const s = get();
-    const elapsedSec = 180; // mock: pretend ~3 minutes elapsed while away
-    const gains: Partial<Record<ResourceType, number>> = {};
-    const resources = s.resources.map((r) => {
-      const gain = Math.round((r.ratePerMin * elapsedSec) / 60);
-      if (gain > 0) gains[r.type] = gain;
-      const next = r.capacity != null ? Math.min(r.capacity, r.amount + gain) : r.amount + gain;
-      return { ...r, amount: next };
+  // Apply a field-level change to one resource, refresh its rollup + audit fields.
+  function withResource(resourceId: string, fn: (r: Resource) => Resource): Resource[] {
+    const me = get().me?.name ?? "Someone";
+    return get().resources.map((r) => {
+      if (r.id !== resourceId) return r;
+      const updated = fn(r);
+      return { ...updated, state: rollupState(updated.fields), updatedAt: now(), updatedBy: me };
     });
-    const summary = (Object.entries(gains) as [ResourceType, number][]).map(([k, v]) => `+${v} ${k}`).join(", ") || "nothing new";
-    const logs = [logEntry("production", "🌙", `Collected offline progress: ${summary}`, gains), ...s.logs];
-    if (typeof window !== "undefined" && Object.keys(gains).length) window.dispatchEvent(new CustomEvent("kingdom:gain", { detail: gains }));
-    set({ resources, logs });
-  },
+  }
 
-  togglePolicy: (policyId) => {
-    set((s) => ({ policies: s.policies.map((p) => (p.id === policyId ? { ...p, enabled: !p.enabled } : p)) }));
-  },
-}));
+  return {
+    rev: 0,
+    resources: SEED_RESOURCES,
+    activity: SEED_ACTIVITY,
+    comments: SEED_COMMENTS,
 
-function scaleCost(cost: Partial<Record<ResourceType, number>>): Partial<Record<ResourceType, number>> {
-  return Object.fromEntries((Object.entries(cost) as [ResourceType, number][]).map(([k, v]) => [k, Math.round(v * 1.4)])) as Partial<
-    Record<ResourceType, number>
-  >;
+    selectedId: SEED_RESOURCES[0].id,
+    activeFieldId: null,
+    rightTab: "activity",
+    exportFormat: "typescript",
+    kindFilter: "all",
+
+    collaborators: SEED_COLLABORATORS,
+    me: null,
+    presences: {},
+
+    hydrate: () => {
+      // Pull the persisted doc (if a teammate already edited in another tab/session).
+      if (typeof window === "undefined") return;
+      try {
+        const raw = window.localStorage.getItem("live-workspace:doc");
+        if (!raw) return;
+        const doc = JSON.parse(raw) as WorkspaceDoc;
+        if (doc.rev > get().rev) {
+          set({ rev: doc.rev, resources: doc.resources, activity: doc.activity, comments: doc.comments });
+        }
+      } catch {
+        /* ignore malformed storage */
+      }
+    },
+
+    applyRemoteDoc: (doc) => {
+      if (doc.rev <= get().rev) return; // stale or echo of our own write
+      set({ rev: doc.rev, resources: doc.resources, activity: doc.activity, comments: doc.comments });
+    },
+
+    upsertPresence: (p) => set((s) => ({ presences: { ...s.presences, [p.clientId]: p } })),
+    dropPresence: (clientId) =>
+      set((s) => {
+        const next = { ...s.presences };
+        delete next[clientId];
+        return { presences: next };
+      }),
+    prunePresences: () =>
+      set((s) => {
+        const cutoff = Date.now() - 8000;
+        const next: Record<string, Presence> = {};
+        for (const [id, p] of Object.entries(s.presences)) if (p.ts >= cutoff) next[id] = p;
+        return { presences: next };
+      }),
+    setMe: (c) => set({ me: c }),
+
+    select: (id) => set({ selectedId: id, activeFieldId: null }),
+    focusComment: (fieldId) => set({ activeFieldId: fieldId, rightTab: "comments" }),
+    setRightTab: (t) => set({ rightTab: t }),
+    setExportFormat: (f) => set({ exportFormat: f }),
+    setKindFilter: (k) => set({ kindFilter: k }),
+
+    addField: (resourceId) => {
+      const field: SchemaField = {
+        id: uid("f"),
+        key: "newField",
+        type: "string",
+        required: false,
+        state: "draft",
+        change: "added",
+      };
+      const resources = withResource(resourceId, (r) => ({ ...r, fields: [...r.fields, field] }));
+      commit({ resources, activity: [log("added", field.key, resourceId), ...get().activity] });
+    },
+
+    updateField: (resourceId, fieldId, patch) => {
+      const resources = withResource(resourceId, (r) => ({
+        ...r,
+        fields: r.fields.map((f) =>
+          f.id === fieldId
+            ? { ...f, ...patch, change: f.change === "added" ? "added" : "modified" }
+            : f,
+        ),
+      }));
+      const key = resources.find((r) => r.id === resourceId)?.fields.find((f) => f.id === fieldId)?.key ?? "field";
+      commit({ resources, activity: [log("edited", key, resourceId), ...get().activity] });
+    },
+
+    cycleFieldState: (resourceId, fieldId) => {
+      let nextState: FieldState = "draft";
+      const resources = withResource(resourceId, (r) => ({
+        ...r,
+        fields: r.fields.map((f) => {
+          if (f.id !== fieldId) return f;
+          const i = FIELD_STATE_CYCLE.indexOf(f.state);
+          nextState = FIELD_STATE_CYCLE[(i + 1) % FIELD_STATE_CYCLE.length];
+          return { ...f, state: nextState };
+        }),
+      }));
+      const key = resources.find((r) => r.id === resourceId)?.fields.find((f) => f.id === fieldId)?.key ?? "field";
+      commit({ resources, activity: [log(`set ${nextState}`, key, resourceId), ...get().activity] });
+    },
+
+    removeField: (resourceId, fieldId) => {
+      // Soft-delete: mark removed (a breaking diff) rather than dropping silently.
+      let key = "field";
+      const resources = withResource(resourceId, (r) => ({
+        ...r,
+        fields: r.fields.map((f) => {
+          if (f.id !== fieldId) return f;
+          key = f.key;
+          // A never-shipped (added) field can be discarded outright.
+          return f.change === "added" ? null : { ...f, change: "removed" as const, state: "breaking" as const };
+        }).filter(Boolean) as SchemaField[],
+      }));
+      commit({ resources, activity: [log("removed", key, resourceId), ...get().activity] });
+    },
+
+    addResource: (kind) => {
+      const label = kind === "endpoint" ? "newEndpoint" : kind === "database" ? "new_table" : "NewModel";
+      const resource: Resource = {
+        id: uid("r"),
+        name: label,
+        kind,
+        ...(kind === "endpoint" ? { method: "GET", path: "/api/v1/new" } : {}),
+        state: "draft",
+        updatedAt: now(),
+        updatedBy: get().me?.name ?? "Someone",
+        fields: [{ id: uid("f"), key: "id", type: "uuid", required: true, state: "draft", change: "added" }],
+      };
+      commit({
+        resources: [resource, ...get().resources],
+        activity: [log("created", resource.name, resource.id), ...get().activity],
+      });
+      set({ selectedId: resource.id });
+    },
+
+    renameResource: (resourceId, name) => {
+      const resources = withResource(resourceId, (r) => ({ ...r, name }));
+      commit({ resources, activity: [log("renamed", name, resourceId), ...get().activity] });
+    },
+
+    addComment: (resourceId, fieldId, body) => {
+      const me = get().me;
+      const comment: Comment = {
+        id: uid("c"),
+        resourceId,
+        fieldId,
+        author: me?.name ?? "Someone",
+        role: me?.role ?? "frontend",
+        body,
+        at: now(),
+      };
+      commit({
+        comments: [...get().comments, comment],
+        activity: [log("commented on", resourceId === get().selectedId ? selectedName(get) : "schema", resourceId), ...get().activity],
+      });
+    },
+  };
+});
+
+function selectedName(get: () => StoreState): string {
+  const s = get();
+  return s.resources.find((r) => r.id === s.selectedId)?.name ?? "schema";
 }
+
+// Derived selectors
+export const selectSelected = (s: StoreState): Resource | undefined =>
+  s.resources.find((r) => r.id === s.selectedId);

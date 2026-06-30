@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5ecd8;
-  --foreground: #3b3026;
+  --background: #f4f4f5;
+  --foreground: #0a0a0a;
+  --font-mono: "SFMono-Regular", ui-monospace, Consolas, "Liberation Mono", monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-prompt), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-mono: var(--font-mono);
 }
 
 body {
@@ -29,21 +30,6 @@ select {
   box-sizing: border-box;
 }
 
-/* Floating +N production number rising above a resource chip. */
-@keyframes float-up {
-  0% {
-    opacity: 0;
-    transform: translateY(2px);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-16px);
-  }
-}
-
 /* New activity-log line sliding in from the top. */
 @keyframes log-in {
   from {
@@ -54,6 +40,20 @@ select {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Thin, high-contrast scrollbars to match the minimalist aesthetic. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border: 2px solid #f4f4f5;
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
 }
 
 @media (prefers-reduced-motion: reduce) {

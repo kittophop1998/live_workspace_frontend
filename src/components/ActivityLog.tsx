@@ -1,51 +1,57 @@
 "use client";
 
-import { Box, Card, Typography } from "@mui/material";
-import { useKingdomStore } from "@/lib/store";
-import { relativeTime, SectionTitle } from "./common";
-import type { LogType } from "@/lib/types";
-
-const TYPE_COLOR: Record<LogType, string> = {
-  production: "#6FAE5E",
-  build: "#D9A441",
-  event: "#9B6FD9",
-  combat: "#D9534F",
-  system: "#857A6B",
-  trade: "#5B8DD9",
-};
+import { Box, Stack, Typography } from "@mui/material";
+import { useWorkspaceStore } from "@/lib/store";
+import { Avatar, relativeTime, useNow } from "@/components/common";
+import { line } from "@/components/theme";
 
 export function ActivityLog() {
-  const logs = useKingdomStore((s) => s.logs);
+  const activity = useWorkspaceStore((s) => s.activity);
+  const resources = useWorkspaceStore((s) => s.resources);
+  const collaborators = useWorkspaceStore((s) => s.collaborators);
+  useNow();
+
+  const resourceName = (id: string) => resources.find((r) => r.id === id)?.name ?? "deleted";
+  const colorFor = (name: string) => collaborators.find((c) => c.name === name)?.color ?? "#71717A";
+
   return (
-    <Card sx={{ p: 1.5 }}>
-      <SectionTitle icon="📰" title="Activity Log" />
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, maxHeight: 280, overflowY: "auto", pr: 0.5 }}>
-        {logs.map((l) => (
-          <Box
-            key={l.id}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              py: 0.6,
-              px: 1,
-              borderRadius: 2,
-              borderLeft: `3px solid ${TYPE_COLOR[l.type]}`,
-              bgcolor: "#FFFDF6",
-              animation: "log-in .35s ease",
-            }}
-          >
-            <span style={{ fontSize: 15 }}>{l.icon}</span>
-            <Typography sx={{ fontSize: 12.5, flex: 1 }} noWrap>
-              {l.message}
-            </Typography>
-            <Typography variant="caption" sx={{ flexShrink: 0 }}>
-              {relativeTime(l.at)}
-            </Typography>
-          </Box>
-        ))}
-        {!logs.length ? <Typography variant="caption">Quiet so far…</Typography> : null}
-      </Box>
-    </Card>
+    <Box sx={{ p: 1.5, overflowY: "auto", height: "100%" }}>
+      {activity.length === 0 ? (
+        <Typography sx={{ color: "#A1A1AA", fontSize: 13, textAlign: "center", mt: 4 }}>No activity yet.</Typography>
+      ) : (
+        <Stack spacing={0}>
+          {activity.map((a, i) => (
+            <Box
+              key={a.id}
+              sx={{
+                display: "flex",
+                gap: 1.25,
+                py: 1.25,
+                px: 0.5,
+                borderBottom: i === activity.length - 1 ? "none" : `1.5px solid #E4E4E7`,
+                animation: i === 0 ? "log-in .25s ease" : "none",
+              }}
+            >
+              <Avatar name={a.actor} color={colorFor(a.actor)} size={26} />
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontSize: 13, lineHeight: 1.4 }}>
+                  <b>{a.actor}</b> {a.verb}{" "}
+                  <Box component="span" sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 700 }}>
+                    {a.target}
+                  </Box>
+                </Typography>
+                <Typography sx={{ fontSize: 11, color: "#71717A" }}>
+                  in{" "}
+                  <Box component="span" sx={{ fontWeight: 700, color: line }}>
+                    {resourceName(a.resourceId)}
+                  </Box>{" "}
+                  · {relativeTime(a.at)}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+        </Stack>
+      )}
+    </Box>
   );
 }
