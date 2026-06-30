@@ -1,20 +1,90 @@
 "use client";
 
-import { Box, Button, Chip, InputBase, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, InputBase, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/EditOutlined";
+import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { FieldRow } from "@/components/FieldRow";
 import { MonoTag, StateBadge, relativeTime, useNow } from "@/components/common";
 import { changeColor, line, methodColor } from "@/components/theme";
-import type { Resource } from "@/lib/types";
+import type { HttpMethod, Resource } from "@/lib/types";
 
 const KIND_LABEL: Record<Resource["kind"], string> = {
   endpoint: "API Endpoint",
   database: "Database Table",
   model: "Schema Model",
 };
+
+const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+
+// Pick the method from a dropdown; click the path to edit it inline.
+function EndpointMeta({ resource }: { resource: Resource }) {
+  const updateEndpoint = useWorkspaceStore((s) => s.updateEndpoint);
+  const [draft, setDraft] = useState(resource.path ?? "");
+  const [editing, setEditing] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const currentMethod = resource.method ?? "GET";
+
+  const pickMethod = (m: HttpMethod) => {
+    setAnchorEl(null);
+    if (m !== resource.method) updateEndpoint(resource.id, { method: m });
+  };
+
+  const commitPath = () => {
+    const path = draft.trim();
+    if (path && path !== resource.path) updateEndpoint(resource.id, { path });
+    setEditing(false);
+  };
+
+  return (
+    <>
+      <Tooltip title="Change method">
+        <Box
+          role="button"
+          aria-label="Change method"
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          sx={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }}
+        >
+          <MonoTag sx={{ color: methodColor[currentMethod], display: "inline-flex", alignItems: "center", gap: 0.1 }}>
+            {currentMethod}
+            <ArrowDropDownIcon sx={{ fontSize: 16, ml: -0.25 }} />
+          </MonoTag>
+        </Box>
+      </Tooltip>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+        {HTTP_METHODS.map((m) => (
+          <MenuItem
+            key={m}
+            selected={m === currentMethod}
+            onClick={() => pickMethod(m)}
+            sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: methodColor[m] }}
+          >
+            {m}
+          </MenuItem>
+        ))}
+      </Menu>
+      {editing ? (
+        <InputBase
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commitPath}
+          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
+          sx={{ fontFamily: "var(--font-mono, monospace)", fontSize: 12, fontWeight: 700, border: `2px solid ${line}`, borderRadius: "5px", px: 0.75, py: 0.1 }}
+        />
+      ) : (
+        <Tooltip title="Click to edit path">
+          <Box component="span" onClick={() => { setDraft(resource.path ?? ""); setEditing(true); }} sx={{ cursor: "pointer" }}>
+            <MonoTag>{resource.path || "(no path)"}</MonoTag>
+          </Box>
+        </Tooltip>
+      )}
+    </>
+  );
+}
 
 function EditableName({ resource }: { resource: Resource }) {
   const [draft, setDraft] = useState(resource.name);
@@ -54,6 +124,7 @@ export function CenterPanel() {
   const resource = useWorkspaceStore((s) => s.resources.find((r) => r.id === s.selectedId));
   const comments = useWorkspaceStore((s) => s.comments);
   const addField = useWorkspaceStore((s) => s.addField);
+  const deleteResource = useWorkspaceStore((s) => s.deleteResource);
   useNow(); // keep "updated Xs ago" fresh
 
   if (!resource) {
@@ -80,14 +151,36 @@ export function CenterPanel() {
           </Box>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
             <StateBadge state={resource.state} sx={{ fontSize: 12, py: 0.4 }} />
+            <Tooltip title={`Delete this ${resource.kind}`}>
+              <Box
+                role="button"
+                aria-label="Delete resource"
+                onClick={() => {
+                  if (window.confirm(`Delete "${resource.name}"? This cannot be undone.`)) {
+                    deleteResource(resource.id);
+                  }
+                }}
+                sx={{
+                  display: "flex",
+                  cursor: "pointer",
+                  p: 0.5,
+                  borderRadius: "8px",
+                  color: "#71717A",
+                  "&:hover": { color: "#DC2626", bgcolor: "#FEE2E2" },
+                }}
+              >
+                <DeleteIcon sx={{ fontSize: 20 }} />
+              </Box>
+            </Tooltip>
           </Stack>
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ mt: 1.5, alignItems: "center", flexWrap: "wrap" }}>
-          {resource.kind === "endpoint" && resource.method ? (
-            <MonoTag sx={{ color: methodColor[resource.method] }}>{resource.method}</MonoTag>
+          {resource.kind === "endpoint" ? (
+            <EndpointMeta resource={resource} />
+          ) : resource.path ? (
+            <MonoTag>{resource.path}</MonoTag>
           ) : null}
-          {resource.path ? <MonoTag>{resource.path}</MonoTag> : null}
           <Chip size="small" variant="outlined" label={`${liveCount} fields`} sx={{ height: 22 }} />
           <Typography variant="caption" sx={{ color: "#71717A" }}>
             updated {relativeTime(resource.updatedAt)} by {resource.updatedBy}

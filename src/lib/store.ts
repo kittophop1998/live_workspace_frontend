@@ -75,6 +75,8 @@ interface StoreState {
   removeField: (resourceId: string, fieldId: string) => void;
   addResource: (kind: ResourceKind) => void;
   renameResource: (resourceId: string, name: string) => void;
+  updateEndpoint: (resourceId: string, patch: { method?: HttpMethod; path?: string }) => void;
+  deleteResource: (resourceId: string) => void;
   addComment: (resourceId: string, fieldId: string | undefined, body: string) => void;
 }
 
@@ -296,6 +298,24 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       try {
         const { rev, resource } = await workspaceApi.updateResource(resourceId, { name });
         get().upsertResource(rev, resource);
+      } catch (err) {
+        fail(err);
+      }
+    },
+
+    updateEndpoint: async (resourceId, patch) => {
+      try {
+        const { rev, resource } = await workspaceApi.updateResource(resourceId, patch);
+        get().upsertResource(rev, resource);
+      } catch (err) {
+        fail(err);
+      }
+    },
+
+    deleteResource: async (resourceId) => {
+      try {
+        const { rev, resourceId: removed } = await workspaceApi.deleteResource(resourceId);
+        get().removeResource(rev, removed);
       } catch (err) {
         fail(err);
       }
