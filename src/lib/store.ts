@@ -1,55 +1,58 @@
 "use client";
 
 import { create } from "zustand";
-import { SEED_ACTIVITY, SEED_COLLABORATORS, SEED_COMMENTS, SEED_RESOURCES } from "@/data/mock";
-import { broadcastDoc, persistDoc } from "@/lib/sync";
+import { apiErrorMessage } from "@/lib/api";
+import { workspaceApi } from "@/services/workspace.service";
 import type {
   ActivityEvent,
   Collaborator,
   Comment,
   ExportFormat,
   FieldState,
+  HttpMethod,
   Presence,
   Resource,
   ResourceKind,
   RightTab,
   SchemaField,
-  WorkspaceDoc,
+  WorkspaceSnapshot,
 } from "@/lib/types";
 
-const uid = (p: string) => `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-const now = () => new Date().toISOString();
-
 const FIELD_STATE_CYCLE: FieldState[] = ["draft", "ready", "breaking"];
+const ACTIVITY_CAP = 200;
 
-// Overall resource status is the worst state among its live fields.
-function rollupState(fields: SchemaField[]): FieldState {
-  const live = fields.filter((f) => f.change !== "removed");
-  if (live.some((f) => f.state === "breaking")) return "breaking";
-  if (live.some((f) => f.state === "draft")) return "draft";
-  return "ready";
-}
+interface StoreState {
+  // Synced document (server-owned)
+  rev: number;
+  resources: Resource[];
+  comments: Comment[];
+  activity: ActivityEvent[];
 
-interface StoreState extends WorkspaceDoc {
-  // UI / session (not part of the synced doc)
+  // UI / session
   selectedId: string;
-  activeFieldId: string | null; // field anchored in the comments tab
+  activeFieldId: string | null;
   rightTab: RightTab;
   exportFormat: ExportFormat;
   kindFilter: ResourceKind | "all";
+  apiError: string | null;
 
   // Identity & presence
   collaborators: Collaborator[];
   me: Collaborator | null;
   presences: Record<string, Presence>;
 
-  // Hydration / sync internals
-  hydrate: () => void;
-  applyRemoteDoc: (doc: WorkspaceDoc) => void;
+  // Hydration + real-time apply (called by useWorkspaceSync / realtime)
+  applySnapshot: (snap: WorkspaceSnapshot) => void;
+  setMe: (c: Collaborator) => void;
+  upsertResource: (rev: number, resource: Resource, fromWs?: boolean) => void;
+  removeResource: (rev: number, resourceId: string, fromWs?: boolean) => void;
+  upsertComment: (rev: number, comment: Comment, fromWs?: boolean) => void;
+  removeComment: (rev: number, commentId: string, fromWs?: boolean) => void;
+  pushActivity: (event: ActivityEvent) => void;
   upsertPresence: (p: Presence) => void;
   dropPresence: (clientId: string) => void;
   prunePresences: () => void;
-  setMe: (c: Collaborator) => void;
+  setApiError: (msg: string | null) => void;
 
   // UI actions
   select: (id: string) => void;
@@ -58,7 +61,7 @@ interface StoreState extends WorkspaceDoc {
   setExportFormat: (f: ExportFormat) => void;
   setKindFilter: (k: ResourceKind | "all") => void;
 
-  // Schema mutations
+  // Schema mutations (call the backend; state updates from the response + WS)
   addField: (resourceId: string) => void;
   updateField: (resourceId: string, fieldId: string, patch: Partial<SchemaField>) => void;
   cycleFieldState: (resourceId: string, fieldId: string) => void;
@@ -68,70 +71,97 @@ interface StoreState extends WorkspaceDoc {
   addComment: (resourceId: string, fieldId: string | undefined, body: string) => void;
 }
 
+// A non-colliding field key so POST /fields never 409s on a duplicate.
+function freshFieldKey(resource: Resource | undefined): string {
+  const existing = new Set((resource?.fields ?? []).map((f) => f.key));
+  if (!existing.has("newField")) return "newField";
+  let n = 2;
+  while (existing.has(`newField${n}`)) n += 1;
+  return `newField${n}`;
+}
+
 export const useWorkspaceStore = create<StoreState>((set, get) => {
-  // Commit a new document version: bump rev, persist, broadcast to other tabs.
-  function commit(next: Partial<WorkspaceDoc>) {
-    const s = get();
-    const doc: WorkspaceDoc = {
-      rev: s.rev + 1,
-      resources: next.resources ?? s.resources,
-      activity: next.activity ?? s.activity,
-      comments: next.comments ?? s.comments,
-    };
-    set(doc);
-    persistDoc(doc);
-    broadcastDoc(doc);
-  }
-
-  function log(verb: string, target: string, resourceId: string): ActivityEvent {
-    return { id: uid("a"), actor: get().me?.name ?? "Someone", verb, target, resourceId, at: now() };
-  }
-
-  // Apply a field-level change to one resource, refresh its rollup + audit fields.
-  function withResource(resourceId: string, fn: (r: Resource) => Resource): Resource[] {
-    const me = get().me?.name ?? "Someone";
-    return get().resources.map((r) => {
-      if (r.id !== resourceId) return r;
-      const updated = fn(r);
-      return { ...updated, state: rollupState(updated.fields), updatedAt: now(), updatedBy: me };
-    });
-  }
+  const fail = (err: unknown) => set({ apiError: apiErrorMessage(err) });
 
   return {
     rev: 0,
-    resources: SEED_RESOURCES,
-    activity: SEED_ACTIVITY,
-    comments: SEED_COMMENTS,
+    resources: [],
+    comments: [],
+    activity: [],
 
-    selectedId: SEED_RESOURCES[0].id,
+    selectedId: "",
     activeFieldId: null,
     rightTab: "activity",
     exportFormat: "typescript",
     kindFilter: "all",
+    apiError: null,
 
-    collaborators: SEED_COLLABORATORS,
+    collaborators: [],
     me: null,
     presences: {},
 
-    hydrate: () => {
-      // Pull the persisted doc (if a teammate already edited in another tab/session).
-      if (typeof window === "undefined") return;
-      try {
-        const raw = window.localStorage.getItem("live-workspace:doc");
-        if (!raw) return;
-        const doc = JSON.parse(raw) as WorkspaceDoc;
-        if (doc.rev > get().rev) {
-          set({ rev: doc.rev, resources: doc.resources, activity: doc.activity, comments: doc.comments });
-        }
-      } catch {
-        /* ignore malformed storage */
-      }
-    },
+    applySnapshot: (snap) =>
+      set((s) => {
+        const selectedId =
+          s.selectedId && snap.resources.some((r) => r.id === s.selectedId)
+            ? s.selectedId
+            : (snap.resources[0]?.id ?? "");
+        return {
+          rev: Math.max(s.rev, snap.rev),
+          resources: snap.resources,
+          comments: snap.comments,
+          activity: snap.activity,
+          collaborators: snap.collaborators,
+          selectedId,
+        };
+      }),
 
-    applyRemoteDoc: (doc) => {
-      if (doc.rev <= get().rev) return; // stale or echo of our own write
-      set({ rev: doc.rev, resources: doc.resources, activity: doc.activity, comments: doc.comments });
-    },
+    setMe: (c) => set({ me: c }),
+
+    upsertResource: (rev, resource, fromWs = false) =>
+      set((s) => {
+        if (fromWs && rev <= s.rev) return {};
+        const exists = s.resources.some((r) => r.id === resource.id);
+        return {
+          rev: Math.max(s.rev, rev),
+          resources: exists
+            ? s.resources.map((r) => (r.id === resource.id ? resource : r))
+            : [resource, ...s.resources],
+        };
+      }),
+
+    removeResource: (rev, resourceId, fromWs = false) =>
+      set((s) => {
+        if (fromWs && rev <= s.rev) return {};
+        const resources = s.resources.filter((r) => r.id !== resourceId);
+        const selectedId =
+          s.selectedId === resourceId ? (resources[0]?.id ?? "") : s.selectedId;
+        return { rev: Math.max(s.rev, rev), resources, selectedId };
+      }),
+
+    upsertComment: (rev, comment, fromWs = false) =>
+      set((s) => {
+        if (fromWs && rev <= s.rev) return {};
+        const exists = s.comments.some((c) => c.id === comment.id);
+        return {
+          rev: Math.max(s.rev, rev),
+          comments: exists
+            ? s.comments.map((c) => (c.id === comment.id ? comment : c))
+            : [...s.comments, comment],
+        };
+      }),
+
+    removeComment: (rev, commentId, fromWs = false) =>
+      set((s) => {
+        if (fromWs && rev <= s.rev) return {};
+        return { rev: Math.max(s.rev, rev), comments: s.comments.filter((c) => c.id !== commentId) };
+      }),
+
+    pushActivity: (event) =>
+      set((s) => {
+        if (s.activity.some((a) => a.id === event.id)) return {};
+        return { activity: [event, ...s.activity].slice(0, ACTIVITY_CAP) };
+      }),
 
     upsertPresence: (p) => set((s) => ({ presences: { ...s.presences, [p.clientId]: p } })),
     dropPresence: (clientId) =>
@@ -147,7 +177,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         for (const [id, p] of Object.entries(s.presences)) if (p.ts >= cutoff) next[id] = p;
         return { presences: next };
       }),
-    setMe: (c) => set({ me: c }),
+    setApiError: (msg) => set({ apiError: msg }),
 
     select: (id) => set({ selectedId: id, activeFieldId: null }),
     focusComment: (fieldId) => set({ activeFieldId: fieldId, rightTab: "comments" }),
@@ -155,109 +185,91 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
     setExportFormat: (f) => set({ exportFormat: f }),
     setKindFilter: (k) => set({ kindFilter: k }),
 
-    addField: (resourceId) => {
-      const field: SchemaField = {
-        id: uid("f"),
-        key: "newField",
-        type: "string",
-        required: false,
-        state: "draft",
-        change: "added",
-      };
-      const resources = withResource(resourceId, (r) => ({ ...r, fields: [...r.fields, field] }));
-      commit({ resources, activity: [log("added", field.key, resourceId), ...get().activity] });
+    addField: async (resourceId) => {
+      const resource = get().resources.find((r) => r.id === resourceId);
+      try {
+        const { rev, resource: updated } = await workspaceApi.addField(resourceId, {
+          key: freshFieldKey(resource),
+          type: "string",
+          required: false,
+        });
+        get().upsertResource(rev, updated);
+      } catch (err) {
+        fail(err);
+      }
     },
 
-    updateField: (resourceId, fieldId, patch) => {
-      const resources = withResource(resourceId, (r) => ({
-        ...r,
-        fields: r.fields.map((f) =>
-          f.id === fieldId
-            ? { ...f, ...patch, change: f.change === "added" ? "added" : "modified" }
-            : f,
-        ),
-      }));
-      const key = resources.find((r) => r.id === resourceId)?.fields.find((f) => f.id === fieldId)?.key ?? "field";
-      commit({ resources, activity: [log("edited", key, resourceId), ...get().activity] });
+    updateField: async (resourceId, fieldId, patch) => {
+      try {
+        const { rev, resource } = await workspaceApi.updateField(resourceId, fieldId, {
+          key: patch.key,
+          type: patch.type,
+          required: patch.required,
+          state: patch.state,
+          description: patch.description,
+        });
+        get().upsertResource(rev, resource);
+      } catch (err) {
+        fail(err);
+      }
     },
 
-    cycleFieldState: (resourceId, fieldId) => {
-      let nextState: FieldState = "draft";
-      const resources = withResource(resourceId, (r) => ({
-        ...r,
-        fields: r.fields.map((f) => {
-          if (f.id !== fieldId) return f;
-          const i = FIELD_STATE_CYCLE.indexOf(f.state);
-          nextState = FIELD_STATE_CYCLE[(i + 1) % FIELD_STATE_CYCLE.length];
-          return { ...f, state: nextState };
-        }),
-      }));
-      const key = resources.find((r) => r.id === resourceId)?.fields.find((f) => f.id === fieldId)?.key ?? "field";
-      commit({ resources, activity: [log(`set ${nextState}`, key, resourceId), ...get().activity] });
+    cycleFieldState: async (resourceId, fieldId) => {
+      const field = get()
+        .resources.find((r) => r.id === resourceId)
+        ?.fields.find((f) => f.id === fieldId);
+      if (!field) return;
+      const next = FIELD_STATE_CYCLE[(FIELD_STATE_CYCLE.indexOf(field.state) + 1) % FIELD_STATE_CYCLE.length];
+      try {
+        const { rev, resource } = await workspaceApi.updateField(resourceId, fieldId, { state: next });
+        get().upsertResource(rev, resource);
+      } catch (err) {
+        fail(err);
+      }
     },
 
-    removeField: (resourceId, fieldId) => {
-      // Soft-delete: mark removed (a breaking diff) rather than dropping silently.
-      let key = "field";
-      const resources = withResource(resourceId, (r) => ({
-        ...r,
-        fields: r.fields.map((f) => {
-          if (f.id !== fieldId) return f;
-          key = f.key;
-          // A never-shipped (added) field can be discarded outright.
-          return f.change === "added" ? null : { ...f, change: "removed" as const, state: "breaking" as const };
-        }).filter(Boolean) as SchemaField[],
-      }));
-      commit({ resources, activity: [log("removed", key, resourceId), ...get().activity] });
+    removeField: async (resourceId, fieldId) => {
+      try {
+        const { rev, resource } = await workspaceApi.deleteField(resourceId, fieldId);
+        get().upsertResource(rev, resource);
+      } catch (err) {
+        fail(err);
+      }
     },
 
-    addResource: (kind) => {
-      const label = kind === "endpoint" ? "newEndpoint" : kind === "database" ? "new_table" : "NewModel";
-      const resource: Resource = {
-        id: uid("r"),
-        name: label,
-        kind,
-        ...(kind === "endpoint" ? { method: "GET", path: "/api/v1/new" } : {}),
-        state: "draft",
-        updatedAt: now(),
-        updatedBy: get().me?.name ?? "Someone",
-        fields: [{ id: uid("f"), key: "id", type: "uuid", required: true, state: "draft", change: "added" }],
-      };
-      commit({
-        resources: [resource, ...get().resources],
-        activity: [log("created", resource.name, resource.id), ...get().activity],
-      });
-      set({ selectedId: resource.id });
+    addResource: async (kind) => {
+      const name = kind === "endpoint" ? "newEndpoint" : kind === "database" ? "new_table" : "NewModel";
+      const endpoint = kind === "endpoint"
+        ? { method: "GET" as HttpMethod, path: "/api/v1/new" }
+        : {};
+      try {
+        const { rev, resource } = await workspaceApi.createResource({ name, kind, ...endpoint });
+        get().upsertResource(rev, resource);
+        set({ selectedId: resource.id });
+      } catch (err) {
+        fail(err);
+      }
     },
 
-    renameResource: (resourceId, name) => {
-      const resources = withResource(resourceId, (r) => ({ ...r, name }));
-      commit({ resources, activity: [log("renamed", name, resourceId), ...get().activity] });
+    renameResource: async (resourceId, name) => {
+      try {
+        const { rev, resource } = await workspaceApi.updateResource(resourceId, { name });
+        get().upsertResource(rev, resource);
+      } catch (err) {
+        fail(err);
+      }
     },
 
-    addComment: (resourceId, fieldId, body) => {
-      const me = get().me;
-      const comment: Comment = {
-        id: uid("c"),
-        resourceId,
-        fieldId,
-        author: me?.name ?? "Someone",
-        role: me?.role ?? "frontend",
-        body,
-        at: now(),
-      };
-      commit({
-        comments: [...get().comments, comment],
-        activity: [log("commented on", resourceId === get().selectedId ? selectedName(get) : "schema", resourceId), ...get().activity],
-      });
+    addComment: async (resourceId, fieldId, body) => {
+      try {
+        const { rev, comment } = await workspaceApi.addComment(resourceId, fieldId, body);
+        get().upsertComment(rev, comment);
+      } catch (err) {
+        fail(err);
+      }
     },
   };
 });
-
-function selectedName(get: () => StoreState): string {
-  const s = get();
-  return s.resources.find((r) => r.id === s.selectedId)?.name ?? "schema";
-}
 
 // Derived selectors
 export const selectSelected = (s: StoreState): Resource | undefined =>

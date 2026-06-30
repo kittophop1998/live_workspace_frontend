@@ -1,86 +1,61 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { SEED_COLLABORATORS } from "@/data/mock";
+import { useEffect } from "react";
 import { useWorkspaceStore } from "@/lib/store";
-import {
-  HEARTBEAT_MS,
-  broadcastHello,
-  broadcastLeave,
-  broadcastPresence,
-  newClientId,
-  subscribe,
-} from "@/lib/sync";
-import type { Collaborator } from "@/lib/types";
+import { connectRealtime, HEARTBEAT_MS, newClientId } from "@/lib/realtime";
+import { apiErrorMessage } from "@/lib/api";
+import { workspaceApi } from "@/services/workspace.service";
 
-const ME_KEY = "live-workspace:me";
-
-// Each browser tab adopts a stable collaborator identity (persisted per-tab in
-// sessionStorage) so opening a second tab simulates a second teammate joining.
-function resolveMe(): Collaborator {
-  if (typeof window !== "undefined") {
-    const saved = window.sessionStorage.getItem(ME_KEY);
-    if (saved) {
-      const found = SEED_COLLABORATORS.find((c) => c.id === saved);
-      if (found) return found;
-    }
-  }
-  const pick = SEED_COLLABORATORS[Math.floor(Math.random() * SEED_COLLABORATORS.length)];
-  if (typeof window !== "undefined") window.sessionStorage.setItem(ME_KEY, pick.id);
-  return pick;
-}
-
+// Boot the workspace: hydrate from the backend (REST), then keep it live over
+// the WebSocket. The server is the single source of truth — every change (ours
+// or a teammate's) arrives back through the stream.
 export function useWorkspaceSync(): void {
-  const clientIdRef = useRef<string>("");
-
   useEffect(() => {
     const store = useWorkspaceStore.getState();
     const clientId = newClientId();
-    clientIdRef.current = clientId;
+    let cancelled = false;
 
-    // 1. Load any persisted doc, adopt an identity.
-    store.hydrate();
-    const me = resolveMe();
-    store.setMe(me);
+    // 1. Initial hydrate (snapshot + my identity).
+    (async () => {
+      try {
+        const [snapshot, me] = await Promise.all([
+          workspaceApi.getSnapshot(),
+          workspaceApi.getMe(),
+        ]);
+        if (cancelled) return;
+        store.applySnapshot(snapshot);
+        store.setMe(me);
+        store.setApiError(null);
+      } catch (err) {
+        if (!cancelled) store.setApiError(apiErrorMessage(err));
+      }
+    })();
 
-    // 2. Subscribe to cross-tab messages.
-    const unsub = subscribe((msg) => {
-      const s = useWorkspaceStore.getState();
-      if (msg.kind === "doc") s.applyRemoteDoc(msg.doc);
-      else if (msg.kind === "presence") s.upsertPresence(msg.presence);
-      else if (msg.kind === "leave") s.dropPresence(msg.clientId);
-      else if (msg.kind === "hello") heartbeat(); // re-announce to the newcomer
+    // 2. Live stream — presence + every mutation, merged by rev.
+    const connection = connectRealtime({
+      clientId,
+      getCollaboratorId: () => useWorkspaceStore.getState().me?.id ?? "",
+      handlers: {
+        onSnapshot: (snap) => useWorkspaceStore.getState().applySnapshot(snap),
+        onResourceUpsert: (rev, resource) =>
+          useWorkspaceStore.getState().upsertResource(rev, resource, true),
+        onResourceDelete: (rev, id) => useWorkspaceStore.getState().removeResource(rev, id, true),
+        onCommentUpsert: (rev, comment) =>
+          useWorkspaceStore.getState().upsertComment(rev, comment, true),
+        onCommentDelete: (rev, id) => useWorkspaceStore.getState().removeComment(rev, id, true),
+        onActivity: (event) => useWorkspaceStore.getState().pushActivity(event),
+        onPresence: (presence) => useWorkspaceStore.getState().upsertPresence(presence),
+        onPresenceLeave: (id) => useWorkspaceStore.getState().dropPresence(id),
+      },
     });
 
-    const heartbeat = () => {
-      const beacon = { clientId, collaboratorId: me.id, ts: Date.now() };
-      useWorkspaceStore.getState().upsertPresence(beacon); // include self
-      broadcastPresence(beacon);
-    };
-
-    // 3. Announce arrival + start heartbeat / prune loops.
-    heartbeat();
-    broadcastHello();
-    const beat = setInterval(heartbeat, HEARTBEAT_MS);
+    // 3. Prune stale presence beacons locally (the server prunes too).
     const prune = setInterval(() => useWorkspaceStore.getState().prunePresences(), HEARTBEAT_MS);
 
-    // 4. Pick up writes from other tabs of the SAME app via the storage event
-    //    (covers browsers without BroadcastChannel).
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === "live-workspace:doc") useWorkspaceStore.getState().hydrate();
-    };
-    window.addEventListener("storage", onStorage);
-
-    const onUnload = () => broadcastLeave(clientId);
-    window.addEventListener("beforeunload", onUnload);
-
     return () => {
-      unsub();
-      clearInterval(beat);
+      cancelled = true;
+      connection.close();
       clearInterval(prune);
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("beforeunload", onUnload);
-      broadcastLeave(clientId);
     };
   }, []);
 }

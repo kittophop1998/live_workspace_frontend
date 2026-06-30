@@ -1,5 +1,5 @@
-// Live Workspace domain types — a client-side schema collaboration hub.
-// No backend: these mirror what a BaaS document would hold, synced across tabs.
+// Live Workspace domain types — mirror the backend wire models (api-spec.md §2).
+// snake_case on the wire, camelCase here; the service layer normalizes.
 
 export type FieldState = "draft" | "ready" | "breaking";
 
@@ -70,19 +70,20 @@ export interface Collaborator {
   color: string;
 }
 
-// Live presence beacon broadcast by each open tab.
+// Live presence beacon — one per open tab, delivered over the WebSocket.
 export interface Presence {
   clientId: string;
   collaboratorId: string;
   ts: number; // epoch ms of last heartbeat
 }
 
-// The shared document persisted to localStorage and broadcast across tabs.
-export interface WorkspaceDoc {
+// One-shot hydrate payload from GET /workspace (and the WS `snapshot` frame).
+export interface WorkspaceSnapshot {
   rev: number;
   resources: Resource[];
-  activity: ActivityEvent[];
   comments: Comment[];
+  activity: ActivityEvent[];
+  collaborators: Collaborator[];
 }
 
 export type ExportFormat = "typescript" | "json";
