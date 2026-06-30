@@ -8,6 +8,7 @@ import type {
   ActivityEvent,
   Collaborator,
   Comment,
+  DataType,
   ExportFormat,
   FieldState,
   HttpMethod,
@@ -73,6 +74,10 @@ interface StoreState {
   // Schema mutations (call the backend; state updates from the response + WS)
   addField: (resourceId: string) => void;
   importJsonFields: (resourceId: string, obj: Record<string, JsonValue>) => void;
+  importTypedFields: (
+    resourceId: string,
+    fields: { key: string; type: DataType; required?: boolean; description?: string; value?: JsonValue }[],
+  ) => void;
   updateField: (resourceId: string, fieldId: string, patch: Partial<SchemaField>) => void;
   cycleFieldState: (resourceId: string, fieldId: string) => void;
   removeField: (resourceId: string, fieldId: string) => void;
@@ -266,6 +271,34 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
           const merged =
             value !== undefined
               ? { ...updated, fields: updated.fields.map((f) => (f.key === key ? { ...f, value } : f)) }
+              : updated;
+          get().upsertResource(rev, merged);
+        } catch (err) {
+          fail(err);
+          return;
+        }
+      }
+    },
+
+    // Like importJsonFields but with explicit types — used by the spec importer to
+    // seed an endpoint's request body. Existing keys are skipped (no overwrite/409).
+    importTypedFields: async (resourceId, fields) => {
+      const resource = get().resources.find((r) => r.id === resourceId);
+      const existing = new Set((resource?.fields ?? []).map((f) => f.key));
+      for (const f of fields) {
+        if (existing.has(f.key)) continue;
+        existing.add(f.key);
+        try {
+          const { rev, resource: updated } = await workspaceApi.addField(resourceId, {
+            key: f.key,
+            type: f.type,
+            required: f.required ?? false,
+            description: f.description,
+            value: f.value,
+          });
+          const merged =
+            f.value !== undefined
+              ? { ...updated, fields: updated.fields.map((x) => (x.key === f.key ? { ...x, value: f.value } : x)) }
               : updated;
           get().upsertResource(rev, merged);
         } catch (err) {

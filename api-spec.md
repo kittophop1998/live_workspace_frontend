@@ -148,6 +148,24 @@ A unit in the explorer: an API endpoint, a database table, or a schema model.
 > display it; they do not author it directly. `updated_at` / `updated_by` are set
 > by the server on every mutation.
 
+### ResponseSchema (frontend-local)
+The per-status response shapes shown in the **bottom half** of the API Endpoint
+view (tabbed `200` / `400` / `500` …). The backend `Resource` model has **no slot
+for these yet**, so the frontend keeps them client-side, persisted in
+`localStorage` (`live-workspace:response-schemas`, keyed by `resource.id`) — see
+`src/lib/responseSchemas.ts`. They are populated manually or by the **spec import**
+flow (`src/lib/specImport.ts`, OpenAPI YAML/JSON or Postman collection).
+```json
+{
+  "status": 200,                 // HTTP status; 0 = OpenAPI "default"
+  "description": "OK",           // optional short label
+  "fields": [ "...SchemaField" ] // same SchemaField shape as the request blueprint
+}
+```
+> **When the backend adopts these:** add a `responses: ResponseSchema[]` array to
+> `Resource` (snake_case on the wire), normalize it in
+> `src/services/workspace.service.ts`, and the local store becomes a cache/fallback.
+
 ### Comment
 Inline discussion, optionally anchored to a single field.
 ```json

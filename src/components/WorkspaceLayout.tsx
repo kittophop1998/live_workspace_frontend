@@ -1,7 +1,9 @@
 "use client";
 
 import { Box } from "@mui/material";
+import { useEffect } from "react";
 import { useWorkspaceSync } from "@/lib/useWorkspaceSync";
+import { useResponseSchemaStore } from "@/lib/responseSchemas";
 import { TopBar } from "@/components/TopBar";
 import { LeftPanel } from "@/components/LeftPanel";
 import { CenterPanel } from "@/components/CenterPanel";
@@ -11,6 +13,10 @@ import { RightPanel } from "@/components/RightPanel";
 // mount/hydration guard), so useWorkspaceSync hydrates with the bearer token.
 export function WorkspaceLayout() {
   useWorkspaceSync(); // hydrate from backend + presence heartbeat over WS
+
+  // Load locally-persisted response schemas (api-spec.md §2 ResponseSchema) once.
+  const hydrateResponseSchemas = useResponseSchemaStore((s) => s.hydrate);
+  useEffect(() => hydrateResponseSchemas(), [hydrateResponseSchemas]);
 
   return (
     <Box sx={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "#F4F4F5" }}>

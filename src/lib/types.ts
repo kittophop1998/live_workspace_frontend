@@ -97,5 +97,14 @@ export interface WorkspaceSnapshot {
   collaborators: Collaborator[];
 }
 
+// Response schemas per endpoint, keyed by HTTP status. Backend (api-spec.md §2
+// Resource) has no slot for these yet, so they live client-side in localStorage
+// (src/lib/responseSchemas.ts) — see api-spec.md §2 "ResponseSchema (frontend-local)".
+export interface ResponseSchema {
+  status: number; // 200, 400, 500, ...
+  description?: string; // short label, e.g. "OK", "Validation error"
+  fields: SchemaField[];
+}
+
 export type ExportFormat = "typescript" | "json";
 export type RightTab = "activity" | "comments" | "export";

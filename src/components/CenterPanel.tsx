@@ -8,6 +8,8 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { FieldRow } from "@/components/FieldRow";
+import { ResponseSchemaPanel } from "@/components/ResponseSchemaPanel";
+import { ImportSpecDialog } from "@/components/ImportSpecDialog";
 import { MonoTag, StateBadge, relativeTime, useNow } from "@/components/common";
 import { changeColor, line, methodColor } from "@/components/theme";
 import type { HttpMethod, JsonValue, Resource } from "@/lib/types";
@@ -223,6 +225,7 @@ export function CenterPanel() {
             <EditableName resource={resource} key={resource.id} />
           </Box>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            {resource.kind === "endpoint" ? <ImportSpecDialog resourceId={resource.id} /> : null}
             <StateBadge state={resource.state} sx={{ fontSize: 12, py: 0.4 }} />
             <Tooltip title={`Delete this ${resource.kind}`}>
               <Box
@@ -290,6 +293,9 @@ export function CenterPanel() {
             ))}
           </Stack>
         </Stack>
+
+        {/* Bottom half — response schemas integrated into the endpoint view */}
+        {resource.kind === "endpoint" ? <ResponseSchemaPanel resourceId={resource.id} /> : null}
       </Box>
     </Box>
   );
