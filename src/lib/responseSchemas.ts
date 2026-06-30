@@ -6,8 +6,9 @@
 // The Import flow (specImport.ts) and the ResponseSchemaPanel both write here.
 
 import { create } from "zustand";
+import { inferField } from "@/lib/codegen";
 import type { ImportedField, ImportedOperation } from "@/lib/specImport";
-import type { DataType, ResponseSchema, SchemaField } from "@/lib/types";
+import type { DataType, JsonValue, ResponseSchema, SchemaField } from "@/lib/types";
 
 const STORAGE_KEY = "live-workspace:response-schemas";
 
@@ -74,6 +75,7 @@ interface ResponseSchemaState {
   addStatus: (resourceId: string, status: number, description?: string) => void;
   removeStatus: (resourceId: string, status: number) => void;
   addField: (resourceId: string, status: number) => void;
+  importJsonFields: (resourceId: string, status: number, obj: Record<string, JsonValue>) => void;
   updateField: (resourceId: string, status: number, fieldId: string, patch: Partial<SchemaField>) => void;
   removeField: (resourceId: string, status: number, fieldId: string) => void;
 }
@@ -119,6 +121,28 @@ export const useResponseSchemaStore = create<ResponseSchemaState>((set, get) => 
       return writeBack({
         ...st.byResource,
         [resourceId]: mapStatus(current, status, (s) => ({ ...s, fields: [...s.fields, blankField()] })),
+      });
+    }),
+
+  // Paste a JSON object → one field per top-level key, types inferred. Existing
+  // keys are skipped. Mirrors the endpoint-side Paste JSON (store.importJsonFields).
+  importJsonFields: (resourceId, status, obj) =>
+    set((st) => {
+      const current = st.byResource[resourceId] ?? [];
+      if (!current.some((s) => s.status === status)) return {};
+      return writeBack({
+        ...st.byResource,
+        [resourceId]: mapStatus(current, status, (s) => {
+          const existing = new Set(s.fields.map((f) => f.key));
+          const added: SchemaField[] = [];
+          for (const [key, raw] of Object.entries(obj)) {
+            if (existing.has(key)) continue;
+            existing.add(key);
+            const { type, value } = inferField(raw);
+            added.push({ id: newId(), key, type, required: false, state: "ready", change: "added", value });
+          }
+          return { ...s, fields: [...s.fields, ...added] };
+        }),
       });
     }),
 

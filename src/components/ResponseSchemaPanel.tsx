@@ -5,23 +5,103 @@ import {
   Box,
   Button,
   Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   InputBase,
   Menu,
   MenuItem,
   Select,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
+import DataObjectIcon from "@mui/icons-material/DataObject";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import { RESPONSE_FIELD_TYPES, useResponseSchemaStore } from "@/lib/responseSchemas";
 import { StateBadge } from "@/components/common";
 import { line } from "@/components/theme";
-import type { DataType, FieldState, ResponseSchema, SchemaField } from "@/lib/types";
+import type { DataType, FieldState, JsonValue, ResponseSchema, SchemaField } from "@/lib/types";
+
+const JSON_PLACEHOLDER = `{
+  "id": "uuid",
+  "email": "string",
+  "profile": {
+    "name": "string",
+    "address": { "city": "string" }
+  }
+}`;
+
+// Paste a JSON object → fields generated with inferred types for this response
+// status. Mirrors the endpoint-side Paste JSON in CenterPanel.
+function PasteJsonButton({ resourceId, status }: { resourceId: string; status: number }) {
+  const importJsonFields = useResponseSchemaStore((s) => s.importJsonFields);
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const close = () => {
+    setOpen(false);
+    setDraft("");
+    setError(null);
+  };
+
+  const apply = () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(draft);
+    } catch {
+      setError("Invalid JSON");
+      return;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setError('Paste a JSON object, e.g. { "id": "uuid" }');
+      return;
+    }
+    importJsonFields(resourceId, status, parsed as Record<string, JsonValue>);
+    close();
+  };
+
+  return (
+    <>
+      <Button size="small" variant="outlined" startIcon={<DataObjectIcon />} onClick={() => setOpen(true)} sx={{ mt: 1.25 }}>
+        Paste JSON
+      </Button>
+      <Dialog open={open} onClose={close} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 800 }}>Paste JSON to add fields</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            multiline
+            minRows={10}
+            fullWidth
+            placeholder={JSON_PLACEHOLDER}
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              setError(null);
+            }}
+            error={Boolean(error)}
+            helperText={error ?? "Each top-level key becomes a field; existing keys are skipped."}
+            sx={{ mt: 1, "& textarea": { fontFamily: "var(--font-mono,monospace)", fontSize: 13 } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={close}>Cancel</Button>
+          <Button variant="contained" onClick={apply} disabled={!draft.trim()}>
+            Add fields
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
 
 const STATE_CYCLE: FieldState[] = ["draft", "ready", "breaking"];
 
@@ -173,9 +253,12 @@ function SchemaTable({ resourceId, schema }: { resourceId: string; schema: Respo
           schema.fields.map((f) => <ResponseFieldRow key={f.id} resourceId={resourceId} status={schema.status} field={f} />)
         )}
       </Box>
-      <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => addField(resourceId, schema.status)} sx={{ mt: 1.25 }}>
-        Add field
-      </Button>
+      <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
+        <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={() => addField(resourceId, schema.status)} sx={{ mt: 1.25 }}>
+          Add field
+        </Button>
+        <PasteJsonButton resourceId={resourceId} status={schema.status} />
+      </Stack>
     </Box>
   );
 }

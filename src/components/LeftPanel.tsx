@@ -3,7 +3,6 @@
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import ApiIcon from "@mui/icons-material/Api";
 import StorageIcon from "@mui/icons-material/Storage";
-import SchemaIcon from "@mui/icons-material/AccountTree";
 import AddIcon from "@mui/icons-material/Add";
 import { useWorkspaceStore } from "@/lib/store";
 import { MonoTag, StateBadge } from "@/components/common";
@@ -13,7 +12,6 @@ import type { Resource, ResourceKind } from "@/lib/types";
 const GROUPS: { kind: ResourceKind; label: string; icon: React.ReactNode }[] = [
   { kind: "endpoint", label: "API Endpoints", icon: <ApiIcon sx={{ fontSize: 16 }} /> },
   { kind: "database", label: "Databases", icon: <StorageIcon sx={{ fontSize: 16 }} /> },
-  { kind: "model", label: "Schemas", icon: <SchemaIcon sx={{ fontSize: 16 }} /> },
 ];
 
 function StateDot({ state }: { state: Resource["state"] }) {
