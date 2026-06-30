@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, InputBase, Menu, MenuItem, Stack, TextField, Tooltip, Typography } from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
 import DataObjectIcon from "@mui/icons-material/DataObject";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
@@ -198,7 +197,6 @@ function EditableName({ resource }: { resource: Resource }) {
 export function CenterPanel() {
   const resource = useWorkspaceStore((s) => s.resources.find((r) => r.id === s.selectedId));
   const comments = useWorkspaceStore((s) => s.comments);
-  const addField = useWorkspaceStore((s) => s.addField);
   const deleteResource = useWorkspaceStore((s) => s.deleteResource);
   useNow(); // keep "updated Xs ago" fresh
 
@@ -280,9 +278,6 @@ export function CenterPanel() {
         </Box>
 
         <Stack direction="row" spacing={2} sx={{ mt: 2, flexWrap: "wrap" }}>
-          <Button variant="outlined" startIcon={<AddIcon />} onClick={() => addField(resource.id)}>
-            Add Field
-          </Button>
           <PasteJsonButton resourceId={resource.id} />
           <Stack direction="row" spacing={1.5} sx={{ ml: "auto", alignItems: "center" }}>
             {(["added", "modified", "removed"] as const).map((c) => (

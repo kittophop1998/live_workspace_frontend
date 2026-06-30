@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Button, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import ApiIcon from "@mui/icons-material/Api";
 import StorageIcon from "@mui/icons-material/Storage";
 import SchemaIcon from "@mui/icons-material/AccountTree";
@@ -127,12 +127,6 @@ export function LeftPanel() {
             </Box>
           );
         })}
-      </Box>
-
-      <Box sx={{ p: 1.5, borderTop: `2px solid ${line}` }}>
-        <Button fullWidth variant="contained" startIcon={<AddIcon />} onClick={() => addResource("model")}>
-          New Schema
-        </Button>
       </Box>
     </Box>
   );
