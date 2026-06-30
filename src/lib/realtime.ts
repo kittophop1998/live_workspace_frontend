@@ -83,7 +83,9 @@ export function connectRealtime(opts: RealtimeOptions): RealtimeConnection {
         handlers.onCommentDelete(rev, payload.comment_id as string);
         break;
       case "activity.created":
-        handlers.onActivity(nActivity(payload as never));
+        // Backend nests the event under `activity` (api-spec §4); tolerate a flat
+        // payload too so a malformed frame can't white-screen the app.
+        handlers.onActivity(nActivity((payload.activity ?? payload) as never));
         break;
       case "presence.update":
         handlers.onPresence(nPresence(payload as never));

@@ -84,7 +84,7 @@ export function relativeTime(iso: string): string {
 
 // Circular monogram for collaborator presence, ringed when online.
 export function Avatar({ name, color, online, size = 28 }: { name: string; color: string; online?: boolean; size?: number }) {
-  const initials = name
+  const initials = (name ?? "?")
     .split(" ")
     .map((p) => p[0])
     .join("")
