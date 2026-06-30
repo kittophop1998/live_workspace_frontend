@@ -4,6 +4,8 @@ import { create } from "zustand";
 import { apiErrorMessage, clearSession, setRoomCode, setToken } from "@/lib/api";
 import { workspaceApi, type RoomSession } from "@/services/workspace.service";
 import { inferField } from "@/lib/codegen";
+import { buildResponseSchemas, useResponseSchemaStore } from "@/lib/responseSchemas";
+import type { ImportedOperation } from "@/lib/specImport";
 import type {
   ActivityEvent,
   Collaborator,
@@ -82,6 +84,7 @@ interface StoreState {
   cycleFieldState: (resourceId: string, fieldId: string) => void;
   removeField: (resourceId: string, fieldId: string) => void;
   addResource: (kind: ResourceKind) => void;
+  importEndpoints: (operations: ImportedOperation[]) => Promise<void>;
   renameResource: (resourceId: string, name: string) => void;
   updateEndpoint: (resourceId: string, patch: { method?: HttpMethod; path?: string }) => void;
   deleteResource: (resourceId: string) => void;
@@ -365,6 +368,32 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       } catch (err) {
         fail(err);
       }
+    },
+
+    // Bulk-import an OpenAPI/Postman spec from the top bar: each chosen operation
+    // becomes a new endpoint Resource in the backend, its request body is seeded
+    // from the spec, and its per-status response schemas are stored client-side.
+    importEndpoints: async (operations) => {
+      let lastId: string | null = null;
+      for (const op of operations) {
+        try {
+          const { rev, resource } = await workspaceApi.createResource({
+            name: op.name,
+            kind: "endpoint",
+            method: op.method,
+            path: op.path,
+          });
+          get().upsertResource(rev, resource);
+          lastId = resource.id;
+          if (op.requestFields.length) await get().importTypedFields(resource.id, op.requestFields);
+          const responses = buildResponseSchemas(op);
+          if (responses.length) useResponseSchemaStore.getState().setForResource(resource.id, responses);
+        } catch (err) {
+          fail(err);
+          return;
+        }
+      }
+      if (lastId) set({ selectedId: lastId });
     },
 
     renameResource: async (resourceId, name) => {

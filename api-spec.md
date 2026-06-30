@@ -149,10 +149,12 @@ A unit in the explorer: an API endpoint, a database table, or a schema model.
 > by the server on every mutation.
 
 ### ResponseSchema (frontend-local)
-The per-status response shapes shown in the **bottom half** of the API Endpoint
-view (tabbed `200` / `400` / `500` …). The backend `Resource` model has **no slot
-for these yet**, so the frontend keeps them client-side, persisted in
-`localStorage` (`live-workspace:response-schemas`, keyed by `resource.id`) — see
+The per-status response shapes shown **below the request body** of the API Endpoint
+view as a **status tab strip** (`200` / `400` / `500` …) — each tab opens the same
+Visual / JSON Schema / Example JSON / Example TypeScript editor as the request body.
+The backend `Resource` model has **no slot for these yet**, so the frontend keeps
+them client-side, persisted in `localStorage`
+(`live-workspace:response-schemas`, keyed by `resource.id`) — see
 `src/lib/responseSchemas.ts`. They are populated manually or by the **spec import**
 flow (`src/lib/specImport.ts`, OpenAPI YAML/JSON or Postman collection).
 ```json
@@ -165,6 +167,15 @@ flow (`src/lib/specImport.ts`, OpenAPI YAML/JSON or Postman collection).
 > **When the backend adopts these:** add a `responses: ResponseSchema[]` array to
 > `Resource` (snake_case on the wire), normalize it in
 > `src/services/workspace.service.ts`, and the local store becomes a cache/fallback.
+
+### Bookmark (frontend-local)
+The explorer pins bookmarked resources in a **"Bookmarked" group at the top**.
+Bookmarks are a per-user preference with **no backend slot**, so they live entirely
+client-side as a set of `resource.id`s in `localStorage`
+(`live-workspace:bookmarks`) — see `src/lib/bookmarks.ts`.
+> **When the backend adopts these:** store per-collaborator (e.g.
+> `Collaborator.bookmarks: string[]` or a `GET/PUT /me/bookmarks` endpoint); the
+> local store then becomes a cache/fallback.
 
 ### Comment
 Inline discussion, optionally anchored to a single field.
@@ -416,10 +427,13 @@ Response `data`: `{ "rev", "comment": { "...Comment" } }`
 | Diff line-weight / colour | `SchemaField.change` |
 | Field comment count | `Comment[]` where `resource_id` + `field_id` match |
 | "updated 2m ago by X" | `Resource.updated_at`, `updated_by` |
+| Request body tabs (Visual / JSON Schema / Example JSON / Example TypeScript) | `Resource.fields` → client-side schema tree (`schemaConvert.ts`) — **no API** |
+| Response tabs (per HTTP status) | `ResponseSchema[]` (frontend-local, see §2) |
+| Explorer "Bookmarked" group (pinned top) | client-side bookmark set (frontend-local, see §2) |
 | Right · Activity tab | `ActivityEvent[]` (newest first) |
 | Right · Comments tab | `Comment[]` (filtered by selected resource / focused field) |
-| Right · Export tab | computed client-side from `Resource.fields` (`codegen.ts`) — **no API** |
 | Top bar presence avatars | `Collaborator[]` + live `Presence` (online if heartbeat within TTL) |
+| Top bar "Import API" | parses an OpenAPI/Postman spec and **`POST /resources`** one endpoint per chosen operation |
 
 The client treats each read/WS payload as the **single source of truth**, merges
 mutations by `rev` (last-writer-wins on conflict, with `409` rebase), and never

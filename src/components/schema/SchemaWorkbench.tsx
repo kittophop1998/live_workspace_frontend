@@ -5,22 +5,24 @@ import { Box, Button, Fab, Stack, TextField, Typography } from "@mui/material";
 import AccountTreeIcon from "@mui/icons-material/AccountTreeOutlined";
 import SchemaIcon from "@mui/icons-material/SchemaOutlined";
 import CodeIcon from "@mui/icons-material/CodeOutlined";
+import DataObjectIcon from "@mui/icons-material/DataObjectOutlined";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { useSchemaTreeStore } from "@/lib/schemaTree";
-import { jsonSchemaToNodes, nodesToExample, nodesToJsonSchema, seedFromFields } from "@/lib/schemaConvert";
+import { jsonSchemaToNodes, nodesToExample, nodesToJsonSchema, nodesToTypeScript, seedFromFields } from "@/lib/schemaConvert";
 import { SchemaTreeEditor } from "@/components/schema/SchemaTreeEditor";
 import { JsonView } from "@/components/schema/JsonView";
 import { AskAiPanel } from "@/components/schema/AskAiPanel";
 import { line } from "@/components/theme";
 import type { SchemaField } from "@/lib/types";
 
-type Mode = "visual" | "schema" | "example";
+type Mode = "visual" | "schema" | "example" | "typescript";
 
 const MODES: { id: Mode; label: string; icon: React.ReactNode }[] = [
   { id: "visual", label: "Visual Builder", icon: <AccountTreeIcon sx={{ fontSize: 16 }} /> },
   { id: "schema", label: "JSON Schema", icon: <SchemaIcon sx={{ fontSize: 16 }} /> },
   { id: "example", label: "Example JSON", icon: <CodeIcon sx={{ fontSize: 16 }} /> },
+  { id: "typescript", label: "Example TypeScript", icon: <DataObjectIcon sx={{ fontSize: 16 }} /> },
 ];
 
 function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
@@ -140,7 +142,41 @@ function ExampleMode({ scope }: { scope: string }) {
   );
 }
 
-export function SchemaWorkbench({ scope, seedFields }: { scope: string; seedFields: SchemaField[] }) {
+// Read-only TypeScript interface generated from the tree.
+function TypeScriptMode({ scope, typeName }: { scope: string; typeName: string }) {
+  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? []);
+  const text = useMemo(() => nodesToTypeScript(nodes, typeName), [nodes, typeName]);
+  return (
+    <Box>
+      <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center" }}>
+        <Typography sx={{ fontSize: 12, color: "#A1A1AA", flex: 1 }}>Generated from the schema · read-only</Typography>
+        <Button size="small" variant="outlined" onClick={() => navigator.clipboard?.writeText(text)}>Copy</Button>
+      </Stack>
+      <Box
+        component="pre"
+        sx={{
+          m: 0,
+          p: 2,
+          bgcolor: "#FBFBFC",
+          border: `2px solid ${line}`,
+          borderRadius: "12px",
+          fontFamily: "var(--font-mono, monospace)",
+          fontSize: 12.5,
+          lineHeight: 1.7,
+          color: "#18181B",
+          overflow: "auto",
+          maxHeight: 460,
+          whiteSpace: "pre",
+          tabSize: 2,
+        }}
+      >
+        <code>{text}</code>
+      </Box>
+    </Box>
+  );
+}
+
+export function SchemaWorkbench({ scope, seedFields, typeName = "Schema" }: { scope: string; seedFields: SchemaField[]; typeName?: string }) {
   const ensureSeed = useSchemaTreeStore((s) => s.ensureSeed);
   const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? []);
   const [mode, setMode] = useState<Mode>("visual");
@@ -160,6 +196,7 @@ export function SchemaWorkbench({ scope, seedFields }: { scope: string; seedFiel
       {mode === "visual" ? <SchemaTreeEditor scope={scope} /> : null}
       {mode === "schema" ? <JsonSchemaMode scope={scope} /> : null}
       {mode === "example" ? <ExampleMode scope={scope} /> : null}
+      {mode === "typescript" ? <TypeScriptMode scope={scope} typeName={typeName} /> : null}
 
       {/* Floating Ask AI */}
       <Fab

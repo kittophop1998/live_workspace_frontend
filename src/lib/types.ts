@@ -107,4 +107,4 @@ export interface ResponseSchema {
 }
 
 export type ExportFormat = "typescript" | "json";
-export type RightTab = "activity" | "comments" | "export";
+export type RightTab = "activity" | "comments";

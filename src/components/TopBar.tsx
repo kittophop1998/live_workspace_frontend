@@ -8,6 +8,7 @@ import CheckIcon from "@mui/icons-material/Check";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar } from "@/components/common";
+import { ImportApiDialog } from "@/components/ImportApiDialog";
 import { line } from "@/components/theme";
 
 export function TopBar() {
@@ -63,12 +64,16 @@ export function TopBar() {
         </Box>
       </Box>
 
+      <Box sx={{ ml: "auto" }}>
+        <ImportApiDialog />
+      </Box>
+
       {roomCode && (
         <Tooltip title={copied ? "Copied!" : "Copy room code to share"}>
           <Box
             onClick={copyCode}
             sx={{
-              ml: "auto",
+              ml: 1.5,
               display: "flex",
               alignItems: "center",
               gap: 0.75,
@@ -95,7 +100,7 @@ export function TopBar() {
         </Tooltip>
       )}
 
-      <Stack direction="row" spacing={0.75} sx={{ ml: roomCode ? 1.5 : "auto", alignItems: "center" }}>
+      <Stack direction="row" spacing={0.75} sx={{ ml: 1.5, alignItems: "center" }}>
         <Box
           sx={{
             display: "flex",

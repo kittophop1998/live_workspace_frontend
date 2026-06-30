@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Box, Button, Collapse, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Box, Button, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import { useResponseSchemaStore } from "@/lib/responseSchemas";
@@ -29,23 +28,18 @@ function statusColor(status: number): string {
   return "#52525B";
 }
 
-export function ResponseAccordions({ resourceId }: { resourceId: string }) {
+export function ResponseTabs({ resourceId, typeName }: { resourceId: string; typeName: string }) {
   const schemas = useResponseSchemaStore((s) => s.byResource[resourceId]);
   const addStatus = useResponseSchemaStore((s) => s.addStatus);
   const removeStatus = useResponseSchemaStore((s) => s.removeStatus);
 
   const sorted = useMemo(() => [...(schemas ?? [])].sort((a, b) => a.status - b.status), [schemas]);
-  const [open, setOpen] = useState<Set<number>>(() => new Set(sorted[0] ? [sorted[0].status] : []));
+  const [active, setActive] = useState<number | null>(null);
   const [menuEl, setMenuEl] = useState<HTMLElement | null>(null);
 
-  const toggle = (status: number) =>
-    setOpen((s) => {
-      const next = new Set(s);
-      if (next.has(status)) next.delete(status);
-      else next.add(status);
-      return next;
-    });
-
+  // Resolve the active tab during render — falls back to the first status when the
+  // user's pick is gone (removed) or unset, so no setState-in-effect is needed.
+  const current = (active !== null && sorted.find((s) => s.status === active)) || sorted[0] || null;
   const available = COMMON_STATUSES.filter((c) => !sorted.some((s) => s.status === c.status));
 
   return (
@@ -64,7 +58,7 @@ export function ResponseAccordions({ resourceId }: { resourceId: string }) {
                 key={c.status}
                 onClick={() => {
                   addStatus(resourceId, c.status, c.description);
-                  setOpen((s) => new Set(s).add(c.status));
+                  setActive(c.status);
                   setMenuEl(null);
                 }}
                 sx={{ gap: 1, fontFamily: "var(--font-mono,monospace)", fontWeight: 700 }}
@@ -82,41 +76,63 @@ export function ResponseAccordions({ resourceId }: { resourceId: string }) {
           No responses defined. Add a status above, or import an OpenAPI / Postman spec.
         </Box>
       ) : (
-        <Stack spacing={1.5}>
-          {sorted.map((s) => {
-            const isOpen = open.has(s.status);
-            const c = statusColor(s.status);
-            return (
-              <Box key={s.status} sx={{ border: `2px solid ${line}`, borderRadius: "12px", bgcolor: "#fff", boxShadow: "3px 3px 0 #0A0A0A", overflow: "hidden" }}>
+        <Box sx={{ border: `2px solid ${line}`, borderRadius: "12px", bgcolor: "#fff", boxShadow: "3px 3px 0 #0A0A0A", overflow: "hidden" }}>
+          {/* Status tab strip */}
+          <Stack direction="row" sx={{ borderBottom: `2px solid ${line}`, bgcolor: "#FAFAFA", overflowX: "auto" }}>
+            {sorted.map((s) => {
+              const isActive = s.status === current?.status;
+              const c = statusColor(s.status);
+              return (
                 <Box
+                  key={s.status}
                   role="button"
-                  onClick={() => toggle(s.status)}
-                  sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 1.25, cursor: "pointer", userSelect: "none", borderBottom: isOpen ? `2px solid ${line}` : "none" }}
+                  onClick={() => setActive(s.status)}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 1.5,
+                    py: 1,
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    borderRight: `1.5px solid #E4E4E7`,
+                    borderBottom: isActive ? `3px solid ${c}` : "3px solid transparent",
+                    bgcolor: isActive ? "#fff" : "transparent",
+                    "&:hover": { bgcolor: isActive ? "#fff" : "#F0F0F2" },
+                  }}
                 >
-                  <ExpandMoreIcon sx={{ transition: "transform .15s ease", transform: isOpen ? "none" : "rotate(-90deg)" }} />
                   <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: c, border: `1px solid ${line}` }} />
-                  <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 800, fontSize: 14, color: c }}>{s.status}</Typography>
-                  {s.description ? <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#52525B" }}>{s.description}</Typography> : null}
-                  <Box sx={{ flex: 1 }} />
+                  <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 800, fontSize: 13.5, color: c }}>
+                    {s.status}
+                  </Typography>
+                  {s.description ? (
+                    <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#71717A" }}>{s.description}</Typography>
+                  ) : null}
                   <Tooltip title="Remove this response">
                     <CloseIcon
                       onClick={(e) => {
                         e.stopPropagation();
                         removeStatus(resourceId, s.status);
                       }}
-                      sx={{ fontSize: 16, color: "#A1A1AA", "&:hover": { color: "#DC2626" } }}
+                      sx={{ fontSize: 15, ml: 0.25, color: "#A1A1AA", "&:hover": { color: "#DC2626" } }}
                     />
                   </Tooltip>
                 </Box>
-                <Collapse in={isOpen} unmountOnExit>
-                  <Box sx={{ p: 2, bgcolor: "#F9F9FA" }}>
-                    <SchemaWorkbench scope={`${resourceId}::res::${s.status}`} seedFields={s.fields} />
-                  </Box>
-                </Collapse>
-              </Box>
-            );
-          })}
-        </Stack>
+              );
+            })}
+          </Stack>
+
+          {current ? (
+            <Box sx={{ p: 2, bgcolor: "#F9F9FA" }}>
+              <SchemaWorkbench
+                key={`${resourceId}::res::${current.status}`}
+                scope={`${resourceId}::res::${current.status}`}
+                seedFields={current.fields}
+                typeName={`${typeName}Response${current.status}`}
+              />
+            </Box>
+          ) : null}
+        </Box>
       )}
     </Box>
   );

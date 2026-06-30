@@ -4,7 +4,10 @@ import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import ApiIcon from "@mui/icons-material/Api";
 import StorageIcon from "@mui/icons-material/Storage";
 import AddIcon from "@mui/icons-material/Add";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorderOutlined";
 import { useWorkspaceStore } from "@/lib/store";
+import { useBookmarkStore } from "@/lib/bookmarks";
 import { MonoTag, StateBadge } from "@/components/common";
 import { line, methodColor, stateColor } from "@/components/theme";
 import type { Resource, ResourceKind } from "@/lib/types";
@@ -29,6 +32,35 @@ function StateDot({ state }: { state: Resource["state"] }) {
   );
 }
 
+function BookmarkStar({ resourceId }: { resourceId: string }) {
+  const bookmarked = useBookmarkStore((s) => Boolean(s.ids[resourceId]));
+  const toggle = useBookmarkStore((s) => s.toggle);
+  return (
+    <Tooltip title={bookmarked ? "Remove bookmark" : "Bookmark this endpoint"}>
+      <Box
+        role="button"
+        aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggle(resourceId);
+        }}
+        className="bookmark-star"
+        sx={{
+          display: "flex",
+          flexShrink: 0,
+          p: 0.25,
+          borderRadius: "6px",
+          color: bookmarked ? "#F59E0B" : "#A1A1AA",
+          opacity: bookmarked ? 1 : 0,
+          "&:hover": { color: "#F59E0B", bgcolor: "#FEF3C7" },
+        }}
+      >
+        {bookmarked ? <StarIcon sx={{ fontSize: 16 }} /> : <StarBorderIcon sx={{ fontSize: 16 }} />}
+      </Box>
+    </Tooltip>
+  );
+}
+
 function ResourceRow({ r }: { r: Resource }) {
   const selectedId = useWorkspaceStore((s) => s.selectedId);
   const select = useWorkspaceStore((s) => s.select);
@@ -50,7 +82,7 @@ function ResourceRow({ r }: { r: Resource }) {
         bgcolor: active ? "#fff" : "transparent",
         boxShadow: active ? "3px 3px 0 #0A0A0A" : "none",
         transition: "background .1s ease",
-        "&:hover": { bgcolor: active ? "#fff" : "#E9E9EC" },
+        "&:hover": { bgcolor: active ? "#fff" : "#E9E9EC", "& .bookmark-star": { opacity: 1 } },
       }}
     >
       <StateDot state={r.state} />
@@ -67,6 +99,7 @@ function ResourceRow({ r }: { r: Resource }) {
       {r.kind === "endpoint" && r.method ? (
         <MonoTag sx={{ color: methodColor[r.method], fontSize: 9.5, px: 0.5 }}>{r.method}</MonoTag>
       ) : null}
+      <BookmarkStar resourceId={r.id} />
     </Box>
   );
 }
@@ -74,12 +107,15 @@ function ResourceRow({ r }: { r: Resource }) {
 export function LeftPanel() {
   const resources = useWorkspaceStore((s) => s.resources);
   const addResource = useWorkspaceStore((s) => s.addResource);
+  const bookmarkIds = useBookmarkStore((s) => s.ids);
 
   // Quick legend of how many of each state exist across the workspace.
   const counts = resources.reduce(
     (acc, r) => ((acc[r.state] = (acc[r.state] ?? 0) + 1), acc),
     {} as Record<string, number>,
   );
+
+  const bookmarked = resources.filter((r) => bookmarkIds[r.id]);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `2px solid ${line}`, bgcolor: "#FAFAFA" }}>
@@ -93,6 +129,24 @@ export function LeftPanel() {
       </Box>
 
       <Box sx={{ flex: 1, overflowY: "auto", p: 1.5 }}>
+        {bookmarked.length > 0 ? (
+          <Box sx={{ mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", px: 1, mb: 0.75 }}>
+              <Stack direction="row" spacing={0.75} sx={{ color: "#B45309", alignItems: "center" }}>
+                <StarIcon sx={{ fontSize: 16 }} />
+                <Typography variant="h3" sx={{ fontSize: 11 }}>
+                  Bookmarked
+                </Typography>
+                <Typography variant="caption" sx={{ color: "#A1A1AA" }}>
+                  {bookmarked.length}
+                </Typography>
+              </Stack>
+            </Box>
+            {bookmarked.map((r) => (
+              <ResourceRow key={`bm-${r.id}`} r={r} />
+            ))}
+          </Box>
+        ) : null}
         {GROUPS.map(({ kind, label, icon }) => {
           const items = resources.filter((r) => r.kind === kind);
           return (

@@ -8,11 +8,14 @@ import ApiIcon from "@mui/icons-material/Api";
 import StorageIcon from "@mui/icons-material/Storage";
 import SchemaOutlinedIcon from "@mui/icons-material/SchemaOutlined";
 import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorderOutlined";
 import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
+import { useBookmarkStore } from "@/lib/bookmarks";
 import { ImportSpecDialog } from "@/components/ImportSpecDialog";
 import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
-import { ResponseAccordions } from "@/components/schema/ResponseAccordions";
+import { ResponseTabs } from "@/components/schema/ResponseTabs";
 import { MonoTag, StateBadge, relativeTime, useNow } from "@/components/common";
 import { line, methodColor } from "@/components/theme";
 import type { HttpMethod, Resource } from "@/lib/types";
@@ -97,6 +100,30 @@ function EndpointMeta({ resource }: { resource: Resource }) {
   );
 }
 
+function BookmarkToggle({ resourceId }: { resourceId: string }) {
+  const bookmarked = useBookmarkStore((s) => Boolean(s.ids[resourceId]));
+  const toggle = useBookmarkStore((s) => s.toggle);
+  return (
+    <Tooltip title={bookmarked ? "Remove bookmark" : "Bookmark this endpoint"}>
+      <Box
+        role="button"
+        aria-label={bookmarked ? "Remove bookmark" : "Bookmark"}
+        onClick={() => toggle(resourceId)}
+        sx={{
+          display: "flex",
+          cursor: "pointer",
+          p: 0.5,
+          borderRadius: "8px",
+          color: bookmarked ? "#F59E0B" : "#71717A",
+          "&:hover": { color: "#F59E0B", bgcolor: "#FEF3C7" },
+        }}
+      >
+        {bookmarked ? <StarIcon sx={{ fontSize: 20 }} /> : <StarBorderIcon sx={{ fontSize: 20 }} />}
+      </Box>
+    </Tooltip>
+  );
+}
+
 function EditableName({ resource }: { resource: Resource }) {
   const [draft, setDraft] = useState(resource.name);
   const [editing, setEditing] = useState(false);
@@ -168,6 +195,7 @@ export function CenterPanel() {
             </Box>
           </Stack>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+            {resource.kind === "endpoint" ? <BookmarkToggle resourceId={resource.id} /> : null}
             {resource.kind === "endpoint" ? <ImportSpecDialog resourceId={resource.id} /> : null}
             <StateBadge state={resource.state} sx={{ fontSize: 12, py: 0.4 }} />
             <Tooltip title={`Delete this ${resource.kind}`}>
@@ -211,10 +239,15 @@ export function CenterPanel() {
       <Box sx={{ flex: 1, overflowY: "auto", p: 3 }}>
         <Box sx={{ border: `2px solid ${line}`, borderRadius: "16px", boxShadow: "4px 4px 0 #0A0A0A", bgcolor: "#fff", p: 2.5 }}>
           <Typography variant="h2" sx={{ mb: 2 }}>{bodyLabel}</Typography>
-          <SchemaWorkbench key={`${resource.id}::req`} scope={`${resource.id}::req`} seedFields={resource.fields} />
+          <SchemaWorkbench
+            key={`${resource.id}::req`}
+            scope={`${resource.id}::req`}
+            seedFields={resource.fields}
+            typeName={isEndpoint ? `${resource.name}Request` : resource.name}
+          />
         </Box>
 
-        {isEndpoint ? <ResponseAccordions key={resource.id} resourceId={resource.id} /> : null}
+        {isEndpoint ? <ResponseTabs key={resource.id} resourceId={resource.id} typeName={resource.name} /> : null}
       </Box>
     </Box>
   );

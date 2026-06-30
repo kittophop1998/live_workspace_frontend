@@ -3,11 +3,9 @@
 import { Box, Tab, Tabs } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
-import CodeIcon from "@mui/icons-material/Code";
 import { useWorkspaceStore } from "@/lib/store";
 import { ActivityLog } from "@/components/ActivityLog";
 import { CommentThread } from "@/components/CommentThread";
-import { CodeExport } from "@/components/CodeExport";
 import { line } from "@/components/theme";
 import type { RightTab } from "@/lib/types";
 
@@ -33,10 +31,9 @@ export function RightPanel() {
       >
         <Tab value="activity" icon={<HistoryIcon sx={{ fontSize: 17 }} />} iconPosition="start" label="Activity" />
         <Tab value="comments" icon={<ForumOutlinedIcon sx={{ fontSize: 17 }} />} iconPosition="start" label={`Comments${commentCount ? ` (${commentCount})` : ""}`} />
-        <Tab value="export" icon={<CodeIcon sx={{ fontSize: 17 }} />} iconPosition="start" label="Export" />
       </Tabs>
       <Box sx={{ flex: 1, minHeight: 0 }}>
-        {tab === "activity" ? <ActivityLog /> : tab === "comments" ? <CommentThread /> : <CodeExport />}
+        {tab === "comments" ? <CommentThread /> : <ActivityLog />}
       </Box>
     </Box>
   );

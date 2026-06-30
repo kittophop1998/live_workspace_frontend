@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useWorkspaceSync } from "@/lib/useWorkspaceSync";
 import { useResponseSchemaStore } from "@/lib/responseSchemas";
 import { useSchemaTreeStore } from "@/lib/schemaTree";
+import { useBookmarkStore } from "@/lib/bookmarks";
 import { TopBar } from "@/components/TopBar";
 import { LeftPanel } from "@/components/LeftPanel";
 import { CenterPanel } from "@/components/CenterPanel";
@@ -19,10 +20,13 @@ export function WorkspaceLayout() {
   const hydrateResponseSchemas = useResponseSchemaStore((s) => s.hydrate);
   // Load locally-persisted Visual Builder schema trees once.
   const hydrateSchemaTrees = useSchemaTreeStore((s) => s.hydrate);
+  // Load locally-persisted bookmarks once.
+  const hydrateBookmarks = useBookmarkStore((s) => s.hydrate);
   useEffect(() => {
     hydrateResponseSchemas();
     hydrateSchemaTrees();
-  }, [hydrateResponseSchemas, hydrateSchemaTrees]);
+    hydrateBookmarks();
+  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks]);
 
   return (
     <Box sx={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "#F4F4F5" }}>

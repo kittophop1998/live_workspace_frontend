@@ -258,6 +258,63 @@ export function nodesToExample(nodes: SchemaNode[]): Record<string, JsonValue> {
   return obj;
 }
 
+// ---- tree → TypeScript interface ------------------------------------------
+
+// PascalCase identifier safe for an interface name.
+function pascalCase(name: string): string {
+  const pascal = name
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim()
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join("");
+  return /^[0-9]/.test(pascal) ? `_${pascal}` : pascal || "Schema";
+}
+
+// Quote a property key only when it isn't a plain identifier.
+const tsKey = (key: string): string => (/^[A-Za-z_$][\w$]*$/.test(key) ? key : JSON.stringify(key));
+
+function tsScalar(node: SchemaNode): string {
+  switch (node.type) {
+    case "integer":
+    case "number":
+      return "number";
+    case "boolean":
+      return "boolean";
+    case "enum":
+      return node.enumValues?.length ? node.enumValues.map((v) => JSON.stringify(v)).join(" | ") : "string";
+    case "null":
+      return "null";
+    default:
+      return "string"; // string | uuid | timestamp
+  }
+}
+
+function tsObject(children: SchemaNode[], indent: number): string {
+  if (!children.length) return "Record<string, unknown>";
+  const pad = "  ".repeat(indent + 1);
+  const close = "  ".repeat(indent);
+  const lines = children.map((c) => {
+    const optional = c.required ? "" : "?";
+    const doc = c.description ? `${pad}/** ${c.description} */\n` : "";
+    return `${doc}${pad}${tsKey(c.key)}${optional}: ${tsType(c, indent + 1)};`;
+  });
+  return `{\n${lines.join("\n")}\n${close}}`;
+}
+
+function tsType(node: SchemaNode, indent: number): string {
+  let base: string;
+  if (node.type === "object") base = tsObject(node.children ?? [], indent);
+  else if (node.type === "array") base = node.items ? `${tsType(node.items, indent)}[]` : "unknown[]";
+  else base = tsScalar(node);
+  if (node.nullable && node.type !== "null") base += " | null";
+  return base;
+}
+
+export function nodesToTypeScript(nodes: SchemaNode[], typeName: string): string {
+  return `export interface ${pascalCase(typeName)} ${tsObject(nodes, 0)}`;
+}
+
 // ---- tiny JSON tokenizer (read-only syntax highlight) ---------------------
 
 export type JsonTokenKind = "key" | "string" | "number" | "boolean" | "null" | "punct" | "plain";
