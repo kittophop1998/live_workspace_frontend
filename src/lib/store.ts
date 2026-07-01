@@ -413,6 +413,13 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
           });
           get().upsertResource(rev, resource);
           lastId = resource.id;
+          // The backend seeds a default `id` field on create; an imported endpoint
+          // must mirror the OpenAPI/Postman spec exactly, so strip seeded fields
+          // before adding the spec's request body.
+          for (const seeded of resource.fields) {
+            const { rev: prunedRev, resource: pruned } = await workspaceApi.deleteField(resource.id, seeded.id);
+            get().upsertResource(prunedRev, pruned);
+          }
           if (op.requestFields.length) await get().importTypedFields(resource.id, op.requestFields);
           const responses = buildResponseSchemas(op);
           if (responses.length) useResponseSchemaStore.getState().setForResource(resource.id, responses);
