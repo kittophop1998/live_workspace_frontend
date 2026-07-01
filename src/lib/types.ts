@@ -182,6 +182,7 @@ export interface StepResult {
   failures: string[];
   outputs: Record<string, JsonValue>;
   error?: string;
+  requestHeaders?: Record<string, string>;
   requestBody?: string;
   response?: string;
 }

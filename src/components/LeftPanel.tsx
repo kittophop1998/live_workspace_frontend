@@ -174,8 +174,6 @@ export function LeftPanel() {
     {} as Record<EndpointStatus, number>,
   );
 
-  const bookmarked = resources.filter((r) => bookmarkIds[r.id] && matchesStatus(r));
-
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `2px solid ${line}`, bgcolor: "#FAFAFA" }}>
       <Box sx={{ p: 2, borderBottom: `2px solid ${line}` }}>
@@ -199,28 +197,14 @@ export function LeftPanel() {
       </Box>
 
       <Box sx={{ flex: 1, overflowY: "auto", p: 1.5 }}>
-        {bookmarked.length > 0 ? (
-          <Box sx={{ mb: 2 }}>
-            <Box sx={{ display: "flex", alignItems: "center", px: 1, mb: 0.75 }}>
-              <Stack direction="row" spacing={0.75} sx={{ color: "#B45309", alignItems: "center" }}>
-                <StarIcon sx={{ fontSize: 16 }} />
-                <Typography variant="h3" sx={{ fontSize: 11 }}>
-                  Bookmarked
-                </Typography>
-                <Typography variant="caption" sx={{ color: "#A1A1AA" }}>
-                  {bookmarked.length}
-                </Typography>
-              </Stack>
-            </Box>
-            {bookmarked.map((r) => (
-              <ResourceRow key={`bm-${r.id}`} r={r} />
-            ))}
-          </Box>
-        ) : null}
         {GROUPS.map(({ kind, label, icon }) => {
           // A status filter is endpoint-only — collapse the other groups.
           if (statusFilter !== "all" && kind !== "endpoint") return null;
-          const items = resources.filter((r) => r.kind === kind && matchesStatus(r));
+          // Keep bookmarks inline (no separate section) but pinned to the top of
+          // the group. Array.sort is stable, so non-bookmarked order is preserved.
+          const items = resources
+            .filter((r) => r.kind === kind && matchesStatus(r))
+            .sort((a, b) => (bookmarkIds[b.id] ? 1 : 0) - (bookmarkIds[a.id] ? 1 : 0));
           return (
             <Box key={kind} sx={{ mb: 2 }}>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1, mb: 0.75 }}>

@@ -42,7 +42,8 @@ function StepResultRow({ result }: { result: StepResult }) {
   ) : (
     <CancelIcon sx={{ fontSize: 18, color: "#DC2626" }} />
   );
-  const hasDetail = Boolean(result.response || result.requestBody || Object.keys(result.outputs).length);
+  const headerEntries = Object.entries(result.requestHeaders ?? {});
+  const hasDetail = Boolean(result.response || result.requestBody || headerEntries.length || Object.keys(result.outputs).length);
 
   return (
     <Box sx={{ border: `2px solid ${line}`, borderRadius: "10px", bgcolor: "#fff", overflow: "hidden" }}>
@@ -96,6 +97,18 @@ function StepResultRow({ result }: { result: StepResult }) {
             <Box sx={{ mb: 1 }}>
               <Typography variant="caption" sx={{ fontWeight: 700, color: "#52525B" }}>Extracted outputs</Typography>
               <JsonView code={JSON.stringify(result.outputs, null, 2)} maxHeight={140} />
+            </Box>
+          ) : null}
+          {headerEntries.length ? (
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "#52525B" }}>Request headers</Typography>
+              <Box sx={{ mt: 0.5, border: `1.5px solid ${line}`, borderRadius: "8px", p: 1, bgcolor: "#FAFAFA" }}>
+                {headerEntries.map(([k, v]) => (
+                  <Typography key={k} sx={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11.5, wordBreak: "break-all" }}>
+                    <Box component="span" sx={{ fontWeight: 800 }}>{k}:</Box> {v}
+                  </Typography>
+                ))}
+              </Box>
             </Box>
           ) : null}
           {result.requestBody ? (

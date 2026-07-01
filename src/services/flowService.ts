@@ -54,6 +54,7 @@ interface WireStepResult {
   failures: string[] | null;
   outputs: Record<string, JsonValue> | null;
   error?: string;
+  request_headers?: Record<string, string> | null;
   request_body?: string;
   response?: string;
 }
@@ -111,6 +112,7 @@ const nStepResult = (s: WireStepResult): StepResult => ({
   failures: s.failures ?? [],
   outputs: s.outputs ?? {},
   error: s.error,
+  requestHeaders: s.request_headers ?? undefined,
   requestBody: s.request_body,
   response: s.response,
 });
