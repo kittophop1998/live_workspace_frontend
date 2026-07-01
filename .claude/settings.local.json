@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(mkdir -p app/citizens app/buildings app/events app/policies)",
-      "Bash(cat)"
+      "Bash(cat)",
+      "Read(//home/kittiphopso/Desktop/project/kingdom_manager/mcp/**)",
+      "Bash(npm install *)",
+      "Bash(npm run *)"
     ]
   }
 }
