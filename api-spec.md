@@ -228,6 +228,71 @@ plus the roster).
 }
 ```
 
+### API test request/result (not persisted)
+Backing shape for the in-endpoint **"Try it"** helper. The request is proxied
+**server-side** (`POST /http/test`) so the browser isn't blocked by CORS and
+latency is measured on the server. Nothing is persisted; the draft lives
+client-side in `localStorage` (`live-workspace:api-tests`, keyed by `resource.id`)
+— see `src/lib/apiTester.ts`.
+```json
+// request
+{ "method": "POST", "url": "http://localhost:8080/api/v1/users?limit=5",
+  "headers": { "Content-Type": "application/json" }, "body": "{\"name\":\"Ada\"}" }
+// result
+{ "status": 201, "duration_ms": 42, "headers": { "Content-Type": ["application/json"] },
+  "body": "{...}", "size": 128, "truncated": false, "error": "" }
+```
+On a transport failure (DNS/refused/timeout) the endpoint still returns `200` with
+`status: 0` and a non-empty `error` so the UI can render it inline.
+
+### FlowDefinition (E2E Flow Testing — persisted)
+A workflow parsed from an uploaded **Arazzo (OpenAPI Workflows) JSON/YAML** file.
+Stored in its **own Mongo collection** (`flows`), scoped by `workspace_id` — *not*
+embedded in the rev-guarded workspace document, so runs never conflict with schema
+edits. A step resolves its HTTP call from an explicit `method`+`path`, or from its
+`operation_id` matched (case-insensitive, by name) against the workspace's endpoint
+resources — the integration point that ties flows to the shared API spec.
+```json
+{
+  "id": "flw_1a2b", "workspace_id": "123456",
+  "name": "loginAndFetch", "description": "Log in then fetch the profile",
+  "inputs": [ { "name": "username", "in": "input", "value": "alice" } ],
+  "steps": [
+    {
+      "id": "fst_9f", "step_id": "login", "description": "…",
+      "operation_id": "loginUser", "method": "POST", "path": "/login", "order": 0,
+      "depends_on": [],                              // inferred from $steps.<id> refs or explicit
+      "parameters": [ { "name": "q", "in": "query", "value": "$inputs.username" } ],
+      "request_body": { "password": "$inputs.password" },
+      "outputs": [ { "name": "token", "from": "$response.body#/token" } ],
+      "success_criteria": [ { "condition": "$statusCode == 200", "context": "", "type": "" } ]
+    }
+  ],
+  "created_at": "2026-07-01T08:00:00Z", "created_by": "Ava Chen"
+}
+```
+
+### FlowRun (E2E Flow Testing — persisted)
+The result of executing a `FlowDefinition` for real against a `base_url`. Stored in
+the `flow_runs` collection. Steps run in dependency order; outputs chain into later
+steps; the first failing/erroring step stops the run and the rest are `skipped`.
+```json
+{
+  "id": "run_77", "flow_id": "flw_1a2b", "workspace_id": "123456",
+  "status": "passed",                     // passed | failed | errored
+  "base_url": "http://localhost:8080", "started_at": "…", "finished_at": "…",
+  "steps": [
+    { "step_id": "login", "method": "POST", "url": "http://localhost:8080/login",
+      "status": 200, "duration_ms": 42, "passed": true, "skipped": false,
+      "failures": [], "outputs": { "token": "abc" }, "request_body": "{…}", "response": "{…}" }
+  ]
+}
+```
+Supported runtime expressions: `$statusCode`, `$response.body`,
+`$response.body#/json/pointer`, `$response.header.Name`, `$inputs.name`,
+`$steps.<stepId>.outputs.<name>`. Success criteria support `==/!=/>/>=/</<=`
+comparisons and `type: "regex"`; no criteria ⇒ a 2xx status passes.
+
 ---
 
 ## 3. REST Endpoints
@@ -279,6 +344,25 @@ Both responses contain `access_token`, `room_code`, `collaborator`, and `session
 | method | path | purpose |
 |--------|------|---------|
 | GET | `/activity` | Activity feed, newest first (`?limit=50&resource_id=` optional) |
+
+### API testing (proxy)
+| method | path | purpose |
+|--------|------|---------|
+| POST | `/http/test` | Proxy one outbound request; returns status/time/headers/body (see model) |
+
+### E2E Flow Testing
+| method | path | purpose |
+|--------|------|---------|
+| POST | `/flows/parse` | Parse an uploaded Arazzo file (multipart `file` or raw body) → preview `{ flows: FlowDefinition[] }`, **not** persisted |
+| POST | `/flows` | Save a parsed `FlowDefinition` (scoped to the room) |
+| GET | `/flows` | List saved flows for the room |
+| GET | `/flows/{id}` | One flow definition |
+| POST | `/flows/{id}/run` | Run the flow for real: `{ "base_url": "...", "inputs": { } }` → `FlowRun` |
+| GET | `/flows/{id}/runs` | Run history (newest first, capped at 50) |
+| GET | `/flows/runs/{run_id}` | One `FlowRun` result |
+
+> Flows live in dedicated `flows` / `flow_runs` collections and do **not** bump the
+> workspace `rev` or emit WebSocket/activity events.
 
 ---
 

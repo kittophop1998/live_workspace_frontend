@@ -17,6 +17,8 @@ export function TopBar() {
   const me = useWorkspaceStore((s) => s.me);
   const roomCode = useWorkspaceStore((s) => s.roomCode);
   const signOut = useWorkspaceStore((s) => s.signOut);
+  const view = useWorkspaceStore((s) => s.view);
+  const setView = useWorkspaceStore((s) => s.setView);
   const [copied, setCopied] = useState(false);
 
   const copyCode = () => {
@@ -64,9 +66,29 @@ export function TopBar() {
         </Box>
       </Box>
 
-      <Box sx={{ ml: "auto" }}>
-        <ImportApiDialog />
-      </Box>
+      <Stack direction="row" spacing={0.5} sx={{ ml: 3, p: 0.4, borderRadius: "10px", border: `2px solid ${line}`, bgcolor: "#F4F4F5" }}>
+        {([
+          { key: "workspace", label: "Workspace" },
+          { key: "flows", label: "E2E Flow Testing" },
+        ] as const).map((tab) => (
+          <Box
+            key={tab.key}
+            role="button"
+            aria-pressed={view === tab.key}
+            onClick={() => setView(tab.key)}
+            sx={{
+              px: 1.5, py: 0.5, borderRadius: "7px", cursor: "pointer", fontSize: 13, fontWeight: 700,
+              color: view === tab.key ? "#fff" : "#52525B",
+              bgcolor: view === tab.key ? line : "transparent",
+              "&:hover": { bgcolor: view === tab.key ? line : "#E4E4E7" },
+            }}
+          >
+            {tab.label}
+          </Box>
+        ))}
+      </Stack>
+
+      <Box sx={{ ml: "auto" }}>{view === "workspace" ? <ImportApiDialog /> : null}</Box>
 
       {roomCode && (
         <Tooltip title={copied ? "Copied!" : "Copy room code to share"}>

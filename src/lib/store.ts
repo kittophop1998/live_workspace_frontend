@@ -21,6 +21,7 @@ import type {
   RightTab,
   SchemaField,
   WorkspaceSnapshot,
+  WorkspaceView,
 } from "@/lib/types";
 
 const FIELD_STATE_CYCLE: FieldState[] = ["draft", "ready", "breaking"];
@@ -34,6 +35,7 @@ interface StoreState {
   activity: ActivityEvent[];
 
   // UI / session
+  view: WorkspaceView;
   selectedId: string;
   activeFieldId: string | null;
   rightTab: RightTab;
@@ -67,6 +69,7 @@ interface StoreState {
   setApiError: (msg: string | null) => void;
 
   // UI actions
+  setView: (v: WorkspaceView) => void;
   select: (id: string) => void;
   focusComment: (fieldId: string | null) => void;
   setRightTab: (t: RightTab) => void;
@@ -109,6 +112,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
     comments: [],
     activity: [],
 
+    view: "workspace",
     selectedId: "",
     activeFieldId: null,
     rightTab: "activity",
@@ -233,6 +237,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       }),
     setApiError: (msg) => set({ apiError: msg }),
 
+    setView: (v) => set({ view: v }),
     select: (id) => set({ selectedId: id, activeFieldId: null }),
     focusComment: (fieldId) => set({ activeFieldId: fieldId, rightTab: "comments" }),
     setRightTab: (t) => set({ rightTab: t }),

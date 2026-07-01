@@ -108,3 +108,87 @@ export interface ResponseSchema {
 
 export type ExportFormat = "typescript" | "json";
 export type RightTab = "activity" | "comments";
+
+// Top-level app view — the workspace (schema collab) vs the E2E flow tester.
+export type WorkspaceView = "workspace" | "flows";
+
+// ---- E2E Flow Testing (api-spec.md §2 Flow*) ------------------------------
+// Parsed from an uploaded Arazzo (OpenAPI Workflows) document by the backend,
+// previewed, then saved + run. camelCase here; flowService normalizes the wire.
+
+export interface FlowVariable {
+  name: string;
+  in: string; // "input" | "query" | "path" | "header" | "body"
+  value?: JsonValue;
+}
+
+export interface FlowOutput {
+  name: string;
+  from: string; // runtime expression, e.g. "$response.body#/id"
+}
+
+export interface StepParameter {
+  name: string;
+  in: string; // "query" | "path" | "header"
+  value?: JsonValue;
+}
+
+export interface Criterion {
+  condition: string;
+  context?: string;
+  type?: string; // "" (simple) | "regex" | "jsonpath"
+}
+
+export interface FlowStep {
+  id?: string;
+  stepId: string;
+  description?: string;
+  operationId?: string;
+  method?: string;
+  path?: string;
+  order: number;
+  dependsOn: string[];
+  parameters: StepParameter[];
+  requestBody?: JsonValue;
+  outputs: FlowOutput[];
+  successCriteria: Criterion[];
+}
+
+export interface FlowDefinition {
+  id?: string;
+  workspaceId?: string;
+  name: string;
+  description: string;
+  inputs: FlowVariable[];
+  steps: FlowStep[];
+  createdAt?: string;
+  createdBy?: string;
+}
+
+export type FlowRunStatus = "passed" | "failed" | "errored";
+
+export interface StepResult {
+  stepId: string;
+  method: string;
+  url: string;
+  status: number;
+  durationMs: number;
+  passed: boolean;
+  skipped: boolean;
+  failures: string[];
+  outputs: Record<string, JsonValue>;
+  error?: string;
+  requestBody?: string;
+  response?: string;
+}
+
+export interface FlowRun {
+  id: string;
+  flowId: string;
+  workspaceId: string;
+  status: FlowRunStatus;
+  baseUrl: string;
+  startedAt: string;
+  finishedAt: string;
+  steps: StepResult[];
+}

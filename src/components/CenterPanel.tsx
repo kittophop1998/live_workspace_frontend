@@ -16,6 +16,7 @@ import { useBookmarkStore } from "@/lib/bookmarks";
 import { ImportSpecDialog } from "@/components/ImportSpecDialog";
 import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
 import { ResponseTabs } from "@/components/schema/ResponseTabs";
+import { RequestTester } from "@/components/tester/RequestTester";
 import { MonoTag, StateBadge, relativeTime, useNow } from "@/components/common";
 import { line, methodColor } from "@/components/theme";
 import type { HttpMethod, Resource } from "@/lib/types";
@@ -248,6 +249,8 @@ export function CenterPanel() {
         </Box>
 
         {isEndpoint ? <ResponseTabs key={resource.id} resourceId={resource.id} typeName={resource.name} /> : null}
+
+        {isEndpoint ? <RequestTester key={`${resource.id}::tester`} resource={resource} /> : null}
       </Box>
     </Box>
   );
