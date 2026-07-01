@@ -24,6 +24,7 @@ export interface RealtimeHandlers {
   onSnapshot: (snap: WorkspaceSnapshot) => void;
   onResourceUpsert: (rev: number, resource: Resource) => void;
   onResourceDelete: (rev: number, resourceId: string) => void;
+  onResourcesCleared: (rev: number, resourceIds: string[]) => void;
   onCommentUpsert: (rev: number, comment: Comment) => void;
   onCommentDelete: (rev: number, commentId: string) => void;
   onActivity: (event: ActivityEvent) => void;
@@ -75,6 +76,9 @@ export function connectRealtime(opts: RealtimeOptions): RealtimeConnection {
         break;
       case "resource.deleted":
         handlers.onResourceDelete(rev, payload.resource_id as string);
+        break;
+      case "resource.cleared":
+        handlers.onResourcesCleared(rev, (payload.resource_ids as string[]) ?? []);
         break;
       case "comment.created":
         handlers.onCommentUpsert(rev, nComment(payload.comment as never));

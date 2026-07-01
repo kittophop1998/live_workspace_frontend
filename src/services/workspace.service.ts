@@ -236,6 +236,14 @@ export const workspaceApi = {
     return { rev: data.rev, resource: nResource(data.resource) };
   },
 
+  // Wipe every resource in the room (clears the left explorer) — backs the
+  // "Import API" flow that recreates endpoints from scratch.
+  async deleteAllResources(): Promise<{ rev: number; resourceIds: string[] }> {
+    const res = await apiClient.delete("/resources");
+    const data = unwrap<{ rev: number; resource_ids: string[] }>(res.data);
+    return { rev: data.rev, resourceIds: data.resource_ids ?? [] };
+  },
+
   async deleteResource(id: string): Promise<{ rev: number; resourceId: string }> {
     const res = await apiClient.delete(`/resources/${id}`);
     const data = unwrap<{ rev: number; resource_id: string }>(res.data);

@@ -60,6 +60,7 @@ interface StoreState {
   signOut: () => void;
   upsertResource: (rev: number, resource: Resource, fromWs?: boolean) => void;
   removeResource: (rev: number, resourceId: string, fromWs?: boolean) => void;
+  removeResources: (rev: number, resourceIds: string[], fromWs?: boolean) => void;
   upsertComment: (rev: number, comment: Comment, fromWs?: boolean) => void;
   removeComment: (rev: number, commentId: string, fromWs?: boolean) => void;
   pushActivity: (event: ActivityEvent) => void;
@@ -87,6 +88,7 @@ interface StoreState {
   cycleFieldState: (resourceId: string, fieldId: string) => void;
   removeField: (resourceId: string, fieldId: string) => void;
   addResource: (kind: ResourceKind) => void;
+  clearResources: () => Promise<void>;
   importEndpoints: (operations: ImportedOperation[]) => Promise<void>;
   renameResource: (resourceId: string, name: string) => void;
   updateEndpoint: (resourceId: string, patch: { method?: HttpMethod; path?: string }) => void;
@@ -195,6 +197,16 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         const selectedId =
           s.selectedId === resourceId ? (resources[0]?.id ?? "") : s.selectedId;
         return { rev: Math.max(s.rev, rev), resources, selectedId };
+      }),
+
+    removeResources: (rev, resourceIds, fromWs = false) =>
+      set((s) => {
+        if (fromWs && rev <= s.rev) return {};
+        const removing = new Set(resourceIds);
+        const resources = s.resources.filter((r) => !removing.has(r.id));
+        const comments = s.comments.filter((c) => !removing.has(c.resourceId));
+        const selectedId = removing.has(s.selectedId) ? (resources[0]?.id ?? "") : s.selectedId;
+        return { rev: Math.max(s.rev, rev), resources, comments, selectedId, activeFieldId: null };
       }),
 
     upsertComment: (rev, comment, fromWs = false) =>
@@ -370,6 +382,17 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         const { rev, resource } = await workspaceApi.createResource({ name, kind, ...endpoint });
         get().upsertResource(rev, resource);
         set({ selectedId: resource.id });
+      } catch (err) {
+        fail(err);
+      }
+    },
+
+    // Delete every resource in the room (clears the left explorer). The response
+    // rev + ids drive the local prune; teammates get the same via `resource.cleared`.
+    clearResources: async () => {
+      try {
+        const { rev, resourceIds } = await workspaceApi.deleteAllResources();
+        get().removeResources(rev, resourceIds);
       } catch (err) {
         fail(err);
       }

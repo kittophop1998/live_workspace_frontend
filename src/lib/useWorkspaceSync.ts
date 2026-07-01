@@ -40,6 +40,7 @@ export function useWorkspaceSync(): void {
         onResourceUpsert: (rev, resource) =>
           useWorkspaceStore.getState().upsertResource(rev, resource, true),
         onResourceDelete: (rev, id) => useWorkspaceStore.getState().removeResource(rev, id, true),
+        onResourcesCleared: (rev, ids) => useWorkspaceStore.getState().removeResources(rev, ids, true),
         onCommentUpsert: (rev, comment) =>
           useWorkspaceStore.getState().upsertComment(rev, comment, true),
         onCommentDelete: (rev, id) => useWorkspaceStore.getState().removeComment(rev, id, true),

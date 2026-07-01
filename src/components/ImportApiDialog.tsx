@@ -32,6 +32,7 @@ function methodChip(method: string) {
 
 export function ImportApiDialog() {
   const importEndpoints = useWorkspaceStore((s) => s.importEndpoints);
+  const clearResources = useWorkspaceStore((s) => s.clearResources);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -95,7 +96,12 @@ export function ImportApiDialog() {
     if (!parsed) return;
     const ops = parsed.operations.filter((o) => picked.has(o.id));
     if (!ops.length) return;
+    if (!window.confirm("Import will remove ALL existing resources in this workspace first, then create the selected endpoints. Continue?")) {
+      return;
+    }
     setBusy(true);
+    // Wipe the current left explorer, then recreate endpoints from the spec.
+    await clearResources();
     await importEndpoints(ops);
     reset();
   };
@@ -181,6 +187,9 @@ export function ImportApiDialog() {
                   </Box>
                 ))}
               </Box>
+              <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#B45309", fontWeight: 700 }}>
+                ⚠ Importing removes all existing resources in this workspace first, then creates the selected endpoints.
+              </Typography>
             </Box>
           ) : null}
         </DialogContent>
