@@ -39,7 +39,7 @@ function persist(byResource: ByResource): void {
 }
 
 // Imported field → a real SchemaField (assign id; imported fields are "added").
-function toField(f: ImportedField, change: SchemaField["change"]): SchemaField {
+export function toField(f: ImportedField, change: SchemaField["change"]): SchemaField {
   return {
     id: newId(),
     key: f.key,

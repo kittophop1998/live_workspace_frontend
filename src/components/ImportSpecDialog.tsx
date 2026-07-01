@@ -14,7 +14,9 @@ import {
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFileOutlined";
 import { useWorkspaceStore } from "@/lib/store";
-import { buildResponseSchemas, useResponseSchemaStore } from "@/lib/responseSchemas";
+import { buildResponseSchemas, toField, useResponseSchemaStore } from "@/lib/responseSchemas";
+import { useSchemaTreeStore } from "@/lib/schemaTree";
+import { seedFromFields } from "@/lib/schemaConvert";
 import { parseSpec, type ImportedOperation, type ParsedSpec } from "@/lib/specImport";
 import { line, methodColor } from "@/components/theme";
 
@@ -40,6 +42,7 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
   const updateEndpoint = useWorkspaceStore((s) => s.updateEndpoint);
   const importTypedFields = useWorkspaceStore((s) => s.importTypedFields);
   const setResponseSchemas = useResponseSchemaStore((s) => s.setForResource);
+  const setTreeNodes = useSchemaTreeStore((s) => s.setNodes);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
@@ -87,8 +90,20 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
 
   const apply = (op: ImportedOperation) => {
     updateEndpoint(resourceId, { method: op.method, path: op.path });
+
+    // Request body — the Visual Builder + "Try it" read the schema TREE, so overwrite
+    // it directly (source of truth). `importTypedFields` keeps backend fields/codegen
+    // roughly in sync but only ever adds new keys, so it alone can't reflect the spec.
+    const requestFields = op.requestFields.map((f) => toField(f, "added"));
+    setTreeNodes(`${resourceId}::req`, seedFromFields(requestFields));
     if (op.requestFields.length) importTypedFields(resourceId, op.requestFields);
-    setResponseSchemas(resourceId, buildResponseSchemas(op));
+
+    // Responses — write the per-status store, and reset each status' tree so a
+    // re-import of an already-seeded status reflects the new spec too.
+    const schemas = buildResponseSchemas(op);
+    setResponseSchemas(resourceId, schemas);
+    for (const s of schemas) setTreeNodes(`${resourceId}::res::${s.status}`, seedFromFields(s.fields));
+
     reset();
   };
 

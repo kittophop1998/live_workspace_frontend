@@ -13,6 +13,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { useApiTesterStore, extractPathParams, type KeyValueRow, type RequestDraft } from "@/lib/apiTester";
 import { sendTest, type TestResult } from "@/services/testerService";
 import { seedFromFields, nodesToExample } from "@/lib/schemaConvert";
+import { useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
 import { ResponseViewer } from "@/components/tester/ResponseViewer";
 import { line, methodColor } from "@/components/theme";
 import type { HttpMethod, Resource } from "@/lib/types";
@@ -24,12 +25,15 @@ const row = (key: string, value = "", enabled = true): KeyValueRow => ({ key, va
 
 // Seed a draft from the API-spec resource: method/path from the spec, path-param
 // rows from the templated path, a default JSON content-type, and an example body
-// generated from the resource's request schema.
-function draftFromResource(resource: Resource): RequestDraft {
+// generated from the request schema the user actually built. That schema lives in
+// the `::req` tree (Visual Builder / Import write there); `resource.fields` is only
+// the original backend seed, so fall back to it only when the tree is empty.
+function draftFromResource(resource: Resource, reqNodes: SchemaNode[]): RequestDraft {
   const method = (resource.method ?? "GET") as HttpMethod;
   const path = resource.path ?? "/";
+  const nodes = reqNodes.length ? reqNodes : seedFromFields(resource.fields);
   const body = BODY_METHODS.has(method)
-    ? JSON.stringify(nodesToExample(seedFromFields(resource.fields)), null, 2)
+    ? JSON.stringify(nodesToExample(nodes), null, 2)
     : "";
   return {
     method,
@@ -123,11 +127,12 @@ export function RequestTester({ resource }: { resource: Resource }) {
   const setBaseUrl = useApiTesterStore((s) => s.setBaseUrl);
   const savedDraft = useApiTesterStore((s) => s.drafts[resource.id]);
   const saveDraft = useApiTesterStore((s) => s.saveDraft);
+  const reqNodes = useSchemaTreeStore((s) => s.trees[`${resource.id}::req`] ?? []);
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<RequestDraft>(() => {
     if (savedDraft) return { ...savedDraft, pathParams: reconcilePathParams(savedDraft.path, savedDraft.pathParams) };
-    return draftFromResource(resource);
+    return draftFromResource(resource, reqNodes);
   });
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -142,7 +147,7 @@ export function RequestTester({ resource }: { resource: Resource }) {
   };
 
   const reset = () => {
-    const fresh = draftFromResource(resource);
+    const fresh = draftFromResource(resource, reqNodes);
     setDraft(fresh);
     saveDraft(resource.id, fresh);
     setResult(null);
