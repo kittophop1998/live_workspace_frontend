@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Chip, InputBase, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, InputBase, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
@@ -13,21 +13,16 @@ import StarBorderIcon from "@mui/icons-material/StarBorderOutlined";
 import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { useBookmarkStore } from "@/lib/bookmarks";
-import { ENDPOINT_STATUSES, useEndpointStatusStore } from "@/lib/endpointStatus";
+import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, useEndpointStatusStore } from "@/lib/endpointStatus";
 import { ImportSpecDialog } from "@/components/ImportSpecDialog";
 import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
 import { ResponseTabs } from "@/components/schema/ResponseTabs";
 import { RequestTester } from "@/components/tester/RequestTester";
-import { MonoTag, StateBadge, relativeTime, useNow } from "@/components/common";
+import { MonoTag, relativeTime, useNow } from "@/components/common";
 import { line, methodColor } from "@/components/theme";
-import type { EndpointStatus, HttpMethod, Resource } from "@/lib/types";
+import type { HttpMethod, Resource } from "@/lib/types";
 
-const STATUS_META: Record<EndpointStatus, { label: string; bg: string; fg: string }> = {
-  draft: { label: "Draft", bg: "#F4F4F5", fg: "#52525B" },
-  inprogress: { label: "In Progress", bg: "#DBEAFE", fg: "#1D4ED8" },
-  testing: { label: "Testing", bg: "#FEF3C7", fg: "#B45309" },
-  done: { label: "Done", bg: "#DCFCE7", fg: "#15803D" },
-};
+const STATUS_META = ENDPOINT_STATUS_META;
 
 // Endpoint workflow status pill with a dropdown — frontend-local (endpointStatus.ts).
 function EndpointStatusPicker({ resourceId }: { resourceId: string }) {
@@ -239,7 +234,6 @@ export function CenterPanel() {
     );
   }
 
-  const liveCount = resource.fields.filter((f) => f.change !== "removed").length;
   const isEndpoint = resource.kind === "endpoint";
   const bodyLabel = isEndpoint ? "Request Body" : resource.kind === "database" ? "Columns" : "Schema";
 
@@ -263,7 +257,6 @@ export function CenterPanel() {
             {resource.kind === "endpoint" ? <BookmarkToggle resourceId={resource.id} /> : null}
             {resource.kind === "endpoint" ? <ImportSpecDialog resourceId={resource.id} /> : null}
             {resource.kind === "endpoint" ? <EndpointStatusPicker resourceId={resource.id} /> : null}
-            <StateBadge state={resource.state} sx={{ fontSize: 12, py: 0.4 }} />
             <Tooltip title={`Delete this ${resource.kind}`}>
               <Box
                 role="button"
@@ -294,7 +287,6 @@ export function CenterPanel() {
           ) : resource.path ? (
             <MonoTag>{resource.path}</MonoTag>
           ) : null}
-          <Chip size="small" variant="outlined" label={`${liveCount} fields`} sx={{ height: 22 }} />
           <Typography variant="caption" sx={{ color: "#71717A" }}>
             updated {relativeTime(resource.updatedAt)} by {resource.updatedBy}
           </Typography>

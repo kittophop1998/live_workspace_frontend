@@ -15,6 +15,15 @@ const STORAGE_KEY = "live-workspace:endpoint-status";
 export const ENDPOINT_STATUSES: EndpointStatus[] = ["draft", "inprogress", "testing", "done"];
 export const DEFAULT_ENDPOINT_STATUS: EndpointStatus = "draft";
 
+// Shared pill styling — used by the header picker (CenterPanel) and the Explorer
+// status filter (LeftPanel) so both stay in sync.
+export const ENDPOINT_STATUS_META: Record<EndpointStatus, { label: string; bg: string; fg: string }> = {
+  draft: { label: "Draft", bg: "#F4F4F5", fg: "#52525B" },
+  inprogress: { label: "In Progress", bg: "#DBEAFE", fg: "#1D4ED8" },
+  testing: { label: "Testing", bg: "#FEF3C7", fg: "#B45309" },
+  done: { label: "Done", bg: "#DCFCE7", fg: "#15803D" },
+};
+
 type ByResource = Record<string, EndpointStatus>;
 
 function load(): ByResource {

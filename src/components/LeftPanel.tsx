@@ -6,11 +6,15 @@ import StorageIcon from "@mui/icons-material/Storage";
 import AddIcon from "@mui/icons-material/Add";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorderOutlined";
+import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { useBookmarkStore } from "@/lib/bookmarks";
-import { MonoTag, StateBadge } from "@/components/common";
+import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, DEFAULT_ENDPOINT_STATUS, useEndpointStatusStore } from "@/lib/endpointStatus";
+import { MonoTag } from "@/components/common";
 import { line, methodColor, stateColor } from "@/components/theme";
-import type { Resource, ResourceKind } from "@/lib/types";
+import type { EndpointStatus, Resource, ResourceKind } from "@/lib/types";
+
+type StatusFilter = EndpointStatus | "all";
 
 const GROUPS: { kind: ResourceKind; label: string; icon: React.ReactNode }[] = [
   { kind: "endpoint", label: "API Endpoints", icon: <ApiIcon sx={{ fontSize: 16 }} /> },
@@ -61,6 +65,53 @@ function BookmarkStar({ resourceId }: { resourceId: string }) {
   );
 }
 
+// Clickable status pill that filters the explorer by endpoint workflow status.
+function StatusFilterChip({
+  status,
+  active,
+  count,
+  onClick,
+}: {
+  status?: EndpointStatus;
+  active: boolean;
+  count: number;
+  onClick: () => void;
+}) {
+  const meta = status ? ENDPOINT_STATUS_META[status] : { label: "All", bg: "#0A0A0A", fg: "#fff" };
+  return (
+    <Box
+      role="button"
+      aria-pressed={active}
+      onClick={onClick}
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.4,
+        cursor: "pointer",
+        px: 0.75,
+        py: 0.2,
+        borderRadius: "6px",
+        border: `2px solid ${line}`,
+        bgcolor: active ? meta.bg : "#fff",
+        color: active ? meta.fg : "#71717A",
+        fontSize: 9.5,
+        fontWeight: 800,
+        letterSpacing: "0.02em",
+        textTransform: "uppercase",
+        whiteSpace: "nowrap",
+        boxShadow: active ? "2px 2px 0 #0A0A0A" : "none",
+        opacity: count || active ? 1 : 0.4,
+        transition: "background .1s ease",
+      }}
+    >
+      {meta.label}
+      <Box component="span" sx={{ fontSize: 9, opacity: 0.7 }}>
+        {count}
+      </Box>
+    </Box>
+  );
+}
+
 function ResourceRow({ r }: { r: Resource }) {
   const selectedId = useWorkspaceStore((s) => s.selectedId);
   const select = useWorkspaceStore((s) => s.select);
@@ -108,23 +159,42 @@ export function LeftPanel() {
   const resources = useWorkspaceStore((s) => s.resources);
   const addResource = useWorkspaceStore((s) => s.addResource);
   const bookmarkIds = useBookmarkStore((s) => s.ids);
+  const statusByResource = useEndpointStatusStore((s) => s.byResource);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  // Quick legend of how many of each state exist across the workspace.
-  const counts = resources.reduce(
-    (acc, r) => ((acc[r.state] = (acc[r.state] ?? 0) + 1), acc),
-    {} as Record<string, number>,
+  const statusOf = (r: Resource): EndpointStatus => statusByResource[r.id] ?? DEFAULT_ENDPOINT_STATUS;
+
+  // Status filter only applies to endpoints (databases have no workflow status).
+  const matchesStatus = (r: Resource) =>
+    statusFilter === "all" || (r.kind === "endpoint" && statusOf(r) === statusFilter);
+
+  const endpoints = resources.filter((r) => r.kind === "endpoint");
+  const statusCounts = ENDPOINT_STATUSES.reduce(
+    (acc, s) => ((acc[s] = endpoints.filter((r) => statusOf(r) === s).length), acc),
+    {} as Record<EndpointStatus, number>,
   );
 
-  const bookmarked = resources.filter((r) => bookmarkIds[r.id]);
+  const bookmarked = resources.filter((r) => bookmarkIds[r.id] && matchesStatus(r));
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `2px solid ${line}`, bgcolor: "#FAFAFA" }}>
       <Box sx={{ p: 2, borderBottom: `2px solid ${line}` }}>
         <Typography variant="h2">Explorer</Typography>
-        <Stack direction="row" spacing={0.75} sx={{ mt: 1 }}>
-          <StateBadge state="ready" sx={{ opacity: counts.ready ? 1 : 0.4 }} />
-          <StateBadge state="draft" sx={{ opacity: counts.draft ? 1 : 0.4 }} />
-          <StateBadge state="breaking" sx={{ opacity: counts.breaking ? 1 : 0.4 }} />
+        <Stack direction="row" sx={{ mt: 1, flexWrap: "wrap", gap: 0.5 }}>
+          <StatusFilterChip
+            active={statusFilter === "all"}
+            count={endpoints.length}
+            onClick={() => setStatusFilter("all")}
+          />
+          {ENDPOINT_STATUSES.map((s) => (
+            <StatusFilterChip
+              key={s}
+              status={s}
+              active={statusFilter === s}
+              count={statusCounts[s]}
+              onClick={() => setStatusFilter((prev) => (prev === s ? "all" : s))}
+            />
+          ))}
         </Stack>
       </Box>
 
@@ -148,7 +218,9 @@ export function LeftPanel() {
           </Box>
         ) : null}
         {GROUPS.map(({ kind, label, icon }) => {
-          const items = resources.filter((r) => r.kind === kind);
+          // A status filter is endpoint-only — collapse the other groups.
+          if (statusFilter !== "all" && kind !== "endpoint") return null;
+          const items = resources.filter((r) => r.kind === kind && matchesStatus(r));
           return (
             <Box key={kind} sx={{ mb: 2 }}>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1, mb: 0.75 }}>
