@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import SaveIcon from "@mui/icons-material/SaveOutlined";
+import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import { flowService } from "@/services/flowService";
 import { FlowDefinitionView } from "@/components/flows/FlowDefinitionView";
 import { FlowDetail } from "@/components/flows/FlowDetail";
@@ -58,6 +59,22 @@ export function FlowTestingPage() {
     }
   };
 
+  const deleteFlow = async (flow: FlowDefinition) => {
+    if (!flow.id) return;
+    if (!window.confirm(`Delete workflow "${flow.name}"? This cannot be undone.`)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await flowService.remove(flow.id);
+      if (selectedId === flow.id) setSelectedId(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const selected = flows.find((f) => f.id === selectedId) ?? null;
 
   return (
@@ -92,10 +109,29 @@ export function FlowTestingPage() {
                   sx={{
                     p: 1, borderRadius: "8px", cursor: "pointer", border: `2px solid ${flow.id === selectedId ? line : "transparent"}`,
                     bgcolor: flow.id === selectedId ? wash : "transparent", "&:hover": { bgcolor: wash },
+                    display: "flex", alignItems: "center", gap: 0.5,
+                    "&:hover .flow-delete": { opacity: 1 },
                   }}
                 >
-                  <Typography sx={{ fontWeight: 700, fontSize: 14 }}>{flow.name}</Typography>
-                  <Typography variant="caption" sx={{ color: "#71717A" }}>{flow.steps.length} steps</Typography>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{flow.name}</Typography>
+                    <Typography variant="caption" sx={{ color: "#71717A" }}>{flow.steps.length} steps</Typography>
+                  </Box>
+                  <Tooltip title="Delete workflow">
+                    <Box
+                      className="flow-delete"
+                      role="button"
+                      aria-label="Delete workflow"
+                      onClick={(e) => { e.stopPropagation(); deleteFlow(flow); }}
+                      sx={{
+                        display: "flex", flexShrink: 0, cursor: "pointer", p: 0.5, borderRadius: "6px",
+                        color: "#A1A1AA", opacity: { xs: 1, md: 0 }, transition: "opacity 120ms",
+                        "&:hover": { color: "#DC2626", bgcolor: "#FEE2E2" },
+                      }}
+                    >
+                      <DeleteIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                  </Tooltip>
                 </Box>
               ))}
             </Stack>

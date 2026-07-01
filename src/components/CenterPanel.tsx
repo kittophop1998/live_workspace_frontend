@@ -13,13 +13,77 @@ import StarBorderIcon from "@mui/icons-material/StarBorderOutlined";
 import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { useBookmarkStore } from "@/lib/bookmarks";
+import { ENDPOINT_STATUSES, useEndpointStatusStore } from "@/lib/endpointStatus";
 import { ImportSpecDialog } from "@/components/ImportSpecDialog";
 import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
 import { ResponseTabs } from "@/components/schema/ResponseTabs";
 import { RequestTester } from "@/components/tester/RequestTester";
 import { MonoTag, StateBadge, relativeTime, useNow } from "@/components/common";
 import { line, methodColor } from "@/components/theme";
-import type { HttpMethod, Resource } from "@/lib/types";
+import type { EndpointStatus, HttpMethod, Resource } from "@/lib/types";
+
+const STATUS_META: Record<EndpointStatus, { label: string; bg: string; fg: string }> = {
+  draft: { label: "Draft", bg: "#F4F4F5", fg: "#52525B" },
+  inprogress: { label: "In Progress", bg: "#DBEAFE", fg: "#1D4ED8" },
+  testing: { label: "Testing", bg: "#FEF3C7", fg: "#B45309" },
+  done: { label: "Done", bg: "#DCFCE7", fg: "#15803D" },
+};
+
+// Endpoint workflow status pill with a dropdown — frontend-local (endpointStatus.ts).
+function EndpointStatusPicker({ resourceId }: { resourceId: string }) {
+  const status = useEndpointStatusStore((s) => s.byResource[resourceId] ?? "draft");
+  const setStatus = useEndpointStatusStore((s) => s.setStatus);
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const meta = STATUS_META[status];
+
+  return (
+    <>
+      <Tooltip title="Change endpoint status">
+        <Box
+          role="button"
+          aria-label="Change endpoint status"
+          onClick={(e) => setAnchorEl(e.currentTarget)}
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.1,
+            cursor: "pointer",
+            px: 0.9,
+            py: 0.15,
+            borderRadius: "6px",
+            border: "2px solid #0A0A0A",
+            bgcolor: meta.bg,
+            color: meta.fg,
+            fontSize: 10.5,
+            fontWeight: 800,
+            letterSpacing: "0.02em",
+            textTransform: "uppercase",
+            lineHeight: 1.5,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {meta.label}
+          <ArrowDropDownIcon sx={{ fontSize: 16, mr: -0.5 }} />
+        </Box>
+      </Tooltip>
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+        {ENDPOINT_STATUSES.map((s) => (
+          <MenuItem
+            key={s}
+            selected={s === status}
+            onClick={() => {
+              setStatus(resourceId, s);
+              setAnchorEl(null);
+            }}
+            sx={{ fontSize: 13, fontWeight: 700, color: STATUS_META[s].fg }}
+          >
+            {STATUS_META[s].label}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  );
+}
 
 const KIND_LABEL: Record<Resource["kind"], string> = {
   endpoint: "API Endpoint",
@@ -198,6 +262,7 @@ export function CenterPanel() {
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
             {resource.kind === "endpoint" ? <BookmarkToggle resourceId={resource.id} /> : null}
             {resource.kind === "endpoint" ? <ImportSpecDialog resourceId={resource.id} /> : null}
+            {resource.kind === "endpoint" ? <EndpointStatusPicker resourceId={resource.id} /> : null}
             <StateBadge state={resource.state} sx={{ fontSize: 12, py: 0.4 }} />
             <Tooltip title={`Delete this ${resource.kind}`}>
               <Box

@@ -3,6 +3,10 @@
 
 export type FieldState = "draft" | "ready" | "breaking";
 
+// Per-endpoint workflow/progress status (frontend-local, api-spec.md §2). Distinct
+// from FieldState — this tracks how far an endpoint is in the build pipeline.
+export type EndpointStatus = "draft" | "inprogress" | "testing" | "done";
+
 // Diff status drives the border / line-weight treatment in the blueprint.
 export type FieldChange = "added" | "removed" | "modified" | "stable";
 

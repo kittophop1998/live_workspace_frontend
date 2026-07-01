@@ -241,6 +241,8 @@ function sampleScalar(node: SchemaNode): JsonValue {
 }
 
 export function nodeToExample(node: SchemaNode): JsonValue {
+  // An explicit example wins for any type, including object/array.
+  if (node.example !== undefined) return node.example;
   if (node.type === "object") {
     const obj: Record<string, JsonValue> = {};
     for (const c of node.children ?? []) obj[c.key] = nodeToExample(c);

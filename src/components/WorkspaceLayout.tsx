@@ -7,6 +7,7 @@ import { useWorkspaceStore } from "@/lib/store";
 import { useResponseSchemaStore } from "@/lib/responseSchemas";
 import { useSchemaTreeStore } from "@/lib/schemaTree";
 import { useBookmarkStore } from "@/lib/bookmarks";
+import { useEndpointStatusStore } from "@/lib/endpointStatus";
 import { useApiTesterStore } from "@/lib/apiTester";
 import { TopBar } from "@/components/TopBar";
 import { LeftPanel } from "@/components/LeftPanel";
@@ -26,14 +27,17 @@ export function WorkspaceLayout() {
   const hydrateSchemaTrees = useSchemaTreeStore((s) => s.hydrate);
   // Load locally-persisted bookmarks once.
   const hydrateBookmarks = useBookmarkStore((s) => s.hydrate);
+  // Load locally-persisted per-endpoint workflow status once.
+  const hydrateEndpointStatus = useEndpointStatusStore((s) => s.hydrate);
   // Load locally-persisted API tester drafts + base URL once.
   const hydrateApiTester = useApiTesterStore((s) => s.hydrate);
   useEffect(() => {
     hydrateResponseSchemas();
     hydrateSchemaTrees();
     hydrateBookmarks();
+    hydrateEndpointStatus();
     hydrateApiTester();
-  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateApiTester]);
+  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateEndpointStatus, hydrateApiTester]);
 
   return (
     <Box sx={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "#F4F4F5" }}>

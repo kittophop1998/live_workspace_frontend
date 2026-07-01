@@ -172,6 +172,10 @@ export const flowService = {
     return nFlow(unwrap<WireFlow>(res.data));
   },
 
+  async remove(id: string): Promise<void> {
+    await apiClient.delete(`/flows/${id}`);
+  },
+
   async run(id: string, baseUrl: string, inputs: Record<string, JsonValue>): Promise<FlowRun> {
     const res = await apiClient.post(`/flows/${id}/run`, { base_url: baseUrl, inputs });
     return nRun(unwrap<WireRun>(res.data));
