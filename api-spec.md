@@ -277,6 +277,26 @@ client-side in `localStorage` (`live-workspace:api-tests`, keyed by `resource.id
 On a transport failure (DNS/refused/timeout) the endpoint still returns `200` with
 `status: 0` and a non-empty `error` so the UI can render it inline.
 
+**Server behavior (backend contract):**
+- The server issues the outbound request itself (server-to-server) — this is what
+  bypasses the browser's CORS/mixed-content restrictions. Nothing about the caller's
+  origin matters.
+- `method` / `url` / `headers` / `body` are forwarded as-is. `url` must be absolute
+  with an `http`/`https` scheme; anything else → `200` + `status: 0` + `error`.
+- **Redirects are NOT auto-followed** — a 3xx is surfaced as-is (more useful when
+  validating API behavior). Request **timeout is 20s**; on timeout the transport
+  error → `200` + `status: 0` + `error`.
+- Response `body` is a UTF-8 string capped at **2 MiB**; `truncated: true` when the
+  source was larger. `size` is the returned (capped) byte length.
+- `duration_ms` is measured on the server around the outbound call.
+- `headers` is the response headers as `{ name: [values...] }` (multi-value safe).
+- Any transport/network error (DNS/refused/timeout) is caught and returned in the
+  envelope with HTTP `200` + `status: 0` + non-empty `error` — never a 5xx for a
+  failed *target*.
+- **SSRF guard** (`Executor.AllowPrivate`): when false (prod) requests to
+  loopback/link-local/private hosts are rejected; dev defaults to true so it can
+  hit `localhost` APIs. See `backend/internal/httpexec/executor.go`.
+
 ### FlowDefinition (E2E Flow Testing — persisted)
 A workflow parsed from an uploaded **Arazzo (OpenAPI Workflows) JSON/YAML** file.
 Stored in its **own Mongo collection** (`flows`), scoped by `workspace_id` — *not*
@@ -566,6 +586,23 @@ Response `data`: `{ "rev", "comment": { "...Comment" } }`
 { "success": true, "message": "OK",
   "data": { "items": [ "...ActivityEvent" ],
             "page_info": { "page": 1, "limit": 50, "total": 128 } } }
+```
+
+### POST `/http/test`
+```json
+// request body
+{ "method": "GET", "url": "https://api.example.com/users?limit=5",
+  "headers": { "Authorization": "Bearer xyz" }, "body": "" }
+// success (target answered)
+{ "success": true, "message": "OK",
+  "data": { "status": 200, "duration_ms": 118,
+            "headers": { "Content-Type": ["application/json"] },
+            "body": "[{...}]", "size": 842, "truncated": false, "error": "" } }
+// target unreachable — still HTTP 200 (handler reports duration_ms: 0 on error)
+{ "success": true, "message": "OK",
+  "data": { "status": 0, "duration_ms": 0, "headers": {},
+            "body": "", "size": 0, "truncated": false,
+            "error": "context deadline exceeded" } }
 ```
 
 ---
