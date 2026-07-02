@@ -112,14 +112,17 @@ function StatusFilterChip({
   );
 }
 
-function ResourceRow({ r }: { r: Resource }) {
+function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }) {
   const selectedId = useWorkspaceStore((s) => s.selectedId);
   const select = useWorkspaceStore((s) => s.select);
   const active = r.id === selectedId;
   return (
     <Box
       role="button"
-      onClick={() => select(r.id)}
+      onClick={() => {
+        select(r.id);
+        onNavigate?.();
+      }}
       sx={{
         display: "flex",
         alignItems: "center",
@@ -155,7 +158,7 @@ function ResourceRow({ r }: { r: Resource }) {
   );
 }
 
-export function LeftPanel() {
+export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
   const resources = useWorkspaceStore((s) => s.resources);
   const addResource = useWorkspaceStore((s) => s.addResource);
   const bookmarkIds = useBookmarkStore((s) => s.ids);
@@ -243,7 +246,7 @@ export function LeftPanel() {
               {items.length === 0 ? (
                 <Typography sx={{ px: 1, fontSize: 12, color: "#A1A1AA", fontStyle: "italic" }}>None yet</Typography>
               ) : (
-                items.map((r) => <ResourceRow key={r.id} r={r} />)
+                items.map((r) => <ResourceRow key={r.id} r={r} onNavigate={onNavigate} />)
               )}
             </Box>
           );

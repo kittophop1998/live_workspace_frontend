@@ -108,8 +108,14 @@ export function ImportApiDialog() {
 
   return (
     <>
-      <Button variant="outlined" size="small" startIcon={<UploadFileIcon sx={{ fontSize: 16 }} />} onClick={() => setOpen(true)}>
-        Import API
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<UploadFileIcon sx={{ fontSize: 16 }} />}
+        onClick={() => setOpen(true)}
+        sx={{ minWidth: { xs: 0, sm: 64 }, px: { xs: 1, sm: 1.5 }, "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 } } }}
+      >
+        <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>Import API</Box>
       </Button>
 
       <Dialog open={open} onClose={busy ? undefined : reset} fullWidth maxWidth="sm">

@@ -27,7 +27,7 @@ const MODES: { id: Mode; label: string; icon: React.ReactNode }[] = [
 
 function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   return (
-    <Box sx={{ display: "inline-flex", p: 0.4, gap: 0.4, bgcolor: "#F4F4F5", border: `2px solid ${line}`, borderRadius: "10px" }}>
+    <Box sx={{ display: "flex", flexWrap: { xs: "wrap", sm: "nowrap" }, p: 0.4, gap: 0.4, bgcolor: "#F4F4F5", border: `2px solid ${line}`, borderRadius: "10px", maxWidth: "100%" }}>
       {MODES.map((m) => {
         const active = m.id === mode;
         return (
@@ -38,6 +38,7 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
             sx={{
               display: "inline-flex",
               alignItems: "center",
+              justifyContent: "center",
               gap: 0.6,
               px: 1.25,
               py: 0.6,
@@ -45,6 +46,7 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
               cursor: "pointer",
               fontSize: 12.5,
               fontWeight: 700,
+              whiteSpace: "nowrap",
               color: active ? "#0A0A0A" : "#71717A",
               bgcolor: active ? "#fff" : "transparent",
               boxShadow: active ? "1px 1px 0 #0A0A0A" : "none",

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Box, Button, Chip, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Button, Chip, Drawer, Stack, Tooltip, Typography } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import SaveIcon from "@mui/icons-material/SaveOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import MenuIcon from "@mui/icons-material/Menu";
 import { flowService } from "@/services/flowService";
 import { FlowDefinitionView } from "@/components/flows/FlowDefinitionView";
 import { FlowDetail } from "@/components/flows/FlowDetail";
@@ -18,6 +19,7 @@ export function FlowTestingPage() {
   const [preview, setPreview] = useState<FlowDefinition[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [navOpen, setNavOpen] = useState(false); // mobile-only flows drawer
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => flowService.list().then(setFlows).catch((e) => setError(String(e?.message ?? e)));
@@ -77,70 +79,98 @@ export function FlowTestingPage() {
 
   const selected = flows.find((f) => f.id === selectedId) ?? null;
 
+  // Sidebar content (upload + saved workflow list) — shared between the desktop
+  // column and the mobile drawer. onNavigate closes the drawer after a pick.
+  const sidebar = (onNavigate?: () => void) => (
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, bgcolor: "#fff" }}>
+      <Box sx={{ p: 2, borderBottom: `2px solid ${line}` }}>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".json,.yaml,.yml,application/json,application/x-yaml,text/yaml"
+          style={{ display: "none" }}
+          onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+        />
+        <Button fullWidth variant="contained" startIcon={<UploadFileIcon />} onClick={() => { fileRef.current?.click(); onNavigate?.(); }} disabled={busy}>
+          Upload Arazzo file
+        </Button>
+        <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#71717A" }}>
+          OpenAPI Workflows (Arazzo) JSON or YAML.
+        </Typography>
+      </Box>
+      <Box sx={{ flex: 1, overflowY: "auto", p: 1 }}>
+        <Typography variant="h3" sx={{ px: 1, py: 1 }}>Saved workflows</Typography>
+        {flows.length === 0 ? (
+          <Typography variant="body2" sx={{ px: 1, color: "#A1A1AA" }}>None yet — upload a workflow to begin.</Typography>
+        ) : (
+          <Stack spacing={0.5}>
+            {flows.map((flow) => (
+              <Box
+                key={flow.id}
+                onClick={() => { setSelectedId(flow.id ?? null); setPreview(null); onNavigate?.(); }}
+                sx={{
+                  p: 1, borderRadius: "8px", cursor: "pointer", border: `2px solid ${flow.id === selectedId ? line : "transparent"}`,
+                  bgcolor: flow.id === selectedId ? wash : "transparent", "&:hover": { bgcolor: wash },
+                  display: "flex", alignItems: "center", gap: 0.5,
+                  "&:hover .flow-delete": { opacity: 1 },
+                }}
+              >
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{flow.name}</Typography>
+                  <Typography variant="caption" sx={{ color: "#71717A" }}>{flow.steps.length} steps</Typography>
+                </Box>
+                <Tooltip title="Delete workflow">
+                  <Box
+                    className="flow-delete"
+                    role="button"
+                    aria-label="Delete workflow"
+                    onClick={(e) => { e.stopPropagation(); deleteFlow(flow); }}
+                    sx={{
+                      display: "flex", flexShrink: 0, cursor: "pointer", p: 0.5, borderRadius: "6px",
+                      color: "#A1A1AA", opacity: { xs: 1, md: 0 }, transition: "opacity 120ms",
+                      "&:hover": { color: "#DC2626", bgcolor: "#FEE2E2" },
+                    }}
+                  >
+                    <DeleteIcon sx={{ fontSize: 18 }} />
+                  </Box>
+                </Tooltip>
+              </Box>
+            ))}
+          </Stack>
+        )}
+      </Box>
+    </Box>
+  );
+
   return (
     <Box sx={{ height: "100%", display: "grid", gridTemplateColumns: { xs: "1fr", md: "280px minmax(0,1fr)" }, minHeight: 0 }}>
-      {/* Sidebar: saved flows + upload */}
-      <Box sx={{ borderRight: `2px solid ${line}`, bgcolor: "#fff", display: { xs: "none", md: "flex" }, flexDirection: "column", minHeight: 0 }}>
-        <Box sx={{ p: 2, borderBottom: `2px solid ${line}` }}>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".json,.yaml,.yml,application/json,application/x-yaml,text/yaml"
-            style={{ display: "none" }}
-            onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-          />
-          <Button fullWidth variant="contained" startIcon={<UploadFileIcon />} onClick={() => fileRef.current?.click()} disabled={busy}>
-            Upload Arazzo file
-          </Button>
-          <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#71717A" }}>
-            OpenAPI Workflows (Arazzo) JSON or YAML.
-          </Typography>
-        </Box>
-        <Box sx={{ flex: 1, overflowY: "auto", p: 1 }}>
-          <Typography variant="h3" sx={{ px: 1, py: 1 }}>Saved workflows</Typography>
-          {flows.length === 0 ? (
-            <Typography variant="body2" sx={{ px: 1, color: "#A1A1AA" }}>None yet — upload a workflow to begin.</Typography>
-          ) : (
-            <Stack spacing={0.5}>
-              {flows.map((flow) => (
-                <Box
-                  key={flow.id}
-                  onClick={() => { setSelectedId(flow.id ?? null); setPreview(null); }}
-                  sx={{
-                    p: 1, borderRadius: "8px", cursor: "pointer", border: `2px solid ${flow.id === selectedId ? line : "transparent"}`,
-                    bgcolor: flow.id === selectedId ? wash : "transparent", "&:hover": { bgcolor: wash },
-                    display: "flex", alignItems: "center", gap: 0.5,
-                    "&:hover .flow-delete": { opacity: 1 },
-                  }}
-                >
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{flow.name}</Typography>
-                    <Typography variant="caption" sx={{ color: "#71717A" }}>{flow.steps.length} steps</Typography>
-                  </Box>
-                  <Tooltip title="Delete workflow">
-                    <Box
-                      className="flow-delete"
-                      role="button"
-                      aria-label="Delete workflow"
-                      onClick={(e) => { e.stopPropagation(); deleteFlow(flow); }}
-                      sx={{
-                        display: "flex", flexShrink: 0, cursor: "pointer", p: 0.5, borderRadius: "6px",
-                        color: "#A1A1AA", opacity: { xs: 1, md: 0 }, transition: "opacity 120ms",
-                        "&:hover": { color: "#DC2626", bgcolor: "#FEE2E2" },
-                      }}
-                    >
-                      <DeleteIcon sx={{ fontSize: 18 }} />
-                    </Box>
-                  </Tooltip>
-                </Box>
-              ))}
-            </Stack>
-          )}
-        </Box>
+      {/* Sidebar: saved flows + upload (inline on desktop; drawer on mobile) */}
+      <Box sx={{ borderRight: `2px solid ${line}`, display: { xs: "none", md: "block" }, minHeight: 0 }}>
+        {sidebar()}
       </Box>
+      <Drawer
+        anchor="left"
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        sx={{ display: { xs: "block", md: "none" } }}
+        slotProps={{ root: { keepMounted: true }, paper: { sx: { width: "84vw", maxWidth: 320 } } }}
+      >
+        {sidebar(() => setNavOpen(false))}
+      </Drawer>
 
       {/* Main area */}
-      <Box sx={{ overflowY: "auto", p: 3, minHeight: 0, bgcolor: wash }}>
+      <Box sx={{ overflowY: "auto", p: { xs: 1.5, sm: 3 }, minHeight: 0, bgcolor: wash }}>
+        {/* Mobile: open the flows drawer */}
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<MenuIcon sx={{ fontSize: 18 }} />}
+          onClick={() => setNavOpen(true)}
+          sx={{ display: { xs: "inline-flex", md: "none" }, mb: 2 }}
+        >
+          Workflows
+        </Button>
+
         {error ? (
           <Box sx={{ mb: 2, p: 1.5, border: `2px solid #DC2626`, borderRadius: "10px", bgcolor: "#FEE2E2", color: "#991B1B" }}>{error}</Box>
         ) : null}

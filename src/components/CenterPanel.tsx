@@ -240,7 +240,7 @@ export function CenterPanel() {
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "#F4F4F5" }}>
       {/* Header */}
-      <Box sx={{ p: 3, pb: 2, borderBottom: `2px solid ${line}`, bgcolor: "#fff" }}>
+      <Box sx={{ p: { xs: 1.5, sm: 3 }, pb: { xs: 1.5, sm: 2 }, borderBottom: `2px solid ${line}`, bgcolor: "#fff" }}>
         <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1 }}>
           <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
             <Box sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: "10px", border: `2px solid ${line}`, bgcolor: "#F4F4F5", color: line, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "2px 2px 0 #0A0A0A" }}>
@@ -294,8 +294,8 @@ export function CenterPanel() {
       </Box>
 
       {/* Editor — card-based schema workbench */}
-      <Box sx={{ flex: 1, overflowY: "auto", p: 3 }}>
-        <Box sx={{ border: `2px solid ${line}`, borderRadius: "16px", boxShadow: "4px 4px 0 #0A0A0A", bgcolor: "#fff", p: 2.5 }}>
+      <Box sx={{ flex: 1, overflowY: "auto", p: { xs: 1.5, sm: 3 } }}>
+        <Box sx={{ border: `2px solid ${line}`, borderRadius: "16px", boxShadow: "4px 4px 0 #0A0A0A", bgcolor: "#fff", p: { xs: 1.5, sm: 2.5 } }}>
           <Typography variant="h2" sx={{ mb: 2 }}>{bodyLabel}</Typography>
           <SchemaWorkbench
             key={`${resource.id}::req`}
