@@ -33,13 +33,23 @@ interface WireTestResult {
   error: string;
 }
 
+// The server-side executor allows a slow target up to 20s (httpexec.DefaultTimeout).
+// Give this one call a longer axios budget than the client's default (8s) so the
+// server's own timeout governs and we get a proper `status:0` result instead of the
+// client aborting first. Other endpoints keep the snappy default.
+const TEST_TIMEOUT_MS = 25_000;
+
 export async function sendTest(input: TestRequestInput): Promise<TestResult> {
-  const res = await apiClient.post("/http/test", {
-    method: input.method,
-    url: input.url,
-    headers: input.headers,
-    body: input.body ?? "",
-  });
+  const res = await apiClient.post(
+    "/http/test",
+    {
+      method: input.method,
+      url: input.url,
+      headers: input.headers,
+      body: input.body ?? "",
+    },
+    { timeout: TEST_TIMEOUT_MS },
+  );
   const data = unwrap<WireTestResult>(res.data);
   return {
     status: data.status,
