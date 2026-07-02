@@ -53,6 +53,10 @@ export interface Resource {
   path?: string; // endpoints only
   state: FieldState; // overall resource status
   fields: SchemaField[];
+  // Per-status response schemas (endpoints). `undefined` = the backend hasn't
+  // sent them (pre-migration → fall back to localStorage in responseSchemas.ts);
+  // `[]` = backend sent an empty set. See ResponseSchema below.
+  responses?: ResponseSchema[];
   updatedAt: string; // ISO
   updatedBy: string;
 }
@@ -101,9 +105,9 @@ export interface WorkspaceSnapshot {
   collaborators: Collaborator[];
 }
 
-// Response schemas per endpoint, keyed by HTTP status. Backend (api-spec.md §2
-// Resource) has no slot for these yet, so they live client-side in localStorage
-// (src/lib/responseSchemas.ts) — see api-spec.md §2 "ResponseSchema (frontend-local)".
+// Response schemas per endpoint, keyed by HTTP status. Persisted on the backend
+// as Resource.responses (synced over WS); responseSchemas.ts keeps a localStorage
+// cache used as an offline fallback before the backend adopts the field.
 export interface ResponseSchema {
   status: number; // 200, 400, 500, ...
   description?: string; // short label, e.g. "OK", "Validation error"

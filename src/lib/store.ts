@@ -131,6 +131,8 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
 
     applySnapshot: (snap) =>
       set((s) => {
+        // Seed the response-schema cache from server-owned Resource.responses.
+        useResponseSchemaStore.getState().seedFromResources(snap.resources);
         const selectedId =
           s.selectedId && snap.resources.some((r) => r.id === s.selectedId)
             ? s.selectedId
@@ -181,6 +183,8 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
     upsertResource: (rev, resource, fromWs = false) =>
       set((s) => {
         if (fromWs && rev <= s.rev) return {};
+        // Keep the response-schema cache in step with server data (REST + WS echo).
+        useResponseSchemaStore.getState().seedFromResources([resource]);
         const exists = s.resources.some((r) => r.id === resource.id);
         return {
           rev: Math.max(s.rev, rev),

@@ -5,7 +5,9 @@
       "Bash(cat)",
       "Read(//home/kittiphopso/Desktop/project/kingdom_manager/mcp/**)",
       "Bash(npm install *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(awk 'NR==1 || /LISTEN/{print}')",
+      "Read(//proc/2577/**)"
     ]
   }
 }

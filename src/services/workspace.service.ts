@@ -14,6 +14,7 @@ import type {
   Presence,
   Resource,
   ResourceKind,
+  ResponseSchema,
   SchemaField,
   TeamRole,
   WorkspaceSnapshot,
@@ -30,6 +31,11 @@ interface WireField {
   description?: string | null;
   value?: JsonValue | null;
 }
+interface WireResponseSchema {
+  status: number;
+  description?: string | null;
+  fields: WireField[];
+}
 interface WireResource {
   id: string;
   name: string;
@@ -38,6 +44,7 @@ interface WireResource {
   path?: string | null;
   state: string;
   fields: WireField[];
+  responses?: WireResponseSchema[] | null;
   updated_at: string;
   updated_by: string;
 }
@@ -89,6 +96,12 @@ export const nField = (f: WireField): SchemaField => ({
   value: f.value ?? undefined,
 });
 
+export const nResponseSchema = (r: WireResponseSchema): ResponseSchema => ({
+  status: r.status,
+  description: r.description ?? undefined,
+  fields: (r.fields ?? []).map(nField),
+});
+
 export const nResource = (r: WireResource): Resource => ({
   id: r.id,
   name: r.name,
@@ -97,8 +110,29 @@ export const nResource = (r: WireResource): Resource => ({
   path: r.path ?? undefined,
   state: r.state as FieldState,
   fields: (r.fields ?? []).map(nField),
+  // Keep `undefined` when the backend omits the field (pre-migration) so the
+  // local cache is preserved; `[]` means the backend sent an empty set.
+  responses: r.responses ? r.responses.map(nResponseSchema) : undefined,
   updatedAt: r.updated_at,
   updatedBy: r.updated_by,
+});
+
+// ---- Denormalizers (domain → wire) — for the responses PUT body -----------
+const dField = (f: SchemaField): WireField => ({
+  id: f.id,
+  key: f.key,
+  type: f.type,
+  required: f.required,
+  state: f.state,
+  change: f.change,
+  description: f.description ?? null,
+  value: f.value ?? null,
+});
+
+const dResponseSchema = (s: ResponseSchema): WireResponseSchema => ({
+  status: s.status,
+  description: s.description ?? null,
+  fields: s.fields.map(dField),
 });
 
 export const nComment = (c: WireComment): Comment => ({
@@ -268,6 +302,16 @@ export const workspaceApi = {
 
   async deleteField(resourceId: string, fieldId: string): Promise<ResourceMutation> {
     const res = await apiClient.delete(`/resources/${resourceId}/fields/${fieldId}`);
+    const data = unwrap<{ rev: number; resource: WireResource }>(res.data);
+    return { rev: data.rev, resource: nResource(data.resource) };
+  },
+
+  // Replace the endpoint's per-status response schemas (whole array). Backs the
+  // response-schema editor's write-through sync (src/lib/responseSchemas.ts).
+  async setResponses(resourceId: string, schemas: ResponseSchema[]): Promise<ResourceMutation> {
+    const res = await apiClient.put(`/resources/${resourceId}/responses`, {
+      responses: schemas.map(dResponseSchema),
+    });
     const data = unwrap<{ rev: number; resource: WireResource }>(res.data);
     return { rev: data.rev, resource: nResource(data.resource) };
   },

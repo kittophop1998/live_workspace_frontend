@@ -1,14 +1,17 @@
 "use client";
 
-// Response schemas per endpoint, keyed by status code. The backend Resource model
-// (api-spec.md §2) has no slot for these, so — as permitted for this feature — they
-// live entirely client-side, persisted to localStorage and keyed by resourceId.
+// Response schemas per endpoint, keyed by status code. These are persisted on the
+// backend as Resource.responses (synced over WebSocket); this store keeps a
+// localStorage cache that (a) seeds instantly on load and (b) is the source of
+// truth before the backend adopts the field. Every mutation is written through to
+// the backend (fire-and-forget); server data seeds back via seedFromResources.
 // The Import flow (specImport.ts) and the ResponseSchemaPanel both write here.
 
 import { create } from "zustand";
 import { inferField } from "@/lib/codegen";
+import { workspaceApi } from "@/services/workspace.service";
 import type { ImportedField, ImportedOperation } from "@/lib/specImport";
-import type { DataType, JsonValue, ResponseSchema, SchemaField } from "@/lib/types";
+import type { DataType, JsonValue, Resource, ResponseSchema, SchemaField } from "@/lib/types";
 
 const STORAGE_KEY = "live-workspace:response-schemas";
 
@@ -70,6 +73,7 @@ function blankField(): SchemaField {
 interface ResponseSchemaState {
   byResource: ByResource;
   hydrate: () => void;
+  seedFromResources: (resources: Resource[]) => void;
   schemasFor: (resourceId: string) => ResponseSchema[];
   setForResource: (resourceId: string, schemas: ResponseSchema[]) => void;
   addStatus: (resourceId: string, status: number, description?: string) => void;
@@ -80,8 +84,21 @@ interface ResponseSchemaState {
   removeField: (resourceId: string, status: number, fieldId: string) => void;
 }
 
-const writeBack = (byResource: ByResource): { byResource: ByResource } => {
+// Write-through to the backend. Fire-and-forget: errors (incl. a 404 before the
+// backend adopts PUT /resources/{id}/responses) are swallowed — the localStorage
+// cache still holds the change locally. The server echoes success back over the
+// WebSocket, which re-seeds via seedFromResources.
+function pushBackend(resourceId: string, schemas: ResponseSchema[]): void {
+  void workspaceApi.setResponses(resourceId, schemas).catch(() => {
+    /* transitional / offline — localStorage remains the fallback */
+  });
+}
+
+// Persist the whole map to localStorage and push the one changed resource to the
+// backend. Pass no resourceId (e.g. from seedFromResources) to skip the push.
+const writeBack = (byResource: ByResource, resourceId?: string): { byResource: ByResource } => {
   persist(byResource);
+  if (resourceId) pushBackend(resourceId, byResource[resourceId] ?? []);
   return { byResource };
 };
 
@@ -96,32 +113,56 @@ export const useResponseSchemaStore = create<ResponseSchemaState>((set, get) => 
 
   hydrate: () => set({ byResource: load() }),
 
+  // Seed from the backend-synced resources (snapshot + WS echoes). A resource
+  // whose `responses` is defined (incl. `[]`) is authoritative and overwrites the
+  // local cache; `undefined` means the backend hasn't sent them yet, so the
+  // localStorage fallback is left untouched. Does NOT push back to the backend.
+  seedFromResources: (resources) =>
+    set((st) => {
+      let changed = false;
+      const next = { ...st.byResource };
+      for (const r of resources) {
+        if (r.responses === undefined) continue;
+        next[r.id] = r.responses;
+        changed = true;
+      }
+      if (!changed) return {};
+      persist(next);
+      return { byResource: next };
+    }),
+
   schemasFor: (resourceId) => get().byResource[resourceId] ?? [],
 
   setForResource: (resourceId, schemas) =>
-    set((st) => writeBack({ ...st.byResource, [resourceId]: schemas })),
+    set((st) => writeBack({ ...st.byResource, [resourceId]: schemas }, resourceId)),
 
   addStatus: (resourceId, status, description) =>
     set((st) => {
       const current = st.byResource[resourceId] ?? [];
       if (current.some((s) => s.status === status)) return {};
       const next = [...current, { status, description, fields: [] }].sort((a, b) => a.status - b.status);
-      return writeBack({ ...st.byResource, [resourceId]: next });
+      return writeBack({ ...st.byResource, [resourceId]: next }, resourceId);
     }),
 
   removeStatus: (resourceId, status) =>
     set((st) => {
       const current = st.byResource[resourceId] ?? [];
-      return writeBack({ ...st.byResource, [resourceId]: current.filter((s) => s.status !== status) });
+      return writeBack(
+        { ...st.byResource, [resourceId]: current.filter((s) => s.status !== status) },
+        resourceId,
+      );
     }),
 
   addField: (resourceId, status) =>
     set((st) => {
       const current = st.byResource[resourceId] ?? [];
-      return writeBack({
-        ...st.byResource,
-        [resourceId]: mapStatus(current, status, (s) => ({ ...s, fields: [...s.fields, blankField()] })),
-      });
+      return writeBack(
+        {
+          ...st.byResource,
+          [resourceId]: mapStatus(current, status, (s) => ({ ...s, fields: [...s.fields, blankField()] })),
+        },
+        resourceId,
+      );
     }),
 
   // Paste a JSON object → one field per top-level key, types inferred. Existing
@@ -130,41 +171,50 @@ export const useResponseSchemaStore = create<ResponseSchemaState>((set, get) => 
     set((st) => {
       const current = st.byResource[resourceId] ?? [];
       if (!current.some((s) => s.status === status)) return {};
-      return writeBack({
-        ...st.byResource,
-        [resourceId]: mapStatus(current, status, (s) => {
-          const existing = new Set(s.fields.map((f) => f.key));
-          const added: SchemaField[] = [];
-          for (const [key, raw] of Object.entries(obj)) {
-            if (existing.has(key)) continue;
-            existing.add(key);
-            const { type, value } = inferField(raw);
-            added.push({ id: newId(), key, type, required: false, state: "ready", change: "added", value });
-          }
-          return { ...s, fields: [...s.fields, ...added] };
-        }),
-      });
+      return writeBack(
+        {
+          ...st.byResource,
+          [resourceId]: mapStatus(current, status, (s) => {
+            const existing = new Set(s.fields.map((f) => f.key));
+            const added: SchemaField[] = [];
+            for (const [key, raw] of Object.entries(obj)) {
+              if (existing.has(key)) continue;
+              existing.add(key);
+              const { type, value } = inferField(raw);
+              added.push({ id: newId(), key, type, required: false, state: "ready", change: "added", value });
+            }
+            return { ...s, fields: [...s.fields, ...added] };
+          }),
+        },
+        resourceId,
+      );
     }),
 
   updateField: (resourceId, status, fieldId, patch) =>
     set((st) => {
       const current = st.byResource[resourceId] ?? [];
-      return writeBack({
-        ...st.byResource,
-        [resourceId]: mapStatus(current, status, (s) => ({
-          ...s,
-          fields: s.fields.map((f) => (f.id === fieldId ? { ...f, ...patch } : f)),
-        })),
-      });
+      return writeBack(
+        {
+          ...st.byResource,
+          [resourceId]: mapStatus(current, status, (s) => ({
+            ...s,
+            fields: s.fields.map((f) => (f.id === fieldId ? { ...f, ...patch } : f)),
+          })),
+        },
+        resourceId,
+      );
     }),
 
   removeField: (resourceId, status, fieldId) =>
     set((st) => {
       const current = st.byResource[resourceId] ?? [];
-      return writeBack({
-        ...st.byResource,
-        [resourceId]: mapStatus(current, status, (s) => ({ ...s, fields: s.fields.filter((f) => f.id !== fieldId) })),
-      });
+      return writeBack(
+        {
+          ...st.byResource,
+          [resourceId]: mapStatus(current, status, (s) => ({ ...s, fields: s.fields.filter((f) => f.id !== fieldId) })),
+        },
+        resourceId,
+      );
     }),
 }));
 
