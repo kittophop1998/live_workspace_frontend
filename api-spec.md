@@ -494,7 +494,18 @@ Request:
 ```json
 { "name": "createOrder", "kind": "endpoint", "method": "POST", "path": "/api/v1/orders" }
 ```
-Response `data`: the created `Resource` (server seeds an `id` field, `state:"draft"`).
+Response `data`: the created `Resource` (`state:"draft"`).
+
+> **Seeded `id` field — behavior change (backend TODO).** The server currently
+> seeds a default `id` (`type:"uuid"`) field on every create. This is wrong for
+> **endpoints**: a `GET` sends query params and a `POST` sends a request body —
+> neither wants a phantom `id`. Desired contract:
+> - `kind:"endpoint"` → create with **no** seeded fields (empty `fields:[]`).
+> - `kind:"database"` / `kind:"model"` → keep the seeded `id` (an id column/key
+>   is a sensible default).
+>
+> Until the backend implements this, the client strips seeded fields from newly
+> created / imported **endpoints** (see `store.ts` `stripSeededFields`).
 
 ### PATCH `/resources/{id}`
 Request (any subset):

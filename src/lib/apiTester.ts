@@ -25,6 +25,9 @@ export interface RequestDraft {
   queryParams: KeyValueRow[];
   headers: KeyValueRow[];
   body: string;
+  // Sent as `Authorization: Bearer <token>` when non-empty. Optional so drafts
+  // persisted before this field existed still deserialize.
+  bearerToken?: string;
 }
 
 interface Persisted {

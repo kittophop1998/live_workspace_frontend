@@ -1,9 +1,11 @@
 "use client";
 
-import { Box, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, InputBase, Stack, Tooltip, Typography } from "@mui/material";
 import ApiIcon from "@mui/icons-material/Api";
 import StorageIcon from "@mui/icons-material/Storage";
 import AddIcon from "@mui/icons-material/Add";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorderOutlined";
 import { useState } from "react";
@@ -164,12 +166,18 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
   const bookmarkIds = useBookmarkStore((s) => s.ids);
   const statusByResource = useEndpointStatusStore((s) => s.byResource);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [nameQuery, setNameQuery] = useState("");
 
   const statusOf = (r: Resource): EndpointStatus => statusByResource[r.id] ?? DEFAULT_ENDPOINT_STATUS;
 
   // Status filter only applies to endpoints (databases have no workflow status).
   const matchesStatus = (r: Resource) =>
     statusFilter === "all" || (r.kind === "endpoint" && statusOf(r) === statusFilter);
+
+  // Client-side name filter (matches name or path, case-insensitive).
+  const q = nameQuery.trim().toLowerCase();
+  const matchesName = (r: Resource) =>
+    !q || r.name.toLowerCase().includes(q) || (r.path?.toLowerCase().includes(q) ?? false);
 
   const endpoints = resources.filter((r) => r.kind === "endpoint");
   const statusCounts = ENDPOINT_STATUSES.reduce(
@@ -181,6 +189,37 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `2px solid ${line}`, bgcolor: "#FAFAFA" }}>
       <Box sx={{ p: 2, borderBottom: `2px solid ${line}` }}>
         <Typography variant="h2">Explorer</Typography>
+        <Box
+          sx={{
+            mt: 1,
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+            px: 1,
+            py: 0.4,
+            borderRadius: "8px",
+            border: `2px solid ${line}`,
+            bgcolor: "#fff",
+          }}
+        >
+          <SearchIcon sx={{ fontSize: 16, color: "#71717A" }} />
+          <InputBase
+            value={nameQuery}
+            onChange={(e) => setNameQuery(e.target.value)}
+            placeholder="Filter by name…"
+            sx={{ flex: 1, fontSize: 13 }}
+          />
+          {nameQuery ? (
+            <Box
+              role="button"
+              aria-label="Clear filter"
+              onClick={() => setNameQuery("")}
+              sx={{ display: "flex", cursor: "pointer", color: "#A1A1AA", "&:hover": { color: line } }}
+            >
+              <CloseIcon sx={{ fontSize: 15 }} />
+            </Box>
+          ) : null}
+        </Box>
         <Stack direction="row" sx={{ mt: 1, flexWrap: "wrap", gap: 0.5 }}>
           <StatusFilterChip
             active={statusFilter === "all"}
@@ -206,7 +245,7 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
           // Keep bookmarks inline (no separate section) but pinned to the top of
           // the group. Array.sort is stable, so non-bookmarked order is preserved.
           const items = resources
-            .filter((r) => r.kind === kind && matchesStatus(r))
+            .filter((r) => r.kind === kind && matchesStatus(r) && matchesName(r))
             .sort((a, b) => (bookmarkIds[b.id] ? 1 : 0) - (bookmarkIds[a.id] ? 1 : 0));
           return (
             <Box key={kind} sx={{ mb: 2 }}>

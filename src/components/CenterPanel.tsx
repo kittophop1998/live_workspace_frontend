@@ -93,6 +93,8 @@ const KIND_ICON: Record<Resource["kind"], React.ReactNode> = {
 };
 
 const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+// Methods that carry a request body; the rest (GET) send data as query params.
+const BODY_METHODS = new Set<HttpMethod>(["POST", "PUT", "PATCH", "DELETE"]);
 
 // Pick the method from a dropdown; click the path to edit it inline.
 function EndpointMeta({ resource }: { resource: Resource }) {
@@ -235,7 +237,15 @@ export function CenterPanel() {
   }
 
   const isEndpoint = resource.kind === "endpoint";
-  const bodyLabel = isEndpoint ? "Request Body" : resource.kind === "database" ? "Columns" : "Schema";
+  // GET has no request body — its schema describes query parameters instead.
+  const endpointHasBody = BODY_METHODS.has(resource.method ?? "GET");
+  const bodyLabel = isEndpoint
+    ? endpointHasBody
+      ? "Request Body"
+      : "Query Parameters"
+    : resource.kind === "database"
+      ? "Columns"
+      : "Schema";
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "#F4F4F5" }}>
@@ -301,7 +311,7 @@ export function CenterPanel() {
             key={`${resource.id}::req`}
             scope={`${resource.id}::req`}
             seedFields={resource.fields}
-            typeName={isEndpoint ? `${resource.name}Request` : resource.name}
+            typeName={isEndpoint ? `${resource.name}${endpointHasBody ? "Request" : "Query"}` : resource.name}
           />
         </Box>
 

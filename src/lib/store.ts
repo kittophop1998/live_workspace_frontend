@@ -108,6 +108,17 @@ function freshFieldKey(resource: Resource | undefined): string {
 export const useWorkspaceStore = create<StoreState>((set, get) => {
   const fail = (err: unknown) => set({ apiError: apiErrorMessage(err) });
 
+  // The backend seeds a default `id` field on every resource create (see
+  // api-spec §5 POST /resources). Endpoints must start from a blank request body
+  // (query params / JSON body come from the spec, not a phantom `id`), so strip
+  // the seeded fields after creation. Shared by addResource + importEndpoints.
+  const stripSeededFields = async (resource: Resource) => {
+    for (const seeded of resource.fields) {
+      const { rev, resource: pruned } = await workspaceApi.deleteField(resource.id, seeded.id);
+      get().upsertResource(rev, pruned);
+    }
+  };
+
   return {
     rev: 0,
     resources: [],
@@ -386,6 +397,10 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         const { rev, resource } = await workspaceApi.createResource({ name, kind, ...endpoint });
         get().upsertResource(rev, resource);
         set({ selectedId: resource.id });
+        // Endpoints don't want the backend-seeded default `id` field in their
+        // request body — start blank. Databases/models keep it (an id column/key
+        // is a sensible default there).
+        if (kind === "endpoint") await stripSeededFields(resource);
       } catch (err) {
         fail(err);
       }
@@ -417,13 +432,9 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
           });
           get().upsertResource(rev, resource);
           lastId = resource.id;
-          // The backend seeds a default `id` field on create; an imported endpoint
-          // must mirror the OpenAPI/Postman spec exactly, so strip seeded fields
-          // before adding the spec's request body.
-          for (const seeded of resource.fields) {
-            const { rev: prunedRev, resource: pruned } = await workspaceApi.deleteField(resource.id, seeded.id);
-            get().upsertResource(prunedRev, pruned);
-          }
+          // An imported endpoint must mirror the OpenAPI/Postman spec exactly, so
+          // strip the backend-seeded default `id` before adding the request body.
+          await stripSeededFields(resource);
           if (op.requestFields.length) await get().importTypedFields(resource.id, op.requestFields);
           const responses = buildResponseSchemas(op);
           if (responses.length) useResponseSchemaStore.getState().setForResource(resource.id, responses);

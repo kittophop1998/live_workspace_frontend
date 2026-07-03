@@ -37,9 +37,10 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
     [presences],
   );
 
-  // Online collaborators first, then offline.
-  const ordered = [...collaborators].sort((a, b) => Number(onlineIds.has(b.id)) - Number(onlineIds.has(a.id)));
-  const onlineCount = collaborators.filter((c) => onlineIds.has(c.id)).length;
+  // Only show avatars for collaborators who are currently online — anyone not
+  // connected is hidden entirely (not dimmed).
+  const online = collaborators.filter((c) => onlineIds.has(c.id));
+  const onlineCount = online.length;
 
   return (
     <Box
@@ -153,10 +154,10 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
           <Typography sx={{ fontSize: 11.5, fontWeight: 800 }}>{onlineCount} online</Typography>
         </Box>
         <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
-          {ordered.map((c) => (
-            <Tooltip key={c.id} title={`${c.name} · ${c.role}${onlineIds.has(c.id) ? " · online" : " · offline"}${c.id === me?.id ? " (you)" : ""}`}>
-              <Box sx={{ opacity: onlineIds.has(c.id) ? 1 : 0.4, ml: -0.5 }}>
-                <Avatar name={c.name} color={c.color} online={onlineIds.has(c.id)} size={30} />
+          {online.map((c) => (
+            <Tooltip key={c.id} title={`${c.name} · ${c.role} · online${c.id === me?.id ? " (you)" : ""}`}>
+              <Box sx={{ ml: -0.5 }}>
+                <Avatar name={c.name} color={c.color} online size={30} />
               </Box>
             </Tooltip>
           ))}

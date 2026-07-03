@@ -32,16 +32,24 @@ function draftFromResource(resource: Resource, reqNodes: SchemaNode[]): RequestD
   const method = (resource.method ?? "GET") as HttpMethod;
   const path = resource.path ?? "/";
   const nodes = reqNodes.length ? reqNodes : seedFromFields(resource.fields);
-  const body = BODY_METHODS.has(method)
-    ? JSON.stringify(nodesToExample(nodes), null, 2)
-    : "";
+  const hasBody = BODY_METHODS.has(method);
+  // Body methods carry a JSON body; GET (and other non-body methods) send the
+  // same schema as query parameters instead.
+  const example = nodesToExample(nodes);
+  const body = hasBody ? JSON.stringify(example, null, 2) : "";
+  const queryParams = hasBody
+    ? []
+    : Object.entries(example).map(([k, v]) =>
+        row(k, typeof v === "object" && v !== null ? JSON.stringify(v) : String(v)),
+      );
   return {
     method,
     path,
     pathParams: extractPathParams(path).map((name) => row(name)),
-    queryParams: [],
+    queryParams,
     headers: [row("Content-Type", "application/json")],
     body,
+    bearerToken: "",
   };
 }
 
@@ -174,6 +182,12 @@ export function RequestTester({ resource }: { resource: Resource }) {
     }
     const headers: Record<string, string> = {};
     for (const h of draft.headers) if (h.enabled && h.key) headers[h.key] = h.value;
+    // Bearer token → Authorization header. An explicit Authorization row (if the
+    // user added one) wins over the token field.
+    const token = draft.bearerToken?.trim();
+    if (token && !Object.keys(headers).some((k) => k.toLowerCase() === "authorization")) {
+      headers.Authorization = `Bearer ${token}`;
+    }
     setLoading(true);
     try {
       const res = await sendTest({
@@ -251,6 +265,17 @@ export function RequestTester({ resource }: { resource: Resource }) {
           {/* Query params */}
           <SectionLabel>Query parameters</SectionLabel>
           <RowsEditor rows={draft.queryParams} addLabel="Add query param" onChange={(rows) => update({ queryParams: rows })} />
+
+          {/* Authorization (bearer token) */}
+          <SectionLabel>Authorization</SectionLabel>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Bearer token (sent as Authorization: Bearer …)"
+            value={draft.bearerToken ?? ""}
+            onChange={(e) => update({ bearerToken: e.target.value })}
+            slotProps={{ input: { sx: { fontFamily: "var(--font-mono, monospace)", fontSize: 12.5 } } }}
+          />
 
           {/* Headers */}
           <SectionLabel>Headers</SectionLabel>
