@@ -106,16 +106,20 @@ function jsonSchema(carrier: unknown): unknown {
 }
 
 function openApiRequestFields(op: Json, root: Json): ImportedField[] {
-  const schema = jsonSchema(op.requestBody);
+  // requestBody may itself be a $ref to #/components/requestBodies/* — deref first.
+  const body = deref(op.requestBody, root, new Set()) ?? op.requestBody;
+  const schema = jsonSchema(body);
   return schema ? schemaToFields(schema, root, new Set()) : [];
 }
 
 function openApiResponses(op: Json, root: Json): ImportedResponse[] {
   if (!isObject(op.responses)) return [];
   const out: ImportedResponse[] = [];
-  for (const [code, respRaw] of Object.entries(op.responses)) {
+  for (const [code, respRaw0] of Object.entries(op.responses)) {
     const status = code === "default" ? 0 : Number.parseInt(code, 10);
     if (Number.isNaN(status)) continue;
+    // A response entry may be a $ref to #/components/responses/* — deref first.
+    const respRaw = deref(respRaw0, root, new Set()) ?? respRaw0;
     const schema = jsonSchema(respRaw);
     out.push({
       status,

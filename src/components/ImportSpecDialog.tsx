@@ -40,6 +40,7 @@ function methodChip(method: string) {
 
 export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
   const updateEndpoint = useWorkspaceStore((s) => s.updateEndpoint);
+  const renameResource = useWorkspaceStore((s) => s.renameResource);
   const importTypedFields = useWorkspaceStore((s) => s.importTypedFields);
   const setResponseSchemas = useResponseSchemaStore((s) => s.setForResource);
   const setTreeNodes = useSchemaTreeStore((s) => s.setNodes);
@@ -90,6 +91,9 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
 
   const apply = (op: ImportedOperation) => {
     updateEndpoint(resourceId, { method: op.method, path: op.path });
+    // Rename the endpoint to match the spec (operationId / Postman item name), like
+    // the bulk importer does — otherwise the endpoint keeps its old placeholder name.
+    if (op.name) renameResource(resourceId, op.name);
 
     // Request body — the Visual Builder + "Try it" read the schema TREE, so overwrite
     // it directly (source of truth). `importTypedFields` keeps backend fields/codegen
