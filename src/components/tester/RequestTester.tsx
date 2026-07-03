@@ -47,7 +47,7 @@ function draftFromResource(resource: Resource, reqNodes: SchemaNode[]): RequestD
     path,
     pathParams: extractPathParams(path).map((name) => row(name)),
     queryParams,
-    headers: [row("Content-Type", "application/json")],
+    headers: [row("Content-Type", "application/json"), row("Authorization", "Bearer <token>")],
     body,
     bearerToken: "",
   };
@@ -265,17 +265,6 @@ export function RequestTester({ resource }: { resource: Resource }) {
           {/* Query params */}
           <SectionLabel>Query parameters</SectionLabel>
           <RowsEditor rows={draft.queryParams} addLabel="Add query param" onChange={(rows) => update({ queryParams: rows })} />
-
-          {/* Authorization (bearer token) */}
-          <SectionLabel>Authorization</SectionLabel>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Bearer token (sent as Authorization: Bearer …)"
-            value={draft.bearerToken ?? ""}
-            onChange={(e) => update({ bearerToken: e.target.value })}
-            slotProps={{ input: { sx: { fontFamily: "var(--font-mono, monospace)", fontSize: 12.5 } } }}
-          />
 
           {/* Headers */}
           <SectionLabel>Headers</SectionLabel>
