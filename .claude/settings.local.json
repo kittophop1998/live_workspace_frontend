@@ -7,7 +7,9 @@
       "Bash(npm install *)",
       "Bash(npm run *)",
       "Bash(awk 'NR==1 || /LISTEN/{print}')",
-      "Read(//proc/2577/**)"
+      "Read(//proc/2577/**)",
+      "Read(//home/kittiphopso/Desktop/project/kingdom_manager/backend/**)",
+      "Bash(go test *)"
     ]
   }
 }

@@ -129,7 +129,7 @@ const dField = (f: SchemaField): WireField => ({
   value: f.value ?? null,
 });
 
-const dResponseSchema = (s: ResponseSchema): WireResponseSchema => ({
+export const dResponseSchema = (s: ResponseSchema): WireResponseSchema => ({
   status: s.status,
   description: s.description ?? null,
   fields: s.fields.map(dField),
@@ -212,6 +212,19 @@ export interface UpdateFieldInput {
   description?: string | null;
   value?: JsonValue | null;
 }
+export interface ImportEndpointInput {
+  name: string;
+  method: HttpMethod;
+  path: string;
+  fields: {
+    key: string;
+    type: DataType;
+    required: boolean;
+    description?: string | null;
+    value?: JsonValue | null;
+  }[];
+  responses: WireResponseSchema[];
+}
 
 // ---- Room session (auth) -------------------------------------------------
 interface WireRoomSession {
@@ -262,6 +275,15 @@ export const workspaceApi = {
     const res = await apiClient.post("/resources", input);
     const data = unwrap<{ rev: number; resource: WireResource }>(res.data);
     return { rev: data.rev, resource: nResource(data.resource) };
+  },
+
+  // Bulk-create endpoints from a parsed spec in ONE atomic request (one rev bump,
+  // one broadcast). Replaces the per-endpoint create/field loop that dropped
+  // endpoints on any transient failure. Backs the "Import API" flow.
+  async importResources(endpoints: ImportEndpointInput[]): Promise<{ rev: number; resources: Resource[] }> {
+    const res = await apiClient.post("/resources/import", { endpoints });
+    const data = unwrap<{ rev: number; resources: WireResource[] }>(res.data);
+    return { rev: data.rev, resources: (data.resources ?? []).map(nResource) };
   },
 
   async updateResource(id: string, input: UpdateResourceInput): Promise<ResourceMutation> {

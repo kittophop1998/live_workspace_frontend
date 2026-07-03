@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { apiErrorMessage, clearSession, setRoomCode, setToken } from "@/lib/api";
-import { workspaceApi, type RoomSession } from "@/services/workspace.service";
+import { dResponseSchema, workspaceApi, type RoomSession } from "@/services/workspace.service";
 import { inferField } from "@/lib/codegen";
 import { buildResponseSchemas, useResponseSchemaStore } from "@/lib/responseSchemas";
 import type { ImportedOperation } from "@/lib/specImport";
@@ -61,6 +61,7 @@ interface StoreState {
   upsertResource: (rev: number, resource: Resource, fromWs?: boolean) => void;
   removeResource: (rev: number, resourceId: string, fromWs?: boolean) => void;
   removeResources: (rev: number, resourceIds: string[], fromWs?: boolean) => void;
+  importResources: (rev: number, resources: Resource[], fromWs?: boolean) => void;
   upsertComment: (rev: number, comment: Comment, fromWs?: boolean) => void;
   removeComment: (rev: number, commentId: string, fromWs?: boolean) => void;
   pushActivity: (event: ActivityEvent) => void;
@@ -222,6 +223,20 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         const comments = s.comments.filter((c) => !removing.has(c.resourceId));
         const selectedId = removing.has(s.selectedId) ? (resources[0]?.id ?? "") : s.selectedId;
         return { rev: Math.max(s.rev, rev), resources, comments, selectedId, activeFieldId: null };
+      }),
+
+    // Apply a whole imported batch in ONE set() — all resources share the import's
+    // single rev, so upserting them one-by-one would make every call after the
+    // first a no-op on a remote client (rev <= s.rev). Response caches seed from
+    // each resource's server-owned `responses`.
+    importResources: (rev, resources, fromWs = false) =>
+      set((s) => {
+        if (fromWs && rev <= s.rev) return {};
+        if (resources.length === 0) return {};
+        useResponseSchemaStore.getState().seedFromResources(resources);
+        const incoming = new Set(resources.map((r) => r.id));
+        const kept = s.resources.filter((r) => !incoming.has(r.id));
+        return { rev: Math.max(s.rev, rev), resources: [...resources, ...kept] };
       }),
 
     upsertComment: (rev, comment, fromWs = false) =>
@@ -417,33 +432,32 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       }
     },
 
-    // Bulk-import an OpenAPI/Postman spec from the top bar: each chosen operation
-    // becomes a new endpoint Resource in the backend, its request body is seeded
-    // from the spec, and its per-status response schemas are stored client-side.
+    // Bulk-import an OpenAPI/Postman spec from the top bar in ONE atomic request:
+    // the backend creates every chosen endpoint (request body + per-status response
+    // schemas) in a single rev-bumping mutation. This replaces the old per-endpoint
+    // create/strip/addField loop, which fired thousands of round-trips for a large
+    // spec and dropped the rest of the batch on the first transient failure.
     importEndpoints: async (operations) => {
-      let lastId: string | null = null;
-      for (const op of operations) {
-        try {
-          const { rev, resource } = await workspaceApi.createResource({
-            name: op.name,
-            kind: "endpoint",
-            method: op.method,
-            path: op.path,
-          });
-          get().upsertResource(rev, resource);
-          lastId = resource.id;
-          // An imported endpoint must mirror the OpenAPI/Postman spec exactly, so
-          // strip the backend-seeded default `id` before adding the request body.
-          await stripSeededFields(resource);
-          if (op.requestFields.length) await get().importTypedFields(resource.id, op.requestFields);
-          const responses = buildResponseSchemas(op);
-          if (responses.length) useResponseSchemaStore.getState().setForResource(resource.id, responses);
-        } catch (err) {
-          fail(err);
-          return;
-        }
+      const endpoints = operations.map((op) => ({
+        name: op.name,
+        method: op.method,
+        path: op.path,
+        fields: op.requestFields.map((f) => ({
+          key: f.key,
+          type: f.type,
+          required: f.required,
+          description: f.description ?? null,
+          value: f.value ?? null,
+        })),
+        responses: buildResponseSchemas(op).map(dResponseSchema),
+      }));
+      try {
+        const { rev, resources } = await workspaceApi.importResources(endpoints);
+        get().importResources(rev, resources);
+        if (resources.length) set({ selectedId: resources[0].id });
+      } catch (err) {
+        fail(err);
       }
-      if (lastId) set({ selectedId: lastId });
     },
 
     renameResource: async (resourceId, name) => {
