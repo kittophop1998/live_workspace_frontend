@@ -72,9 +72,9 @@ function JsonValueCell({ resourceId, field, disabled }: { resourceId: string; fi
             cursor: disabled ? "default" : "pointer",
             fontFamily: "var(--font-mono,monospace)",
             fontSize: 11.5,
-            color: isEmpty ? "#A1A1AA" : "#52525B",
-            bgcolor: "#F4F4F5",
-            border: `1.5px solid ${line}`,
+            color: isEmpty ? "#94A3B8" : "#4B5563",
+            bgcolor: "#F1F5F9",
+            border: `1px solid ${line}`,
             borderRadius: "6px",
             px: 0.75,
             py: 0.25,
@@ -87,7 +87,7 @@ function JsonValueCell({ resourceId, field, disabled }: { resourceId: string; fi
         </Box>
       </Tooltip>
       <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 800, fontFamily: "var(--font-mono,monospace)" }}>
+        <DialogTitle sx={{ fontWeight: 600, fontFamily: "var(--font-mono,monospace)" }}>
           {field.key} — JSON
         </DialogTitle>
         <DialogContent>
@@ -144,12 +144,12 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
         py: 1,
         // Diff treatment via left line weight + color; focus ring when commented on.
         borderLeft: `${field.change === "stable" ? 3 : 6}px solid ${changeColor[field.change]}`,
-        borderBottom: `1.5px solid ${line}`,
-        bgcolor: focused ? "#FFFBEB" : removed ? "#FAFAFA" : "#fff",
+        borderBottom: `1px solid ${line}`,
+        bgcolor: focused ? "#FFFBEB" : removed ? "#F8FAFC" : "#fff",
         opacity: removed ? 0.6 : 1,
         textDecoration: removed ? "line-through" : "none",
         transition: "background-color .12s ease",
-        "&:hover": removed || focused ? {} : { bgcolor: "#FAFAFA" },
+        "&:hover": removed || focused ? {} : { bgcolor: "#F8FAFC" },
         "&:last-of-type": { borderBottom: "none" },
       }}
     >
@@ -157,7 +157,7 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, width: 190, flexShrink: 0 }}>
         {field.required ? (
           <Tooltip title="Primary / required">
-            <KeyIcon sx={{ fontSize: 13, color: "#A1A1AA" }} />
+            <KeyIcon sx={{ fontSize: 13, color: "#94A3B8" }} />
           </Tooltip>
         ) : (
           <Box sx={{ width: 13 }} />
@@ -189,7 +189,7 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
           fontFamily: "var(--font-mono,monospace)",
           fontSize: 12.5,
           fontWeight: 700,
-          bgcolor: "#F4F4F5",
+          bgcolor: "#F1F5F9",
           "& .MuiOutlinedInput-notchedOutline": { borderColor: line, borderWidth: 1.5 },
           "& .MuiSelect-select": { py: 0.4 },
         }}
@@ -212,7 +212,7 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
             display: "flex",
             justifyContent: "center",
             cursor: removed ? "default" : "pointer",
-            color: field.required ? "#16A34A" : "#C4C4CC",
+            color: field.required ? "#16A34A" : "#CBD5E1",
             flexShrink: 0,
             transition: "color .12s ease, transform .08s ease",
             "&:hover": removed ? {} : { transform: "scale(1.15)" },
@@ -228,7 +228,7 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
         {field.description ? (
-          <Typography sx={{ fontSize: 11.5, color: "#71717A", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <Typography sx={{ fontSize: 11.5, color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {field.description}
           </Typography>
         ) : null}
@@ -236,7 +236,7 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
           <JsonValueCell resourceId={resourceId} field={field} disabled={removed} />
         ) : null}
         {field.change !== "stable" ? (
-          <Typography sx={{ fontSize: 10, fontWeight: 800, color: changeColor[field.change], textTransform: "uppercase" }}>
+          <Typography sx={{ fontSize: 10, fontWeight: 600, color: changeColor[field.change], textTransform: "uppercase" }}>
             {CHANGE_LABEL[field.change]}
           </Typography>
         ) : null}
@@ -251,10 +251,10 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
 
       {/* Comment anchor */}
       <Tooltip title="Discuss this field">
-        <IconButton size="small" onClick={() => focusComment(field.id)} sx={{ position: "relative", color: commentCount ? "#2563EB" : "#A1A1AA" }}>
+        <IconButton size="small" onClick={() => focusComment(field.id)} sx={{ position: "relative", color: commentCount ? "#2563EB" : "#94A3B8" }}>
           <ChatBubbleOutlineIcon sx={{ fontSize: 16 }} />
           {commentCount ? (
-            <Box sx={{ position: "absolute", top: -2, right: -2, bgcolor: "#2563EB", color: "#fff", fontSize: 8.5, fontWeight: 800, borderRadius: "50%", width: 13, height: 13, display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px solid #fff" }}>
+            <Box sx={{ position: "absolute", top: -2, right: -2, bgcolor: "#2563EB", color: "#fff", fontSize: 8.5, fontWeight: 600, borderRadius: "50%", width: 13, height: 13, display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px solid #fff" }}>
               {commentCount}
             </Box>
           ) : null}
@@ -263,7 +263,7 @@ export function FieldRow({ resourceId, field, commentCount }: { resourceId: stri
 
       <Tooltip title={removed ? "Marked removed" : "Remove field"}>
         <span>
-          <IconButton size="small" disabled={removed} onClick={() => removeField(resourceId, field.id)} sx={{ color: "#A1A1AA", "&:hover": { color: "#DC2626" } }}>
+          <IconButton size="small" disabled={removed} onClick={() => removeField(resourceId, field.id)} sx={{ color: "#94A3B8", "&:hover": { color: "#DC2626" } }}>
             <DeleteOutlineIcon sx={{ fontSize: 17 }} />
           </IconButton>
         </span>

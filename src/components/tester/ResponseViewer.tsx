@@ -14,7 +14,7 @@ function statusColor(status: number): string {
   if (status >= 400) return "#D97706";
   if (status >= 300) return "#7C3AED";
   if (status >= 200) return "#16A34A";
-  return "#71717A";
+  return "#6B7280";
 }
 
 // Pretty-print JSON bodies; fall back to raw text for anything else.
@@ -31,7 +31,7 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
 
   if (loading) {
     return (
-      <Typography variant="body2" sx={{ color: "#71717A", mt: 1 }}>
+      <Typography variant="body2" sx={{ color: "#6B7280", mt: 1 }}>
         Sending request…
       </Typography>
     );
@@ -63,7 +63,7 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
         <Chip
           size="small"
           label={result.status || "—"}
-          sx={{ fontWeight: 800, color: "#fff", bgcolor: statusColor(result.status), border: `2px solid ${line}` }}
+          sx={{ fontWeight: 600, color: "#fff", bgcolor: statusColor(result.status), border: `1px solid ${line}` }}
         />
         <MonoTag>{result.durationMs} ms</MonoTag>
         <MonoTag>{result.size} B</MonoTag>
@@ -78,7 +78,7 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
             direction="row"
             spacing={0.5}
             onClick={() => setShowHeaders((v) => !v)}
-            sx={{ alignItems: "center", cursor: "pointer", color: "#52525B", userSelect: "none" }}
+            sx={{ alignItems: "center", cursor: "pointer", color: "#4B5563", userSelect: "none" }}
           >
             <ExpandMoreIcon sx={{ fontSize: 18, transform: showHeaders ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform .15s" }} />
             <Typography variant="caption" sx={{ fontWeight: 700 }}>
@@ -86,11 +86,11 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
             </Typography>
           </Stack>
           <Collapse in={showHeaders}>
-            <Box sx={{ mt: 0.75, p: 1.25, border: `2px solid ${line}`, borderRadius: "10px", bgcolor: "#FBFBFC", fontFamily: "var(--font-mono, monospace)", fontSize: 12 }}>
+            <Box sx={{ mt: 0.75, p: 1.25, border: `1px solid ${line}`, borderRadius: "10px", bgcolor: "#F8FAFC", fontFamily: "var(--font-mono, monospace)", fontSize: 12 }}>
               {headerEntries.map(([key, values]) => (
                 <Box key={key} sx={{ display: "flex", gap: 1, py: 0.15 }}>
                   <Box component="span" sx={{ color: "#2563EB", fontWeight: 700 }}>{key}:</Box>
-                  <Box component="span" sx={{ color: "#18181B", wordBreak: "break-all" }}>{values.join(", ")}</Box>
+                  <Box component="span" sx={{ color: "#111827", wordBreak: "break-all" }}>{values.join(", ")}</Box>
                 </Box>
               ))}
             </Box>
@@ -99,12 +99,12 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
       ) : null}
 
       <Box sx={{ mt: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: "#52525B" }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: "#4B5563" }}>
           Response body {json ? "" : "(raw)"}
         </Typography>
         <Box sx={{ mt: 0.5 }}>
           {result.body ? <JsonView code={code} maxHeight={340} /> : (
-            <Typography variant="body2" sx={{ color: "#A1A1AA", fontStyle: "italic" }}>(empty body)</Typography>
+            <Typography variant="body2" sx={{ color: "#94A3B8", fontStyle: "italic" }}>(empty body)</Typography>
           )}
         </Box>
       </Box>

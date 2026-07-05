@@ -86,7 +86,7 @@ export function SchemaNodeRow({ node, depth, cb }: { node: SchemaNode; depth: nu
           bgcolor: selected ? "#EFF6FF" : hint === "inside" ? "#F0FDF4" : "transparent",
           boxShadow: selected ? "inset 2px 0 0 #2563EB" : hint === "inside" ? "inset 0 0 0 1.5px #16A34A" : "none",
           transition: "background-color .1s ease",
-          "&:hover": { bgcolor: selected ? "#EFF6FF" : "#FAFAFA" },
+          "&:hover": { bgcolor: selected ? "#EFF6FF" : "#F8FAFC" },
           "&:hover .row-actions": { opacity: 1 },
           // drop line indicator
           "&::before":
@@ -117,7 +117,7 @@ export function SchemaNodeRow({ node, depth, cb }: { node: SchemaNode; depth: nu
               e.stopPropagation();
               cb.onToggle(node.id);
             }}
-            sx={{ p: 0.25, color: "#71717A", "&:hover": { bgcolor: "transparent" } }}
+            sx={{ p: 0.25, color: "#6B7280", "&:hover": { bgcolor: "transparent" } }}
           >
             <ChevronRightIcon sx={{ fontSize: 18, transition: "transform .12s ease", transform: open ? "rotate(90deg)" : "none" }} />
           </IconButton>
@@ -132,7 +132,7 @@ export function SchemaNodeRow({ node, depth, cb }: { node: SchemaNode; depth: nu
             fontFamily: "var(--font-mono, monospace)",
             fontSize: 13,
             fontWeight: 700,
-            color: node.change === "removed" ? "#A1A1AA" : "#18181B",
+            color: node.change === "removed" ? "#94A3B8" : "#111827",
             textDecoration: node.change === "removed" ? "line-through" : "none",
             whiteSpace: "nowrap",
           }}
@@ -142,14 +142,14 @@ export function SchemaNodeRow({ node, depth, cb }: { node: SchemaNode; depth: nu
 
         {node.required ? (
           <Tooltip title="Required">
-            <Box component="span" sx={{ color: "#DC2626", fontWeight: 800, fontSize: 13, lineHeight: 1 }}>*</Box>
+            <Box component="span" sx={{ color: "#DC2626", fontWeight: 600, fontSize: 13, lineHeight: 1 }}>*</Box>
           </Tooltip>
         ) : null}
 
         <TypeChip type={node.type} suffix={node.type === "array" && node.items ? `<${node.items.type}>` : undefined} />
 
         {node.nullable ? (
-          <Box component="span" sx={{ fontSize: 10, fontWeight: 700, color: "#71717A", border: "1px solid #E4E4E7", borderRadius: "4px", px: 0.4 }}>
+          <Box component="span" sx={{ fontSize: 10, fontWeight: 700, color: "#6B7280", border: "1px solid #EEF2F6", borderRadius: "4px", px: 0.4 }}>
             nullable
           </Box>
         ) : null}
@@ -172,29 +172,29 @@ export function SchemaNodeRow({ node, depth, cb }: { node: SchemaNode; depth: nu
         <Box className="row-actions" sx={{ display: "flex", alignItems: "center", gap: 0.25, opacity: 0, transition: "opacity .12s ease" }}>
           {node.type === "object" ? (
             <Tooltip title="Add child field">
-              <IconButton size="small" onClick={(e) => { e.stopPropagation(); cb.onAddChild(node.id); }} sx={{ p: 0.4, color: "#52525B" }}>
+              <IconButton size="small" onClick={(e) => { e.stopPropagation(); cb.onAddChild(node.id); }} sx={{ p: 0.4, color: "#4B5563" }}>
                 <AddIcon sx={{ fontSize: 16 }} />
               </IconButton>
             </Tooltip>
           ) : null}
           {node.type === "array" && !node.items ? (
             <Tooltip title="Add item schema">
-              <IconButton size="small" onClick={(e) => { e.stopPropagation(); cb.onAddItem(node.id); }} sx={{ p: 0.4, color: "#52525B" }}>
+              <IconButton size="small" onClick={(e) => { e.stopPropagation(); cb.onAddItem(node.id); }} sx={{ p: 0.4, color: "#4B5563" }}>
                 <AddIcon sx={{ fontSize: 16 }} />
               </IconButton>
             </Tooltip>
           ) : null}
           <Tooltip title="Duplicate">
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); cb.onDuplicate(node.id); }} sx={{ p: 0.4, color: "#52525B" }}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); cb.onDuplicate(node.id); }} sx={{ p: 0.4, color: "#4B5563" }}>
               <ContentCopyIcon sx={{ fontSize: 14 }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete">
-            <IconButton size="small" onClick={(e) => { e.stopPropagation(); cb.onDelete(node.id); }} sx={{ p: 0.4, color: "#A1A1AA", "&:hover": { color: "#DC2626" } }}>
+            <IconButton size="small" onClick={(e) => { e.stopPropagation(); cb.onDelete(node.id); }} sx={{ p: 0.4, color: "#94A3B8", "&:hover": { color: "#DC2626" } }}>
               <DeleteOutlineIcon sx={{ fontSize: 15 }} />
             </IconButton>
           </Tooltip>
-          <Box sx={{ display: "flex", color: "#C4C4CC", cursor: "grab" }}>
+          <Box sx={{ display: "flex", color: "#CBD5E1", cursor: "grab" }}>
             <DragIndicatorIcon sx={{ fontSize: 16 }} />
           </Box>
         </Box>

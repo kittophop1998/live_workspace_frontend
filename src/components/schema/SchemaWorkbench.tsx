@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, Fab, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import AccountTreeIcon from "@mui/icons-material/AccountTreeOutlined";
 import SchemaIcon from "@mui/icons-material/SchemaOutlined";
 import CodeIcon from "@mui/icons-material/CodeOutlined";
@@ -27,7 +27,7 @@ const MODES: { id: Mode; label: string; icon: React.ReactNode }[] = [
 
 function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
   return (
-    <Box sx={{ display: "flex", flexWrap: { xs: "wrap", sm: "nowrap" }, p: 0.4, gap: 0.4, bgcolor: "#F4F4F5", border: `2px solid ${line}`, borderRadius: "10px", maxWidth: "100%" }}>
+    <Box sx={{ display: "flex", flexWrap: { xs: "wrap", sm: "nowrap" }, p: 0.5, gap: 0.4, bgcolor: "#F1F5F9", borderRadius: "10px", maxWidth: "100%" }}>
       {MODES.map((m) => {
         const active = m.id === mode;
         return (
@@ -47,10 +47,9 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
               fontSize: 12.5,
               fontWeight: 700,
               whiteSpace: "nowrap",
-              color: active ? "#0A0A0A" : "#71717A",
+              color: active ? "#111827" : "#6B7280",
               bgcolor: active ? "#fff" : "transparent",
-              boxShadow: active ? "1px 1px 0 #0A0A0A" : "none",
-              border: active ? `1.5px solid ${line}` : "1.5px solid transparent",
+              boxShadow: active ? "0 1px 2px rgba(15,23,42,0.08)" : "none",
             }}
           >
             {m.icon}
@@ -100,7 +99,7 @@ function JsonSchemaMode({ scope }: { scope: string }) {
   return (
     <Box>
       <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center" }}>
-        <Typography sx={{ fontSize: 12, color: "#A1A1AA", flex: 1 }}>
+        <Typography sx={{ fontSize: 12, color: "#94A3B8", flex: 1 }}>
           {editing ? "Editing — Apply rebuilds the Visual Builder tree" : "Read-only · synced with the Visual Builder"}
         </Typography>
         {editing ? (
@@ -136,7 +135,7 @@ function ExampleMode({ scope }: { scope: string }) {
   return (
     <Box>
       <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center" }}>
-        <Typography sx={{ fontSize: 12, color: "#A1A1AA", flex: 1 }}>Generated from the schema · read-only</Typography>
+        <Typography sx={{ fontSize: 12, color: "#94A3B8", flex: 1 }}>Generated from the schema · read-only</Typography>
         <Button size="small" variant="outlined" onClick={() => navigator.clipboard?.writeText(text)}>Copy</Button>
       </Stack>
       <JsonView code={text} />
@@ -151,7 +150,7 @@ function TypeScriptMode({ scope, typeName }: { scope: string; typeName: string }
   return (
     <Box>
       <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center" }}>
-        <Typography sx={{ fontSize: 12, color: "#A1A1AA", flex: 1 }}>Generated from the schema · read-only</Typography>
+        <Typography sx={{ fontSize: 12, color: "#94A3B8", flex: 1 }}>Generated from the schema · read-only</Typography>
         <Button size="small" variant="outlined" onClick={() => navigator.clipboard?.writeText(text)}>Copy</Button>
       </Stack>
       <Box
@@ -159,13 +158,13 @@ function TypeScriptMode({ scope, typeName }: { scope: string; typeName: string }
         sx={{
           m: 0,
           p: 2,
-          bgcolor: "#FBFBFC",
-          border: `2px solid ${line}`,
+          bgcolor: "#F8FAFC",
+          border: `1px solid ${line}`,
           borderRadius: "12px",
           fontFamily: "var(--font-mono, monospace)",
           fontSize: 12.5,
           lineHeight: 1.7,
-          color: "#18181B",
+          color: "#111827",
           overflow: "auto",
           maxHeight: 460,
           whiteSpace: "pre",
@@ -191,34 +190,25 @@ export function SchemaWorkbench({ scope, seedFields, typeName = "Schema" }: { sc
 
   return (
     <Box sx={{ position: "relative" }}>
-      <Box sx={{ mb: 2 }}>
+      {/* Contextual toolbar: view modes on the left, AI assistant on the right. */}
+      <Stack direction="row" sx={{ mb: 2, gap: 1, alignItems: "center", flexWrap: "wrap" }}>
         <ModeTabs mode={mode} onChange={setMode} />
-      </Box>
+        <Box sx={{ flex: 1 }} />
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setAiOpen(true)}
+          startIcon={<AutoAwesomeIcon sx={{ fontSize: 16, color: "#8B5CF6" }} />}
+          sx={{ color: "#6D28D9", borderColor: "#EDE9FE", bgcolor: "#F5F3FF", "&:hover": { bgcolor: "#EDE9FE", borderColor: "#DDD6FE" } }}
+        >
+          Ask AI
+        </Button>
+      </Stack>
 
       {mode === "visual" ? <SchemaTreeEditor scope={scope} /> : null}
       {mode === "schema" ? <JsonSchemaMode scope={scope} /> : null}
       {mode === "example" ? <ExampleMode scope={scope} /> : null}
       {mode === "typescript" ? <TypeScriptMode scope={scope} typeName={typeName} /> : null}
-
-      {/* Floating Ask AI */}
-      <Fab
-        variant="extended"
-        onClick={() => setAiOpen(true)}
-        sx={{
-          position: "sticky",
-          bottom: 16,
-          float: "right",
-          mt: 2,
-          bgcolor: "#0A0A0A",
-          color: "#fff",
-          border: `2px solid ${line}`,
-          boxShadow: "3px 3px 0 #0A0A0A",
-          "&:hover": { bgcolor: "#1f1f1f" },
-        }}
-      >
-        <AutoAwesomeIcon sx={{ fontSize: 18, mr: 1, color: "#C4B5FD" }} />
-        Ask AI
-      </Fab>
 
       <AskAiPanel scope={scope} nodes={nodes} open={aiOpen} onClose={() => setAiOpen(false)} />
     </Box>

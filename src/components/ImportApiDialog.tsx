@@ -24,7 +24,7 @@ you select is created as a new endpoint in this workspace.`;
 
 function methodChip(method: string) {
   return (
-    <Box component="span" sx={{ fontFamily: "var(--font-mono,monospace)", fontSize: 11, fontWeight: 800, color: methodColor[method] ?? "#52525B", width: 52, flexShrink: 0 }}>
+    <Box component="span" sx={{ fontFamily: "var(--font-mono,monospace)", fontSize: 11, fontWeight: 600, color: methodColor[method] ?? "#4B5563", width: 52, flexShrink: 0 }}>
       {method}
     </Box>
   );
@@ -119,7 +119,7 @@ export function ImportApiDialog() {
       </Button>
 
       <Dialog open={open} onClose={busy ? undefined : reset} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 800 }}>Import API specification</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600 }}>Import API specification</DialogTitle>
         <DialogContent>
           <input
             ref={fileInput}
@@ -133,7 +133,7 @@ export function ImportApiDialog() {
             <Button variant="outlined" startIcon={<UploadFileIcon />} onClick={() => fileInput.current?.click()}>
               Upload file
             </Button>
-            <Typography variant="caption" sx={{ color: "#71717A" }}>
+            <Typography variant="caption" sx={{ color: "#6B7280" }}>
               OpenAPI (.yaml / .json) or Postman collection (.json)
             </Typography>
           </Stack>
@@ -157,14 +157,14 @@ export function ImportApiDialog() {
           {parsed ? (
             <Box sx={{ mt: 2 }}>
               <Stack direction="row" sx={{ alignItems: "center", mb: 1 }}>
-                <Typography variant="caption" sx={{ color: "#71717A", textTransform: "uppercase", letterSpacing: "0.08em", flex: 1 }}>
+                <Typography variant="caption" sx={{ color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.08em", flex: 1 }}>
                   Endpoints to create ({picked.size}/{parsed.operations.length})
                 </Typography>
                 <Button size="small" variant="outlined" onClick={toggleAll}>
                   {allPicked ? "Clear all" : "Select all"}
                 </Button>
               </Stack>
-              <Box sx={{ border: `2px solid ${line}`, borderRadius: "8px", maxHeight: 240, overflowY: "auto" }}>
+              <Box sx={{ border: `1px solid ${line}`, borderRadius: "8px", maxHeight: 240, overflowY: "auto" }}>
                 {parsed.operations.map((op, i) => (
                   <Box
                     key={`${op.id}-${i}`}
@@ -177,7 +177,7 @@ export function ImportApiDialog() {
                       px: 1,
                       py: 0.5,
                       cursor: "pointer",
-                      borderBottom: `1.5px solid #E4E4E7`,
+                      borderBottom: `1px solid #EEF2F6`,
                       bgcolor: picked.has(op.id) ? "#FFFBEB" : "#fff",
                       "&:last-of-type": { borderBottom: "none" },
                     }}
@@ -187,7 +187,7 @@ export function ImportApiDialog() {
                     <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12.5, fontWeight: 700, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {op.path}
                     </Typography>
-                    <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: "#A1A1AA", flexShrink: 0 }}>
+                    <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "#94A3B8", flexShrink: 0 }}>
                       {op.responses.length} resp · {op.requestFields.length} req
                     </Typography>
                   </Box>

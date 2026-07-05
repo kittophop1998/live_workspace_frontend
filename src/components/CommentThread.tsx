@@ -7,7 +7,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar, MonoTag, relativeTime, useNow } from "@/components/common";
-import { line } from "@/components/theme";
+import { blue, blueSoft, ink, line, secondaryText } from "@/components/theme";
 
 export function CommentThread() {
   const selectedId = useWorkspaceStore((s) => s.selectedId);
@@ -21,7 +21,7 @@ export function CommentThread() {
   const [draft, setDraft] = useState("");
   useNow();
 
-  const colorFor = (name: string) => collaborators.find((c) => c.name === name)?.color ?? "#71717A";
+  const colorFor = (name: string) => collaborators.find((c) => c.name === name)?.color ?? "#94A3B8";
   const activeField = resource?.fields.find((f) => f.id === activeFieldId);
 
   const thread = comments
@@ -38,52 +38,52 @@ export function CommentThread() {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Scope indicator */}
-      <Box sx={{ px: 1.5, py: 1, borderBottom: `1.5px solid #E4E4E7`, display: "flex", alignItems: "center", gap: 1 }}>
+      <Box sx={{ px: 1.75, py: 1.25, borderBottom: `1px solid ${line}`, display: "flex", alignItems: "center", gap: 1 }}>
         {activeField ? (
           <>
-            <Typography sx={{ fontSize: 12, color: "#71717A" }}>Field:</Typography>
+            <Typography sx={{ fontSize: 12, color: secondaryText }}>Field:</Typography>
             <MonoTag>{activeField.key}</MonoTag>
             <IconButton size="small" onClick={() => focusComment(null)} sx={{ ml: "auto" }}>
               <CloseIcon sx={{ fontSize: 15 }} />
             </IconButton>
           </>
         ) : (
-          <Typography sx={{ fontSize: 12, color: "#71717A" }}>
-            All comments on <b style={{ color: line }}>{resource?.name}</b>
+          <Typography sx={{ fontSize: 12, color: secondaryText }}>
+            All comments on <Box component="b" sx={{ color: ink, fontWeight: 600 }}>{resource?.name}</Box>
           </Typography>
         )}
       </Box>
 
-      <Box sx={{ flex: 1, overflowY: "auto", p: 1.5 }}>
+      <Box sx={{ flex: 1, overflowY: "auto", p: 1.75 }}>
         {thread.length === 0 ? (
-          <Stack spacing={1} sx={{ alignItems: "center", mt: 5, color: "#A1A1AA" }}>
-            <ForumOutlinedIcon sx={{ fontSize: 32 }} />
-            <Typography sx={{ fontSize: 13, textAlign: "center" }}>
-              {activeField ? "No comments on this field yet." : "No comments yet. Start the discussion."}
+          <Stack spacing={1.25} sx={{ alignItems: "center", mt: 6, color: "#B8C1CD", px: 3, textAlign: "center" }}>
+            <ForumOutlinedIcon sx={{ fontSize: 30 }} />
+            <Typography sx={{ fontSize: 13, color: secondaryText }}>
+              {activeField ? "No comments on this field yet." : "No comments yet — start the discussion."}
             </Typography>
           </Stack>
         ) : (
-          <Stack spacing={1.5}>
+          <Stack spacing={1.25}>
             {thread.map((c) => {
               const field = resource?.fields.find((f) => f.id === c.fieldId);
               return (
-                <Box key={c.id} sx={{ border: `2px solid ${line}`, borderRadius: "10px", p: 1.25, boxShadow: "2px 2px 0 #0A0A0A" }}>
-                  <Stack direction="row" spacing={1} sx={{ mb: 0.5, alignItems: "center" }}>
+                <Box key={c.id} sx={{ bgcolor: "#F8FAFC", border: `1px solid ${line}`, borderRadius: "12px", p: 1.5 }}>
+                  <Stack direction="row" spacing={1} sx={{ mb: 0.75, alignItems: "center" }}>
                     <Avatar name={c.author} color={colorFor(c.author)} size={24} />
-                    <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{c.author}</Typography>
+                    <Typography sx={{ fontSize: 13, fontWeight: 600, color: ink }}>{c.author}</Typography>
                     <Chip
                       size="small"
                       label={c.role}
-                      sx={{ height: 18, fontSize: 9.5, textTransform: "uppercase", bgcolor: c.role === "backend" ? "#DBEAFE" : "#FCE7F3" }}
+                      sx={{ height: 18, fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", bgcolor: c.role === "backend" ? "#DBEAFE" : "#FCE7F3", color: c.role === "backend" ? "#1D4ED8" : "#BE185D" }}
                     />
-                    <Typography sx={{ fontSize: 10.5, color: "#A1A1AA", ml: "auto" }}>{relativeTime(c.at)}</Typography>
+                    <Typography sx={{ fontSize: 10.5, color: "#B8C1CD", ml: "auto" }}>{relativeTime(c.at)}</Typography>
                   </Stack>
                   {!activeFieldId && field ? (
-                    <Box sx={{ mb: 0.5 }}>
+                    <Box sx={{ mb: 0.75 }}>
                       <MonoTag sx={{ fontSize: 10 }}>{field.key}</MonoTag>
                     </Box>
                   ) : null}
-                  <Typography sx={{ fontSize: 13, lineHeight: 1.5 }}>{c.body}</Typography>
+                  <Typography sx={{ fontSize: 13, lineHeight: 1.55, color: ink }}>{c.body}</Typography>
                 </Box>
               );
             })}
@@ -92,9 +92,20 @@ export function CommentThread() {
       </Box>
 
       {/* Composer */}
-      <Box sx={{ p: 1.5, borderTop: `2px solid ${line}`, bgcolor: "#FAFAFA" }}>
+      <Box sx={{ p: 1.75, borderTop: `1px solid ${line}`, bgcolor: "#fff" }}>
         <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
-          <Box sx={{ flex: 1, border: `2px solid ${line}`, borderRadius: "8px", bgcolor: "#fff", px: 1, py: 0.5 }}>
+          <Box
+            sx={{
+              flex: 1,
+              border: `1px solid ${line}`,
+              borderRadius: "10px",
+              bgcolor: "#F8FAFC",
+              px: 1.25,
+              py: 0.75,
+              transition: "border-color .15s ease, background-color .15s ease, box-shadow .15s ease",
+              "&:focus-within": { bgcolor: "#fff", borderColor: blue, boxShadow: `0 0 0 3px ${blueSoft}` },
+            }}
+          >
             <InputBase
               multiline
               maxRows={4}
@@ -108,12 +119,12 @@ export function CommentThread() {
               sx={{ fontSize: 13 }}
             />
           </Box>
-          <Button variant="contained" onClick={submit} disabled={!draft.trim()} sx={{ minWidth: 0, px: 1.25, height: 40 }}>
+          <Button variant="contained" onClick={submit} disabled={!draft.trim()} sx={{ minWidth: 0, px: 1.5, height: 42 }}>
             <SendIcon sx={{ fontSize: 17 }} />
           </Button>
         </Box>
-        <Typography sx={{ fontSize: 10, color: "#A1A1AA", mt: 0.5 }}>
-          Posting as <b>{me?.name ?? "…"}</b> · ⌘/Ctrl+Enter to send
+        <Typography sx={{ fontSize: 10.5, color: "#B8C1CD", mt: 0.75 }}>
+          Posting as <Box component="b" sx={{ color: secondaryText, fontWeight: 600 }}>{me?.name ?? "…"}</Box> · ⌘/Ctrl+Enter to send
         </Typography>
       </Box>
     </Box>

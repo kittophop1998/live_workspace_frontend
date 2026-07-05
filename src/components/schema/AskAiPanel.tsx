@@ -80,20 +80,20 @@ export function AskAiPanel({
       anchor="right"
       open={open}
       onClose={onClose}
-      slotProps={{ paper: { sx: { width: { xs: "100%", sm: 420 }, borderLeft: `2px solid ${line}` } } }}
+      slotProps={{ paper: { sx: { width: { xs: "100%", sm: 420 }, borderLeft: `1px solid ${line}` } } }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2.5, py: 2, borderBottom: `2px solid ${line}` }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2.5, py: 2, borderBottom: `1px solid ${line}` }}>
         <AutoAwesomeIcon sx={{ fontSize: 20, color: "#7C3AED" }} />
         <Box sx={{ flex: 1 }}>
           <Typography variant="h2">Ask AI</Typography>
-          <Typography sx={{ fontSize: 11, color: "#A1A1AA" }}>Offline assistant · rule-based, no external LLM</Typography>
+          <Typography sx={{ fontSize: 11, color: "#94A3B8" }}>Offline assistant · rule-based, no external LLM</Typography>
         </Box>
         <IconButton size="small" onClick={onClose}>
           <CloseIcon sx={{ fontSize: 18 }} />
         </IconButton>
       </Box>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons={false} sx={{ px: 1.5, borderBottom: `2px solid ${line}`, minHeight: 40 }}>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons={false} sx={{ px: 1.5, borderBottom: `1px solid ${line}`, minHeight: 40 }}>
         <Tab sx={tabSx} label="Generate" />
         <Tab sx={tabSx} label="Convert JSON" />
         <Tab sx={tabSx} label="Explain" />
@@ -105,7 +105,7 @@ export function AskAiPanel({
         {/* Generate from description */}
         {tab === 0 ? (
           <Stack spacing={1.5}>
-            <Typography sx={{ fontSize: 13, color: "#52525B" }}>
+            <Typography sx={{ fontSize: 13, color: "#4B5563" }}>
               Describe the fields in plain language — one per line or comma-separated.
             </Typography>
             <TextField
@@ -126,7 +126,7 @@ export function AskAiPanel({
         {/* Convert pasted JSON */}
         {tab === 1 ? (
           <Stack spacing={1.5}>
-            <Typography sx={{ fontSize: 13, color: "#52525B" }}>
+            <Typography sx={{ fontSize: 13, color: "#4B5563" }}>
               Paste a JSON object — it becomes a typed visual schema (nested objects & arrays included).
             </Typography>
             <TextField
@@ -152,7 +152,7 @@ export function AskAiPanel({
         {/* Explain a field */}
         {tab === 2 ? (
           <Stack spacing={1.5}>
-            <Typography sx={{ fontSize: 13, color: "#52525B" }}>Pick a field to explain.</Typography>
+            <Typography sx={{ fontSize: 13, color: "#4B5563" }}>Pick a field to explain.</Typography>
             <Stack direction="row" sx={{ flexWrap: "wrap", gap: 0.75 }}>
               {nodes.map((n) => (
                 <Chip
@@ -163,10 +163,10 @@ export function AskAiPanel({
                   sx={{ fontFamily: "var(--font-mono,monospace)", bgcolor: explainId === n.id ? "#EFF6FF" : undefined }}
                 />
               ))}
-              {nodes.length === 0 ? <Typography sx={{ fontSize: 12, color: "#A1A1AA" }}>No fields to explain yet.</Typography> : null}
+              {nodes.length === 0 ? <Typography sx={{ fontSize: 12, color: "#94A3B8" }}>No fields to explain yet.</Typography> : null}
             </Stack>
             {explainNodeObj ? (
-              <Box sx={{ p: 2, border: "2px solid #0A0A0A", borderRadius: "12px", bgcolor: "#FBFBFC", fontSize: 13.5, lineHeight: 1.7 }}>
+              <Box sx={{ p: 2, border: "1px solid #E8EDF3", borderRadius: "12px", bgcolor: "#F8FAFC", fontSize: 13.5, lineHeight: 1.7 }}>
                 {explainNode(explainNodeObj)}
               </Box>
             ) : null}
@@ -177,7 +177,7 @@ export function AskAiPanel({
         {tab === 3 ? (
           <Stack spacing={1.5}>
             <Stack direction="row" sx={{ alignItems: "center" }}>
-              <Typography sx={{ fontSize: 13, color: "#52525B", flex: 1 }}>Generated sample payload.</Typography>
+              <Typography sx={{ fontSize: 13, color: "#4B5563", flex: 1 }}>Generated sample payload.</Typography>
               <Button size="small" variant="outlined" onClick={() => navigator.clipboard?.writeText(example)}>
                 Copy
               </Button>
@@ -189,28 +189,28 @@ export function AskAiPanel({
         {/* Reusable component suggestions */}
         {tab === 4 ? (
           <Stack spacing={1.5}>
-            <Typography sx={{ fontSize: 13, color: "#52525B" }}>
+            <Typography sx={{ fontSize: 13, color: "#4B5563" }}>
               Repeated object shapes that could be extracted into a shared component.
             </Typography>
             {reusable.length === 0 ? (
-              <Box sx={{ p: 2, color: "#A1A1AA", fontSize: 13, border: "1.5px dashed #D4D4D8", borderRadius: "10px" }}>
+              <Box sx={{ p: 2, color: "#94A3B8", fontSize: 13, border: "1.5px dashed #E2E8F0", borderRadius: "10px" }}>
                 No duplicate structures detected.
               </Box>
             ) : (
               reusable.map((r) => (
-                <Box key={r.signature} sx={{ p: 1.5, border: "2px solid #0A0A0A", borderRadius: "10px", bgcolor: "#fff" }}>
+                <Box key={r.signature} sx={{ p: 1.5, border: "1px solid #E8EDF3", borderRadius: "10px", bgcolor: "#fff" }}>
                   <Stack direction="row" sx={{ alignItems: "center", gap: 1, mb: 0.5 }}>
-                    <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 800, fontSize: 14 }}>{r.suggestedName}</Typography>
+                    <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 600, fontSize: 14 }}>{r.suggestedName}</Typography>
                     <Chip size="small" label={`${r.occurrences.length}× · ${r.fieldCount} fields`} />
                   </Stack>
-                  <Typography sx={{ fontSize: 12, color: "#71717A" }}>
+                  <Typography sx={{ fontSize: 12, color: "#6B7280" }}>
                     Appears as: {r.occurrences.map((k) => <Box key={k} component="span" sx={{ fontFamily: "var(--font-mono,monospace)" }}>{k} </Box>)}
                   </Typography>
                 </Box>
               ))
             )}
             <Divider />
-            <Typography sx={{ fontSize: 11, color: "#A1A1AA" }}>
+            <Typography sx={{ fontSize: 11, color: "#94A3B8" }}>
               Extraction to a real shared $ref component is a backend-model change (not yet supported) — this is a detector + suggestion.
             </Typography>
           </Stack>

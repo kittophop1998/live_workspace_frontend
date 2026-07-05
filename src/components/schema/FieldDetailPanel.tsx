@@ -38,7 +38,7 @@ function jsonish(v: JsonValue | undefined): string {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Typography sx={{ fontSize: 10.5, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "#A1A1AA", mb: 0.75 }}>
+    <Typography sx={{ fontSize: 10.5, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94A3B8", mb: 0.75 }}>
       {children}
     </Typography>
   );
@@ -75,7 +75,7 @@ function DetailForm({ scope, node, onClose }: { scope: string; node: SchemaNode;
   return (
     <Box sx={{ width: { xs: "100%", md: 384 }, display: "flex", flexDirection: "column", height: "100%" }}>
       {/* header */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2.5, py: 2, borderBottom: `2px solid ${line}` }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2.5, py: 2, borderBottom: `1px solid ${line}` }}>
         <TypeIcon type={node.type} />
         <Typography variant="h2" sx={{ fontFamily: "var(--font-mono,monospace)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
           {node.key}
@@ -201,7 +201,7 @@ function DetailForm({ scope, node, onClose }: { scope: string; node: SchemaNode;
               </>
             ) : null}
             {!isString && !isNumeric ? (
-              <Typography sx={{ fontSize: 12, color: "#A1A1AA" }}>No validation rules for this type.</Typography>
+              <Typography sx={{ fontSize: 12, color: "#94A3B8" }}>No validation rules for this type.</Typography>
             ) : null}
           </Stack>
         </Box>
@@ -230,8 +230,8 @@ export function FieldDetailPanel({
       slotProps={{
         paper: {
           sx: {
-            borderLeft: mobile ? "none" : `2px solid ${line}`,
-            borderTop: mobile ? `2px solid ${line}` : "none",
+            borderLeft: mobile ? "none" : `1px solid ${line}`,
+            borderTop: mobile ? `1px solid ${line}` : "none",
             borderTopLeftRadius: mobile ? 16 : 0,
             borderTopRightRadius: mobile ? 16 : 0,
             maxHeight: mobile ? "82vh" : "100%",

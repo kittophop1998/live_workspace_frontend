@@ -21,10 +21,10 @@ export const typeColor: Record<NodeType, string> = {
   boolean: "#D97706",
   uuid: "#4F46E5",
   timestamp: "#DB2777",
-  object: "#0A0A0A",
+  object: "#111827",
   array: "#0D9488",
   enum: "#EA580C",
-  null: "#71717A",
+  null: "#6B7280",
 };
 
 function iconFor(type: NodeType): ReactNode {
@@ -68,8 +68,8 @@ export function TypeChip({ type, suffix }: { type: NodeType; suffix?: string }) 
         fontSize: 11,
         fontWeight: 700,
         color: typeColor[type],
-        bgcolor: "#F4F4F5",
-        border: "1px solid #E4E4E7",
+        bgcolor: "#F1F5F9",
+        border: "1px solid #EEF2F6",
         borderRadius: "5px",
         px: 0.6,
         py: 0.1,
@@ -77,7 +77,7 @@ export function TypeChip({ type, suffix }: { type: NodeType; suffix?: string }) 
       }}
     >
       {type}
-      {suffix ? <Box component="span" sx={{ color: "#A1A1AA" }}>{suffix}</Box> : null}
+      {suffix ? <Box component="span" sx={{ color: "#94A3B8" }}>{suffix}</Box> : null}
     </Box>
   );
 }

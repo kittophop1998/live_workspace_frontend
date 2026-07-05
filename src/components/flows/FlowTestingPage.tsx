@@ -83,7 +83,7 @@ export function FlowTestingPage() {
   // column and the mobile drawer. onNavigate closes the drawer after a pick.
   const sidebar = (onNavigate?: () => void) => (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, bgcolor: "#fff" }}>
-      <Box sx={{ p: 2, borderBottom: `2px solid ${line}` }}>
+      <Box sx={{ p: 2, borderBottom: `1px solid ${line}` }}>
         <input
           ref={fileRef}
           type="file"
@@ -94,14 +94,14 @@ export function FlowTestingPage() {
         <Button fullWidth variant="contained" startIcon={<UploadFileIcon />} onClick={() => { fileRef.current?.click(); onNavigate?.(); }} disabled={busy}>
           Upload Arazzo file
         </Button>
-        <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#71717A" }}>
+        <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#6B7280" }}>
           OpenAPI Workflows (Arazzo) JSON or YAML.
         </Typography>
       </Box>
       <Box sx={{ flex: 1, overflowY: "auto", p: 1 }}>
         <Typography variant="h3" sx={{ px: 1, py: 1 }}>Saved workflows</Typography>
         {flows.length === 0 ? (
-          <Typography variant="body2" sx={{ px: 1, color: "#A1A1AA" }}>None yet — upload a workflow to begin.</Typography>
+          <Typography variant="body2" sx={{ px: 1, color: "#94A3B8" }}>None yet — upload a workflow to begin.</Typography>
         ) : (
           <Stack spacing={0.5}>
             {flows.map((flow) => (
@@ -117,7 +117,7 @@ export function FlowTestingPage() {
               >
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{flow.name}</Typography>
-                  <Typography variant="caption" sx={{ color: "#71717A" }}>{flow.steps.length} steps</Typography>
+                  <Typography variant="caption" sx={{ color: "#6B7280" }}>{flow.steps.length} steps</Typography>
                 </Box>
                 <Tooltip title="Delete workflow">
                   <Box
@@ -127,7 +127,7 @@ export function FlowTestingPage() {
                     onClick={(e) => { e.stopPropagation(); deleteFlow(flow); }}
                     sx={{
                       display: "flex", flexShrink: 0, cursor: "pointer", p: 0.5, borderRadius: "6px",
-                      color: "#A1A1AA", opacity: { xs: 1, md: 0 }, transition: "opacity 120ms",
+                      color: "#94A3B8", opacity: { xs: 1, md: 0 }, transition: "opacity 120ms",
                       "&:hover": { color: "#DC2626", bgcolor: "#FEE2E2" },
                     }}
                   >
@@ -145,7 +145,7 @@ export function FlowTestingPage() {
   return (
     <Box sx={{ height: "100%", display: "grid", gridTemplateColumns: { xs: "1fr", md: "280px minmax(0,1fr)" }, minHeight: 0 }}>
       {/* Sidebar: saved flows + upload (inline on desktop; drawer on mobile) */}
-      <Box sx={{ borderRight: `2px solid ${line}`, display: { xs: "none", md: "block" }, minHeight: 0 }}>
+      <Box sx={{ borderRight: `1px solid ${line}`, display: { xs: "none", md: "block" }, minHeight: 0 }}>
         {sidebar()}
       </Box>
       <Drawer
@@ -183,7 +183,7 @@ export function FlowTestingPage() {
             </Stack>
             <Stack spacing={2}>
               {preview.map((flow, i) => (
-                <Box key={i} sx={{ border: `2px solid ${line}`, borderRadius: "16px", bgcolor: "#fff", p: 2.5, boxShadow: "4px 4px 0 #0A0A0A" }}>
+                <Box key={i} sx={{ border: `1px solid ${line}`, borderRadius: "16px", bgcolor: "#fff", p: 2.5, boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 6px 20px rgba(15,23,42,0.07)" }}>
                   <FlowDefinitionView flow={flow} />
                   <Button variant="contained" startIcon={<SaveIcon sx={{ fontSize: 18 }} />} onClick={() => savePreview(flow, i)} disabled={busy} sx={{ mt: 2 }}>
                     Save workflow
@@ -195,8 +195,8 @@ export function FlowTestingPage() {
         ) : selected ? (
           <FlowDetail key={selected.id} flow={selected} />
         ) : (
-          <Box sx={{ height: "100%", display: "flex", flexDirection: "column", gap: 1.5, alignItems: "center", justifyContent: "center", color: "#A1A1AA" }}>
-            <Box sx={{ width: 64, height: 64, borderRadius: "16px", border: `2px dashed #C4C4CC`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Box sx={{ height: "100%", display: "flex", flexDirection: "column", gap: 1.5, alignItems: "center", justifyContent: "center", color: "#94A3B8" }}>
+            <Box sx={{ width: 64, height: 64, borderRadius: "16px", border: `1.5px dashed #E2E8F0`, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <AccountTreeOutlinedIcon sx={{ fontSize: 30 }} />
             </Box>
             <Typography sx={{ fontWeight: 600 }}>Upload an OpenAPI Workflow, or pick a saved one to run.</Typography>

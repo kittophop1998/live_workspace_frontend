@@ -148,17 +148,17 @@ export function SchemaTreeEditor({ scope }: { scope: string }) {
         onKeyDown={onKeyDown}
         onDragOver={(e) => e.preventDefault()}
         sx={{
-          border: `2px solid ${line}`,
+          border: `1px solid ${line}`,
           borderRadius: "12px",
           bgcolor: "#fff",
           overflow: "hidden",
           outline: "none",
           py: 0.5,
-          "& > *:not(:last-child)": { borderBottom: "1px solid #F4F4F5" },
+          "& > *:not(:last-child)": { borderBottom: "1px solid #F1F5F9" },
         }}
       >
         {nodes.length === 0 ? (
-          <Stack spacing={1} sx={{ alignItems: "center", py: 5, color: "#A1A1AA" }}>
+          <Stack spacing={1} sx={{ alignItems: "center", py: 5, color: "#94A3B8" }}>
             <AccountTreeOutlinedIcon sx={{ fontSize: 28 }} />
             <Typography sx={{ fontSize: 13, fontWeight: 600 }}>No fields yet — add one or use Ask AI / paste JSON.</Typography>
           </Stack>
@@ -167,7 +167,7 @@ export function SchemaTreeEditor({ scope }: { scope: string }) {
         )}
       </Box>
 
-      <Typography sx={{ mt: 1, fontSize: 11, color: "#A1A1AA" }}>
+      <Typography sx={{ mt: 1, fontSize: 11, color: "#94A3B8" }}>
         Drag to reorder · click a field to edit details · <b>Enter</b> add · <b>⌘/Ctrl+D</b> duplicate · <b>Del</b> remove
       </Typography>
 

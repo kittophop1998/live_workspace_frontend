@@ -74,7 +74,7 @@ function PasteJsonButton({ resourceId, status }: { resourceId: string; status: n
         Paste JSON
       </Button>
       <Dialog open={open} onClose={close} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 800 }}>Paste JSON to add fields</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600 }}>Paste JSON to add fields</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -124,7 +124,7 @@ function statusColor(status: number): string {
   if (status >= 200 && status < 300) return "#16A34A";
   if (status >= 400 && status < 500) return "#D97706";
   if (status >= 500) return "#DC2626";
-  return "#52525B";
+  return "#4B5563";
 }
 
 function statusLabel(status: number): string {
@@ -162,7 +162,7 @@ function ResponseFieldRow({
         gap: 1,
         px: 1.25,
         py: 0.85,
-        borderBottom: `1.5px solid ${line}`,
+        borderBottom: `1px solid ${line}`,
         bgcolor: "#fff",
         "&:last-of-type": { borderBottom: "none" },
       }}
@@ -187,7 +187,7 @@ function ResponseFieldRow({
           fontFamily: "var(--font-mono,monospace)",
           fontSize: 12,
           fontWeight: 700,
-          bgcolor: "#F4F4F5",
+          bgcolor: "#F1F5F9",
           "& .MuiOutlinedInput-notchedOutline": { borderColor: line, borderWidth: 1.5 },
           "& .MuiSelect-select": { py: 0.35 },
         }}
@@ -203,7 +203,7 @@ function ResponseFieldRow({
         <Box
           role="button"
           onClick={() => updateField(resourceId, status, field.id, { required: !field.required })}
-          sx={{ width: 26, textAlign: "center", fontSize: 11, fontWeight: 800, cursor: "pointer", color: field.required ? line : "#C4C4CC", flexShrink: 0 }}
+          sx={{ width: 26, textAlign: "center", fontSize: 11, fontWeight: 600, cursor: "pointer", color: field.required ? line : "#CBD5E1", flexShrink: 0 }}
         >
           REQ
         </Box>
@@ -214,7 +214,7 @@ function ResponseFieldRow({
           value={field.description ?? ""}
           placeholder="description"
           onChange={(e) => updateField(resourceId, status, field.id, { description: e.target.value })}
-          sx={{ fontSize: 12, color: "#52525B", width: "100%", "& input": { p: 0 } }}
+          sx={{ fontSize: 12, color: "#4B5563", width: "100%", "& input": { p: 0 } }}
         />
       </Box>
 
@@ -225,7 +225,7 @@ function ResponseFieldRow({
       </Tooltip>
 
       <Tooltip title="Remove field">
-        <IconButton size="small" onClick={() => removeField(resourceId, status, field.id)} sx={{ color: "#A1A1AA", "&:hover": { color: "#DC2626" } }}>
+        <IconButton size="small" onClick={() => removeField(resourceId, status, field.id)} sx={{ color: "#94A3B8", "&:hover": { color: "#DC2626" } }}>
           <DeleteOutlineIcon sx={{ fontSize: 16 }} />
         </IconButton>
       </Tooltip>
@@ -237,16 +237,16 @@ function SchemaTable({ resourceId, schema }: { resourceId: string; schema: Respo
   const addField = useResponseSchemaStore((s) => s.addField);
   return (
     <Box>
-      <Box sx={{ border: `2px solid ${line}`, borderRadius: "10px", overflow: "hidden", bgcolor: "#fff" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.25, py: 0.7, bgcolor: "#0A0A0A", color: "#fff" }}>
-          <Box sx={{ width: 180, flexShrink: 0, fontSize: 10, fontWeight: 800, letterSpacing: "0.06em" }}>KEY</Box>
-          <Box sx={{ width: 120, flexShrink: 0, fontSize: 10, fontWeight: 800, letterSpacing: "0.06em" }}>TYPE</Box>
-          <Box sx={{ width: 26, flexShrink: 0, fontSize: 10, fontWeight: 800 }}>REQ</Box>
-          <Box sx={{ flex: 1, fontSize: 10, fontWeight: 800, letterSpacing: "0.06em" }}>DESCRIPTION</Box>
-          <Box sx={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", pr: 5.5 }}>STATE</Box>
+      <Box sx={{ border: `1px solid ${line}`, borderRadius: "10px", overflow: "hidden", bgcolor: "#fff" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.25, py: 0.9, bgcolor: "#F8FAFC", color: "#6B7280", borderBottom: `1px solid ${line}` }}>
+          <Box sx={{ width: 180, flexShrink: 0, fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>KEY</Box>
+          <Box sx={{ width: 120, flexShrink: 0, fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>TYPE</Box>
+          <Box sx={{ width: 26, flexShrink: 0, fontSize: 10, fontWeight: 600 }}>REQ</Box>
+          <Box sx={{ flex: 1, fontSize: 10, fontWeight: 600, letterSpacing: "0.06em" }}>DESCRIPTION</Box>
+          <Box sx={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.06em", pr: 5.5 }}>STATE</Box>
         </Box>
         {schema.fields.length === 0 ? (
-          <Box sx={{ px: 1.5, py: 2, color: "#A1A1AA", fontSize: 12.5 }}>
+          <Box sx={{ px: 1.5, py: 2, color: "#94A3B8", fontSize: 12.5 }}>
             No fields yet — add one, or import a spec to populate this response.
           </Box>
         ) : (
@@ -279,16 +279,16 @@ export function ResponseSchemaPanel({ resourceId }: { resourceId: string }) {
   const available = COMMON_STATUSES.filter((c) => !sorted.some((s) => s.status === c.status));
 
   return (
-    <Box sx={{ mt: 3, border: `2px solid ${line}`, borderRadius: "12px", boxShadow: "4px 4px 0 #0A0A0A", bgcolor: "#fff", overflow: "hidden" }}>
+    <Box sx={{ mt: 3, border: `1px solid ${line}`, borderRadius: "12px", boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 6px 20px rgba(15,23,42,0.07)", bgcolor: "#fff", overflow: "hidden" }}>
       {/* Section header — click to fold */}
       <Box
         role="button"
         onClick={() => setOpen((v) => !v)}
-        sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 1.25, cursor: "pointer", borderBottom: open ? `2px solid ${line}` : "none", userSelect: "none" }}
+        sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 1.25, cursor: "pointer", borderBottom: open ? `1px solid ${line}` : "none", userSelect: "none" }}
       >
         <ExpandMoreIcon sx={{ transition: "transform .15s ease", transform: open ? "none" : "rotate(-90deg)" }} />
         <Typography variant="h2">Response Schemas</Typography>
-        <Box sx={{ ml: 0.5, fontSize: 11, fontWeight: 800, color: "#A1A1AA" }}>
+        <Box sx={{ ml: 0.5, fontSize: 11, fontWeight: 600, color: "#94A3B8" }}>
           {sorted.length ? `${sorted.length} response${sorted.length > 1 ? "s" : ""}` : "none defined"}
         </Box>
         <Box sx={{ ml: "auto" }} />
@@ -313,19 +313,19 @@ export function ResponseSchemaPanel({ resourceId }: { resourceId: string }) {
                     px: 1,
                     py: 0.4,
                     borderRadius: "8px",
-                    border: `2px solid ${selected ? line : "#D4D4D8"}`,
-                    bgcolor: selected ? "#fff" : "#FAFAFA",
-                    boxShadow: selected ? "2px 2px 0 #0A0A0A" : "none",
+                    border: `2px solid ${selected ? line : "#CBD5E1"}`,
+                    bgcolor: selected ? "#fff" : "#F8FAFC",
+                    boxShadow: selected ? "0 1px 2px rgba(15,23,42,0.05), 0 1px 3px rgba(15,23,42,0.08)" : "none",
                     cursor: "pointer",
                     transition: "box-shadow .08s ease, transform .08s ease",
                   }}
                 >
                   <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: c, border: `1px solid ${line}` }} />
-                  <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12.5, fontWeight: 800, color: c }}>
+                  <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12.5, fontWeight: 600, color: c }}>
                     {statusLabel(s.status)}
                   </Typography>
                   {s.description ? (
-                    <Typography sx={{ fontSize: 11.5, fontWeight: 600, color: "#52525B" }}>{s.description}</Typography>
+                    <Typography sx={{ fontSize: 11.5, fontWeight: 600, color: "#4B5563" }}>{s.description}</Typography>
                   ) : null}
                   {selected ? (
                     <Tooltip title="Remove this response">
@@ -334,7 +334,7 @@ export function ResponseSchemaPanel({ resourceId }: { resourceId: string }) {
                           e.stopPropagation();
                           removeStatus(resourceId, s.status);
                         }}
-                        sx={{ fontSize: 14, color: "#A1A1AA", "&:hover": { color: "#DC2626" } }}
+                        sx={{ fontSize: 14, color: "#94A3B8", "&:hover": { color: "#DC2626" } }}
                       />
                     </Tooltip>
                   ) : null}
@@ -370,9 +370,9 @@ export function ResponseSchemaPanel({ resourceId }: { resourceId: string }) {
           {activeSchema ? (
             <SchemaTable resourceId={resourceId} schema={activeSchema} />
           ) : (
-            <Box sx={{ py: 3, textAlign: "center", color: "#A1A1AA", fontSize: 13 }}>
+            <Box sx={{ py: 3, textAlign: "center", color: "#94A3B8", fontSize: 13 }}>
               No response schemas yet. Add a response status above, or use{" "}
-              <Box component="span" sx={{ fontWeight: 800, color: "#52525B" }}>
+              <Box component="span" sx={{ fontWeight: 600, color: "#4B5563" }}>
                 Import Specification
               </Box>{" "}
               to populate them from an OpenAPI / Postman file.

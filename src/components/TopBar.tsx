@@ -11,7 +11,7 @@ import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar } from "@/components/common";
 import { ImportApiDialog } from "@/components/ImportApiDialog";
-import { line } from "@/components/theme";
+import { blue, ink, line, secondaryText } from "@/components/theme";
 
 export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; onOpenRight?: () => void } = {}) {
   const collaborators = useWorkspaceStore((s) => s.collaborators);
@@ -45,119 +45,126 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
   return (
     <Box
       sx={{
-        height: 56,
+        height: 52,
         flexShrink: 0,
-        borderBottom: `2px solid ${line}`,
+        borderBottom: `1px solid ${line}`,
         bgcolor: "#fff",
         display: "flex",
         alignItems: "center",
-        px: { xs: 1, sm: 2 },
-        gap: { xs: 0.75, sm: 1.5 },
+        px: { xs: 1.5, sm: 2.5 },
+        gap: { xs: 1, sm: 2 },
       }}
     >
       <Tooltip title="Open explorer">
         <IconButton
           onClick={onOpenLeft}
-          sx={{ display: { xs: "inline-flex", md: "none" }, border: `2px solid ${line}`, width: 34, height: 34 }}
+          sx={{ display: { xs: "inline-flex", md: "none" }, width: 34, height: 34 }}
           aria-label="Open explorer"
         >
-          <MenuIcon sx={{ fontSize: 18 }} />
+          <MenuIcon sx={{ fontSize: 20 }} />
         </IconButton>
       </Tooltip>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-        <Box sx={{ width: 30, height: 30, flexShrink: 0, borderRadius: "8px", bgcolor: line, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "2px 2px 0 #71717A" }}>
+      {/* Brand */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+        <Box sx={{ width: 30, height: 30, flexShrink: 0, borderRadius: "9px", bgcolor: blue, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 2px rgba(59,130,246,0.35)" }}>
           <BoltIcon sx={{ fontSize: 18 }} />
         </Box>
-        <Box sx={{ display: { xs: "none", sm: "block" } }}>
-          <Typography variant="h2" sx={{ lineHeight: 1 }}>
+        <Box sx={{ display: { xs: "none", sm: "block" }, lineHeight: 1.15 }}>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: ink, lineHeight: 1.1 }}>
             Live Workspace
           </Typography>
-          <Typography variant="caption" sx={{ color: "#71717A" }}>
+          <Typography sx={{ fontSize: 11, fontWeight: 400, color: secondaryText, lineHeight: 1.1 }}>
             Schema collaboration hub
           </Typography>
         </Box>
       </Box>
 
-      <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0.5, md: 3 }, p: 0.4, borderRadius: "10px", border: `2px solid ${line}`, bgcolor: "#F4F4F5", flexShrink: 0 }}>
+      {/* Center nav */}
+      <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0.5, md: 2 }, p: 0.5, borderRadius: "10px", bgcolor: "#F1F5F9", flexShrink: 0 }}>
         {([
-          { key: "workspace", label: "Workspace", short: "Schema" },
-          { key: "flows", label: "E2E Flow Testing", short: "Flows" },
-        ] as const).map((tab) => (
-          <Box
-            key={tab.key}
-            role="button"
-            aria-pressed={view === tab.key}
-            onClick={() => setView(tab.key)}
-            sx={{
-              px: { xs: 1, sm: 1.5 }, py: 0.5, borderRadius: "7px", cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap",
-              color: view === tab.key ? "#fff" : "#52525B",
-              bgcolor: view === tab.key ? line : "transparent",
-              "&:hover": { bgcolor: view === tab.key ? line : "#E4E4E7" },
-            }}
-          >
-            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>{tab.label}</Box>
-            <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>{tab.short}</Box>
-          </Box>
-        ))}
+          { key: "workspace", label: "Workspace", short: "Workspace" },
+          { key: "flows", label: "Flow Testing", short: "Flows" },
+        ] as const).map((tab) => {
+          const active = view === tab.key;
+          return (
+            <Box
+              key={tab.key}
+              role="button"
+              aria-pressed={active}
+              onClick={() => setView(tab.key)}
+              sx={{
+                px: { xs: 1.25, sm: 1.75 }, py: 0.55, borderRadius: "8px", cursor: "pointer", fontSize: 13, fontWeight: active ? 600 : 500, whiteSpace: "nowrap",
+                color: active ? ink : secondaryText,
+                bgcolor: active ? "#fff" : "transparent",
+                boxShadow: active ? "0 1px 2px rgba(15,23,42,0.08)" : "none",
+                transition: "color .15s ease, background-color .15s ease",
+                "&:hover": { color: ink, bgcolor: active ? "#fff" : "rgba(255,255,255,0.6)" },
+              }}
+            >
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>{tab.label}</Box>
+              <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>{tab.short}</Box>
+            </Box>
+          );
+        })}
       </Stack>
 
       <Box sx={{ ml: "auto" }}>{view === "workspace" ? <ImportApiDialog /> : null}</Box>
 
+      {/* Room badge */}
       {roomCode && (
         <Tooltip title={copied ? "Copied!" : "Copy room code to share"}>
           <Box
             onClick={copyCode}
             sx={{
-              ml: 1.5,
               display: { xs: "none", sm: "flex" },
               alignItems: "center",
               gap: 0.75,
-              px: 1,
-              py: 0.4,
-              border: `2px solid ${line}`,
-              borderRadius: "8px",
-              bgcolor: "#F4F4F5",
+              px: 1.25,
+              py: 0.5,
+              borderRadius: "999px",
+              bgcolor: "#F1F5F9",
               cursor: "pointer",
+              transition: "background-color .15s ease",
+              "&:hover": { bgcolor: "#E9EEF4" },
             }}
           >
-            <Typography variant="caption" sx={{ color: "#71717A" }}>
+            <Typography sx={{ fontSize: 11, fontWeight: 500, color: secondaryText }}>
               Room
             </Typography>
-            <Typography sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 800, fontSize: 13, letterSpacing: "0.06em" }}>
+            <Typography sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600, fontSize: 12.5, letterSpacing: "0.06em", color: ink }}>
               {roomCode}
             </Typography>
             {copied ? (
-              <CheckIcon sx={{ fontSize: 15, color: "#16A34A" }} />
+              <CheckIcon sx={{ fontSize: 15, color: "#22C55E" }} />
             ) : (
-              <ContentCopyIcon sx={{ fontSize: 14 }} />
+              <ContentCopyIcon sx={{ fontSize: 13, color: secondaryText }} />
             )}
           </Box>
         </Tooltip>
       )}
 
-      <Stack direction="row" spacing={0.75} sx={{ ml: { xs: "auto", sm: 1.5 }, alignItems: "center" }}>
+      {/* Presence */}
+      <Stack direction="row" spacing={1} sx={{ ml: { xs: "auto", sm: 0.5 }, alignItems: "center" }}>
         <Box
           sx={{
             display: { xs: "none", md: "flex" },
             alignItems: "center",
-            gap: 0.75,
-            mr: 1,
-            px: 1,
-            py: 0.4,
-            border: `2px solid ${line}`,
+            gap: 0.6,
+            px: 1.1,
+            py: 0.45,
             borderRadius: "999px",
-            bgcolor: "#DCFCE7",
+            bgcolor: "#F0FDF4",
           }}
         >
-          <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#16A34A", boxShadow: "0 0 0 2px #16A34A33" }} />
-          <Typography sx={{ fontSize: 11.5, fontWeight: 800 }}>{onlineCount} online</Typography>
+          <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#22C55E", boxShadow: "0 0 0 3px rgba(34,197,94,0.18)" }} />
+          <Typography sx={{ fontSize: 11.5, fontWeight: 600, color: "#166534" }}>{onlineCount} online</Typography>
         </Box>
-        <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}>
+        <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", pl: 0.5 }}>
           {online.map((c) => (
             <Tooltip key={c.id} title={`${c.name} · ${c.role} · online${c.id === me?.id ? " (you)" : ""}`}>
-              <Box sx={{ ml: -0.5 }}>
-                <Avatar name={c.name} color={c.color} online size={30} />
+              <Box sx={{ ml: -0.6 }}>
+                <Avatar name={c.name} color={c.color} online size={28} />
               </Box>
             </Tooltip>
           ))}
@@ -166,18 +173,15 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
           <Tooltip title="Activity & comments">
             <IconButton
               onClick={onOpenRight}
-              sx={{ display: { xs: "inline-flex", md: "none" }, border: `2px solid ${line}`, width: 34, height: 34 }}
+              sx={{ display: { xs: "inline-flex", md: "none" }, width: 34, height: 34 }}
               aria-label="Open activity and comments"
             >
-              <ForumOutlinedIcon sx={{ fontSize: 17 }} />
+              <ForumOutlinedIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Tooltip>
         ) : null}
         <Tooltip title="Leave room">
-          <IconButton
-            onClick={signOut}
-            sx={{ ml: 1, border: `2px solid ${line}`, width: 34, height: 34 }}
-          >
+          <IconButton onClick={signOut} sx={{ width: 34, height: 34 }}>
             <LogoutIcon sx={{ fontSize: 17 }} />
           </IconButton>
         </Tooltip>

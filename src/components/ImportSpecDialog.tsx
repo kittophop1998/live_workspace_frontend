@@ -32,7 +32,7 @@ paths:
 
 function methodChip(method: string) {
   return (
-    <Box component="span" sx={{ fontFamily: "var(--font-mono,monospace)", fontSize: 11, fontWeight: 800, color: methodColor[method] ?? "#52525B", width: 52, flexShrink: 0 }}>
+    <Box component="span" sx={{ fontFamily: "var(--font-mono,monospace)", fontSize: 11, fontWeight: 600, color: methodColor[method] ?? "#4B5563", width: 52, flexShrink: 0 }}>
       {method}
     </Box>
   );
@@ -120,7 +120,7 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
       </Button>
 
       <Dialog open={open} onClose={reset} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 800 }}>Import Specification</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 600 }}>Import Specification</DialogTitle>
         <DialogContent>
           <input
             ref={fileInput}
@@ -134,7 +134,7 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
             <Button variant="outlined" startIcon={<UploadFileIcon />} onClick={() => fileInput.current?.click()}>
               Upload file
             </Button>
-            <Typography variant="caption" sx={{ color: "#71717A" }}>
+            <Typography variant="caption" sx={{ color: "#6B7280" }}>
               OpenAPI (.yaml / .json) or Postman collection (.json)
             </Typography>
           </Stack>
@@ -157,10 +157,10 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
 
           {parsed ? (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" sx={{ color: "#71717A", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              <Typography variant="caption" sx={{ color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                 Pick an operation to apply to this endpoint
               </Typography>
-              <Box sx={{ mt: 1, border: `2px solid ${line}`, borderRadius: "8px", maxHeight: 220, overflowY: "auto" }}>
+              <Box sx={{ mt: 1, border: `1px solid ${line}`, borderRadius: "8px", maxHeight: 220, overflowY: "auto" }}>
                 {parsed.operations.map((op, i) => {
                   const active = op.id === selectedId;
                   return (
@@ -175,7 +175,7 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
                         px: 1.25,
                         py: 0.85,
                         cursor: "pointer",
-                        borderBottom: `1.5px solid #E4E4E7`,
+                        borderBottom: `1px solid #EEF2F6`,
                         bgcolor: active ? "#FFFBEB" : "#fff",
                         "&:last-of-type": { borderBottom: "none" },
                       }}
@@ -184,7 +184,7 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
                       <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12.5, fontWeight: 700, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {op.path}
                       </Typography>
-                      <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: "#A1A1AA", flexShrink: 0 }}>
+                      <Typography sx={{ fontSize: 10.5, fontWeight: 600, color: "#94A3B8", flexShrink: 0 }}>
                         {op.responses.length} resp · {op.requestFields.length} req
                       </Typography>
                     </Box>

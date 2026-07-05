@@ -12,7 +12,7 @@ import { useApiTesterStore } from "@/lib/apiTester";
 import { FlowDefinitionView } from "@/components/flows/FlowDefinitionView";
 import { MonoTag, relativeTime } from "@/components/common";
 import { JsonView } from "@/components/schema/JsonView";
-import { line, methodColor } from "@/components/theme";
+import { ink, line, methodColor } from "@/components/theme";
 import type { FlowDefinition, FlowRun, JsonValue, StepResult } from "@/lib/types";
 
 function statusColor(status: string): string {
@@ -36,7 +36,7 @@ function coerce(value: string): JsonValue {
 function StepResultRow({ result }: { result: StepResult }) {
   const [open, setOpen] = useState(false);
   const icon = result.skipped ? (
-    <RemoveCircleOutlineIcon sx={{ fontSize: 18, color: "#A1A1AA" }} />
+    <RemoveCircleOutlineIcon sx={{ fontSize: 18, color: "#94A3B8" }} />
   ) : result.passed ? (
     <CheckCircleIcon sx={{ fontSize: 18, color: "#16A34A" }} />
   ) : (
@@ -46,7 +46,7 @@ function StepResultRow({ result }: { result: StepResult }) {
   const hasDetail = Boolean(result.response || result.requestBody || headerEntries.length || Object.keys(result.outputs).length);
 
   return (
-    <Box sx={{ border: `2px solid ${line}`, borderRadius: "10px", bgcolor: "#fff", overflow: "hidden" }}>
+    <Box sx={{ border: `1px solid ${line}`, borderRadius: "10px", bgcolor: "#fff", overflow: "hidden" }}>
       <Stack
         direction="row"
         spacing={1}
@@ -54,27 +54,27 @@ function StepResultRow({ result }: { result: StepResult }) {
         sx={{ alignItems: "center", p: 1.25, flexWrap: "wrap", cursor: hasDetail ? "pointer" : "default" }}
       >
         {icon}
-        <Typography sx={{ fontWeight: 800 }}>{result.stepId}</Typography>
+        <Typography sx={{ fontWeight: 600 }}>{result.stepId}</Typography>
         {result.skipped ? (
           <Chip size="small" variant="outlined" label="skipped" sx={{ height: 20 }} />
         ) : (
           <>
-            {result.method ? <MonoTag sx={{ color: methodColor[result.method] ?? line }}>{result.method}</MonoTag> : null}
+            {result.method ? <MonoTag sx={{ color: methodColor[result.method] ?? ink }}>{result.method}</MonoTag> : null}
             {result.status ? (
-              <Chip size="small" label={result.status} sx={{ height: 20, fontWeight: 800, color: "#fff", bgcolor: result.status < 400 ? "#16A34A" : "#DC2626" }} />
+              <Chip size="small" label={result.status} sx={{ height: 20, fontWeight: 600, color: "#fff", bgcolor: result.status < 400 ? "#16A34A" : "#DC2626" }} />
             ) : null}
             <MonoTag>{result.durationMs} ms</MonoTag>
           </>
         )}
         {hasDetail ? (
           <Box sx={{ ml: "auto" }}>
-            <ExpandMoreIcon sx={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s", color: "#71717A" }} />
+            <ExpandMoreIcon sx={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s", color: "#6B7280" }} />
           </Box>
         ) : null}
       </Stack>
 
       {result.url ? (
-        <Typography variant="caption" sx={{ display: "block", px: 1.25, pb: 0.5, color: "#71717A", fontFamily: "var(--font-mono, monospace)", wordBreak: "break-all" }}>
+        <Typography variant="caption" sx={{ display: "block", px: 1.25, pb: 0.5, color: "#6B7280", fontFamily: "var(--font-mono, monospace)", wordBreak: "break-all" }}>
           {result.url}
         </Typography>
       ) : null}
@@ -95,17 +95,17 @@ function StepResultRow({ result }: { result: StepResult }) {
         <Box sx={{ px: 1.25, pb: 1.25 }}>
           {Object.keys(result.outputs).length ? (
             <Box sx={{ mb: 1 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: "#52525B" }}>Extracted outputs</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "#4B5563" }}>Extracted outputs</Typography>
               <JsonView code={JSON.stringify(result.outputs, null, 2)} maxHeight={140} />
             </Box>
           ) : null}
           {headerEntries.length ? (
             <Box sx={{ mb: 1 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: "#52525B" }}>Request headers</Typography>
-              <Box sx={{ mt: 0.5, border: `1.5px solid ${line}`, borderRadius: "8px", p: 1, bgcolor: "#FAFAFA" }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "#4B5563" }}>Request headers</Typography>
+              <Box sx={{ mt: 0.5, border: `1px solid ${line}`, borderRadius: "8px", p: 1, bgcolor: "#F8FAFC" }}>
                 {headerEntries.map(([k, v]) => (
                   <Typography key={k} sx={{ fontFamily: "var(--font-mono, monospace)", fontSize: 11.5, wordBreak: "break-all" }}>
-                    <Box component="span" sx={{ fontWeight: 800 }}>{k}:</Box> {v}
+                    <Box component="span" sx={{ fontWeight: 600 }}>{k}:</Box> {v}
                   </Typography>
                 ))}
               </Box>
@@ -113,13 +113,13 @@ function StepResultRow({ result }: { result: StepResult }) {
           ) : null}
           {result.requestBody ? (
             <Box sx={{ mb: 1 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: "#52525B" }}>Request body</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "#4B5563" }}>Request body</Typography>
               <JsonView code={result.requestBody} maxHeight={160} />
             </Box>
           ) : null}
           {result.response ? (
             <Box>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: "#52525B" }}>Response</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "#4B5563" }}>Response</Typography>
               <JsonView code={prettify(result.response)} maxHeight={220} />
             </Box>
           ) : null}
@@ -196,8 +196,8 @@ export function FlowDetail({ flow }: { flow: FlowDefinition }) {
           <Box sx={{ mt: 2.5 }}>
             <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
               <Typography variant="h2">Run result</Typography>
-              <Chip size="small" label={run.status} sx={{ fontWeight: 800, color: "#fff", bgcolor: statusColor(run.status), border: `2px solid ${line}` }} />
-              {summary ? <Typography variant="caption" sx={{ color: "#71717A" }}>{summary.passed}/{summary.total} steps passed</Typography> : null}
+              <Chip size="small" label={run.status} sx={{ fontWeight: 600, color: "#fff", bgcolor: statusColor(run.status), border: `1px solid ${line}` }} />
+              {summary ? <Typography variant="caption" sx={{ color: "#6B7280" }}>{summary.passed}/{summary.total} steps passed</Typography> : null}
             </Stack>
             <Stack spacing={1}>
               {run.steps.map((s) => <StepResultRow key={s.stepId} result={s} />)}
@@ -208,7 +208,7 @@ export function FlowDetail({ flow }: { flow: FlowDefinition }) {
 
       {/* Run controls + history */}
       <Box>
-        <Box sx={{ border: `2px solid ${line}`, borderRadius: "14px", bgcolor: "#fff", p: 2, boxShadow: "4px 4px 0 #0A0A0A", position: "sticky", top: 0 }}>
+        <Box sx={{ border: `1px solid ${line}`, borderRadius: "14px", bgcolor: "#fff", p: 2, boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 6px 20px rgba(15,23,42,0.07)", position: "sticky", top: 0 }}>
           <Typography variant="h3" sx={{ mb: 1 }}>Run workflow</Typography>
           <TextField
             fullWidth
@@ -222,7 +222,7 @@ export function FlowDetail({ flow }: { flow: FlowDefinition }) {
 
           {flow.inputs.length ? (
             <Box sx={{ mt: 1.5 }}>
-              <Typography variant="caption" sx={{ fontWeight: 800, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Inputs</Typography>
+              <Typography variant="caption" sx={{ fontWeight: 600, color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.06em" }}>Inputs</Typography>
               <Stack spacing={1} sx={{ mt: 0.75 }}>
                 {flow.inputs.map((v) => (
                   <TextField
@@ -255,10 +255,10 @@ export function FlowDetail({ flow }: { flow: FlowDefinition }) {
                   direction="row"
                   spacing={1}
                   onClick={() => setRun(h)}
-                  sx={{ alignItems: "center", p: 1, border: `2px solid ${line}`, borderRadius: "8px", bgcolor: "#fff", cursor: "pointer", "&:hover": { bgcolor: "#FAFAFA" } }}
+                  sx={{ alignItems: "center", p: 1, border: `1px solid ${line}`, borderRadius: "8px", bgcolor: "#fff", cursor: "pointer", "&:hover": { bgcolor: "#F8FAFC" } }}
                 >
                   <Chip size="small" label={h.status} sx={{ height: 20, fontWeight: 700, color: "#fff", bgcolor: statusColor(h.status) }} />
-                  <Typography variant="caption" sx={{ color: "#71717A" }}>{relativeTime(h.startedAt)}</Typography>
+                  <Typography variant="caption" sx={{ color: "#6B7280" }}>{relativeTime(h.startedAt)}</Typography>
                 </Stack>
               ))}
             </Stack>

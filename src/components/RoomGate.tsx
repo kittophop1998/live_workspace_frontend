@@ -15,7 +15,7 @@ import BoltIcon from "@mui/icons-material/Bolt";
 import { useWorkspaceStore } from "@/lib/store";
 import { workspaceApi } from "@/services/workspace.service";
 import { apiErrorMessage } from "@/lib/api";
-import { flatShadow, line } from "@/components/theme";
+import { blue, flatShadow, line } from "@/components/theme";
 
 type Mode = "create" | "join";
 
@@ -60,7 +60,7 @@ export function RoomGate() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "#F4F4F5",
+        bgcolor: "#F1F5F9",
         p: 2,
       }}
     >
@@ -74,7 +74,7 @@ export function RoomGate() {
           width: "100%",
           maxWidth: 400,
           bgcolor: "#fff",
-          border: `2px solid ${line}`,
+          border: `1px solid ${line}`,
           borderRadius: "12px",
           boxShadow: flatShadow,
           p: 3,
@@ -85,13 +85,13 @@ export function RoomGate() {
             sx={{
               width: 34,
               height: 34,
-              borderRadius: "8px",
-              bgcolor: line,
+              borderRadius: "10px",
+              bgcolor: blue,
               color: "#fff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "2px 2px 0 #71717A",
+              boxShadow: "0 1px 2px rgba(15,23,42,0.05), 0 1px 3px rgba(15,23,42,0.08)",
             }}
           >
             <BoltIcon sx={{ fontSize: 20 }} />
@@ -100,7 +100,7 @@ export function RoomGate() {
             <Typography variant="h1" sx={{ lineHeight: 1 }}>
               Live Workspace
             </Typography>
-            <Typography variant="caption" sx={{ color: "#71717A" }}>
+            <Typography variant="caption" sx={{ color: "#6B7280" }}>
               Schema collaboration hub
             </Typography>
           </Box>
@@ -145,7 +145,7 @@ export function RoomGate() {
           )}
 
           {error && (
-            <Alert severity="error" sx={{ border: `2px solid ${line}`, borderRadius: "8px", py: 0 }}>
+            <Alert severity="error" sx={{ border: `1px solid ${line}`, borderRadius: "8px", py: 0 }}>
               {error}
             </Alert>
           )}
@@ -163,7 +163,7 @@ export function RoomGate() {
 
         <Typography
           variant="caption"
-          sx={{ display: "block", mt: 2, color: "#71717A", textAlign: "center" }}
+          sx={{ display: "block", mt: 2, color: "#6B7280", textAlign: "center" }}
         >
           {mode === "create"
             ? "You'll get a room code to share with your team."

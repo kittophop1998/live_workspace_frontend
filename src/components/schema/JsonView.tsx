@@ -8,8 +8,8 @@ const TOKEN_COLOR: Record<JsonTokenKind, string> = {
   string: "#15803D",
   number: "#7C3AED",
   boolean: "#D97706",
-  null: "#A1A1AA",
-  punct: "#52525B",
+  null: "#94A3B8",
+  punct: "#4B5563",
   plain: "inherit",
 };
 
@@ -22,13 +22,13 @@ export function JsonView({ code, maxHeight = 460 }: { code: string; maxHeight?: 
       sx={{
         m: 0,
         p: 2,
-        bgcolor: "#FBFBFC",
-        border: "2px solid #0A0A0A",
+        bgcolor: "#F8FAFC",
+        border: "1px solid #E8EDF3",
         borderRadius: "12px",
         fontFamily: "var(--font-mono, monospace)",
         fontSize: 12.5,
         lineHeight: 1.7,
-        color: "#18181B",
+        color: "#111827",
         overflow: "auto",
         maxHeight,
         whiteSpace: "pre",

@@ -25,7 +25,7 @@ function statusColor(status: number): string {
   if (status >= 200 && status < 300) return "#16A34A";
   if (status >= 400 && status < 500) return "#D97706";
   if (status >= 500) return "#DC2626";
-  return "#52525B";
+  return "#4B5563";
 }
 
 export function ResponseTabs({ resourceId, typeName }: { resourceId: string; typeName: string }) {
@@ -72,13 +72,13 @@ export function ResponseTabs({ resourceId, typeName }: { resourceId: string; typ
       </Stack>
 
       {sorted.length === 0 ? (
-        <Box sx={{ p: 3, textAlign: "center", color: "#A1A1AA", fontSize: 13, border: "1.5px dashed #D4D4D8", borderRadius: "12px" }}>
+        <Box sx={{ p: 3, textAlign: "center", color: "#94A3B8", fontSize: 13, border: "1.5px dashed #E2E8F0", borderRadius: "12px" }}>
           No responses defined. Add a status above, or import an OpenAPI / Postman spec.
         </Box>
       ) : (
-        <Box sx={{ border: `2px solid ${line}`, borderRadius: "12px", bgcolor: "#fff", boxShadow: "3px 3px 0 #0A0A0A", overflow: "hidden" }}>
+        <Box sx={{ border: `1px solid ${line}`, borderRadius: "12px", bgcolor: "#fff", boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 6px 20px rgba(15,23,42,0.07)", overflow: "hidden" }}>
           {/* Status tab strip */}
-          <Stack direction="row" sx={{ borderBottom: `2px solid ${line}`, bgcolor: "#FAFAFA", overflowX: "auto" }}>
+          <Stack direction="row" sx={{ borderBottom: `1px solid ${line}`, bgcolor: "#F8FAFC", overflowX: "auto" }}>
             {sorted.map((s) => {
               const isActive = s.status === current?.status;
               const c = statusColor(s.status);
@@ -95,18 +95,18 @@ export function ResponseTabs({ resourceId, typeName }: { resourceId: string; typ
                     py: 1,
                     cursor: "pointer",
                     flexShrink: 0,
-                    borderRight: `1.5px solid #E4E4E7`,
+                    borderRight: `1px solid #EEF2F6`,
                     borderBottom: isActive ? `3px solid ${c}` : "3px solid transparent",
                     bgcolor: isActive ? "#fff" : "transparent",
-                    "&:hover": { bgcolor: isActive ? "#fff" : "#F0F0F2" },
+                    "&:hover": { bgcolor: isActive ? "#fff" : "#F1F5F9" },
                   }}
                 >
                   <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: c, border: `1px solid ${line}` }} />
-                  <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 800, fontSize: 13.5, color: c }}>
+                  <Typography sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 600, fontSize: 13.5, color: c }}>
                     {s.status}
                   </Typography>
                   {s.description ? (
-                    <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#71717A" }}>{s.description}</Typography>
+                    <Typography sx={{ fontSize: 12, fontWeight: 600, color: "#6B7280" }}>{s.description}</Typography>
                   ) : null}
                   <Tooltip title="Remove this response">
                     <CloseIcon
@@ -114,7 +114,7 @@ export function ResponseTabs({ resourceId, typeName }: { resourceId: string; typ
                         e.stopPropagation();
                         removeStatus(resourceId, s.status);
                       }}
-                      sx={{ fontSize: 15, ml: 0.25, color: "#A1A1AA", "&:hover": { color: "#DC2626" } }}
+                      sx={{ fontSize: 15, ml: 0.25, color: "#94A3B8", "&:hover": { color: "#DC2626" } }}
                     />
                   </Tooltip>
                 </Box>
@@ -123,7 +123,7 @@ export function ResponseTabs({ resourceId, typeName }: { resourceId: string; typ
           </Stack>
 
           {current ? (
-            <Box sx={{ p: 2, bgcolor: "#F9F9FA" }}>
+            <Box sx={{ p: 2, bgcolor: "#F8FAFC" }}>
               <SchemaWorkbench
                 key={`${resourceId}::res::${current.status}`}
                 scope={`${resourceId}::res::${current.status}`}

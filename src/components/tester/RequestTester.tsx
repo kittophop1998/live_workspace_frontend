@@ -78,20 +78,20 @@ function RowsEditor({
             type="checkbox"
             checked={r.enabled}
             onChange={(e) => patch(i, { enabled: e.target.checked })}
-            style={{ width: 15, height: 15, accentColor: "#0A0A0A", cursor: "pointer" }}
+            style={{ width: 15, height: 15, accentColor: "#3B82F6", cursor: "pointer" }}
           />
           <InputBase
             value={r.key}
             readOnly={lockKeys}
             placeholder="key"
             onChange={(e) => patch(i, { key: e.target.value })}
-            sx={{ flex: 1, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `2px solid ${line}`, borderRadius: "6px", px: 0.75, py: 0.25, bgcolor: lockKeys ? "#F4F4F5" : "#fff" }}
+            sx={{ flex: 1, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: "6px", px: 0.75, py: 0.25, bgcolor: lockKeys ? "#F1F5F9" : "#fff" }}
           />
           <InputBase
             value={r.value}
             placeholder="value"
             onChange={(e) => patch(i, { value: e.target.value })}
-            sx={{ flex: 1.4, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `2px solid ${line}`, borderRadius: "6px", px: 0.75, py: 0.25 }}
+            sx={{ flex: 1.4, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: "6px", px: 0.75, py: 0.25 }}
           />
           {lockKeys ? (
             <Box sx={{ width: 28 }} />
@@ -113,7 +113,7 @@ function RowsEditor({
         </Button>
       ) : null}
       {rows.length === 0 && lockKeys ? (
-        <Typography variant="body2" sx={{ color: "#A1A1AA", fontStyle: "italic" }}>No path parameters.</Typography>
+        <Typography variant="body2" sx={{ color: "#94A3B8", fontStyle: "italic" }}>No path parameters.</Typography>
       ) : null}
     </Stack>
   );
@@ -121,7 +121,7 @@ function RowsEditor({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Typography variant="caption" sx={{ display: "block", fontWeight: 800, color: "#52525B", textTransform: "uppercase", letterSpacing: "0.06em", mt: 1.5, mb: 0.5 }}>
+    <Typography variant="caption" sx={{ display: "block", fontWeight: 600, color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.06em", mt: 1.5, mb: 0.5 }}>
       {children}
     </Typography>
   );
@@ -207,16 +207,16 @@ export function RequestTester({ resource }: { resource: Resource }) {
   const showBody = BODY_METHODS.has(draft.method);
 
   return (
-    <Box sx={{ mt: 3, border: `2px solid ${line}`, borderRadius: "16px", boxShadow: "4px 4px 0 #0A0A0A", bgcolor: "#fff", overflow: "hidden" }}>
+    <Box sx={{ mt: 3, border: `1px solid ${line}`, borderRadius: "16px", boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 6px 20px rgba(15,23,42,0.07)", bgcolor: "#fff", overflow: "hidden" }}>
       <Stack
         direction="row"
         onClick={() => setOpen((v) => !v)}
-        sx={{ alignItems: "center", justifyContent: "space-between", p: 2, cursor: "pointer", bgcolor: open ? "#FAFAFA" : "#fff" }}
+        sx={{ alignItems: "center", justifyContent: "space-between", p: 2, cursor: "pointer", bgcolor: open ? "#F8FAFC" : "#fff" }}
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
           <ScienceOutlinedIcon sx={{ fontSize: 20 }} />
           <Typography variant="h2">Try it</Typography>
-          <Typography variant="caption" sx={{ color: "#71717A" }}>send a live test request</Typography>
+          <Typography variant="caption" sx={{ color: "#6B7280" }}>send a live test request</Typography>
         </Stack>
         <ExpandMoreIcon sx={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
       </Stack>
@@ -241,7 +241,7 @@ export function RequestTester({ resource }: { resource: Resource }) {
               size="small"
               value={draft.method}
               onChange={(e) => update({ method: e.target.value as HttpMethod })}
-              sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 800, color: methodColor[draft.method], minWidth: 108 }}
+              sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600, color: methodColor[draft.method], minWidth: 108 }}
             >
               {HTTP_METHODS.map((m) => (
                 <MenuItem key={m} value={m} sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: methodColor[m] }}>{m}</MenuItem>
@@ -251,10 +251,10 @@ export function RequestTester({ resource }: { resource: Resource }) {
               value={draft.path}
               onChange={(e) => update({ path: e.target.value })}
               placeholder="/api/v1/resource/{id}"
-              sx={{ flex: 1, fontFamily: "var(--font-mono, monospace)", fontSize: 13, border: `2px solid ${line}`, borderRadius: "8px", px: 1 }}
+              sx={{ flex: 1, fontFamily: "var(--font-mono, monospace)", fontSize: 13, border: `1px solid ${line}`, borderRadius: "8px", px: 1 }}
             />
           </Stack>
-          <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: "#71717A", fontFamily: "var(--font-mono, monospace)", wordBreak: "break-all" }}>
+          <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: "#6B7280", fontFamily: "var(--font-mono, monospace)", wordBreak: "break-all" }}>
             → {previewUrl || "(set base URL)"}
           </Typography>
 
@@ -279,7 +279,7 @@ export function RequestTester({ resource }: { resource: Resource }) {
                 onChange={(e) => update({ body: e.target.value })}
                 multiline
                 minRows={4}
-                sx={{ width: "100%", fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `2px solid ${line}`, borderRadius: "10px", p: 1.25, bgcolor: "#FBFBFC" }}
+                sx={{ width: "100%", fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: "10px", p: 1.25, bgcolor: "#F8FAFC" }}
               />
             </>
           ) : null}
