@@ -1,9 +1,16 @@
 "use client";
 
-import { Box, Typography, type SxProps, type Theme } from "@mui/material";
+import { Box, type SxProps, type Theme } from "@mui/material";
 import type { ReactNode } from "react";
 import { PixelMascot, type MascotPose } from "@/components/PixelMascot";
 import { ink, secondaryText } from "@/components/theme";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/pixelact-ui/empty";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PixelEmptyState — never a boring empty white box. Pairs the pixel mascot with
@@ -27,6 +34,8 @@ export function PixelEmptyState({
 }) {
   return (
     <Box
+      component={Empty}
+      font="normal"
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -39,11 +48,15 @@ export function PixelEmptyState({
         ...sx,
       }}
     >
-      <PixelMascot pose={pose} size={mascotSize} />
-      <Typography sx={{ mt: 0.5, fontSize: 15, fontWeight: 700, color: ink }}>{title}</Typography>
-      {subtitle ? (
-        <Typography sx={{ fontSize: 13, color: secondaryText, maxWidth: 320, lineHeight: 1.6 }}>{subtitle}</Typography>
-      ) : null}
+      <EmptyMedia variant="icon" className="bg-violet-50 text-violet-700">
+        <PixelMascot pose={pose} size={mascotSize} />
+      </EmptyMedia>
+      <EmptyHeader>
+        <Box component={EmptyTitle} sx={{ mt: 0.5, fontSize: 15, fontWeight: 700, color: ink }}>{title}</Box>
+        {subtitle ? (
+          <Box component={EmptyDescription} sx={{ fontSize: 13, color: secondaryText, maxWidth: 320, lineHeight: 1.6 }}>{subtitle}</Box>
+        ) : null}
+      </EmptyHeader>
       {action ? <Box sx={{ mt: 1 }}>{action}</Box> : null}
     </Box>
   );

@@ -66,7 +66,7 @@ export function ActivityLog() {
               sx={{
                 px: 1.1,
                 py: 0.4,
-                borderRadius: "999px",
+                borderRadius: 0,
                 cursor: "pointer",
                 fontSize: 11.5,
                 fontWeight: 700,
@@ -115,8 +115,8 @@ export function ActivityLog() {
                       minWidth: 0,
                       bgcolor: "#FFFDF8",
                       border: `1.5px solid ${line}`,
-                      borderRadius: "4px 14px 14px 14px",
-                      boxShadow: "0 1px 2px rgba(120,88,44,0.06)",
+                      borderRadius: 0,
+                      boxShadow: `2px 2px 0 ${line}`,
                       px: 1.25,
                       py: 1,
                     }}
@@ -128,14 +128,13 @@ export function ActivityLog() {
                         right: -8,
                         width: 22,
                         height: 22,
-                        borderRadius: "50%",
+                        borderRadius: 0,
                         bgcolor: pastel[d.color],
                         color: pastelInk[d.color],
                         border: `1.5px solid ${pastelInk[d.color]}33`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        transform: "rotate(-6deg)",
                       }}
                     >
                       {d.icon}

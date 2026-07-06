@@ -2,7 +2,8 @@
 
 import { Box, type SxProps, type Theme } from "@mui/material";
 import type { ReactNode } from "react";
-import { line, paper, radius, softShadow } from "@/components/theme";
+import { Card as PixelactCard } from "@/components/ui/pixelact-ui/card";
+import { line, paper } from "@/components/theme";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The signature "notebook page" surface. A soft white card with a 12px radius
@@ -13,25 +14,12 @@ import { line, paper, radius, softShadow } from "@/components/theme";
 // and forms inside keep normal, non-pixelated edges.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STEP = 4; // px — size of the little pixel notch at the corners
-
 export function pixelBorder(color = line): SxProps<Theme> {
   return {
     position: "relative",
-    border: `1.5px solid ${color}`,
-    borderRadius: `${radius}px`,
-    // Two tiny squares tucked into opposite corners read as "hand-placed pixels".
-    "&::before, &::after": {
-      content: '""',
-      position: "absolute",
-      width: STEP,
-      height: STEP,
-      bgcolor: color,
-      opacity: 0.5,
-      pointerEvents: "none",
-    },
-    "&::before": { top: -1.5, left: radius - STEP },
-    "&::after": { bottom: -1.5, right: radius - STEP },
+    border: `1px solid ${color}`,
+    borderRadius: 0,
+    boxShadow: `3px 3px 0 ${color}`,
   };
 }
 
@@ -48,17 +36,18 @@ export function PixelPanel({
 } & Omit<React.ComponentProps<typeof Box>, "sx">) {
   return (
     <Box
+      component={PixelactCard}
+      font="normal"
       {...rest}
       sx={[
         {
           bgcolor: paper,
-          boxShadow: softShadow,
           p: { xs: 2, sm: 3 },
-          transition: "transform .15s ease, box-shadow .15s ease",
+          transition: "transform .12s ease, box-shadow .12s ease",
         },
         pixelBorder(),
         hover
-          ? { "&:hover": { transform: "translateY(-2px)", boxShadow: "0 6px 14px rgba(46,46,46,0.08), 0 18px 40px rgba(46,46,46,0.12)" } }
+          ? { "&:hover": { transform: "translate(-1px,-1px)", boxShadow: `4px 4px 0 ${line}` } }
           : {},
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
+import TerminalRoundedIcon from "@mui/icons-material/TerminalRounded";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -10,7 +10,6 @@ import MenuIcon from "@mui/icons-material/Menu";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar } from "@/components/common";
-import { DoodleStar } from "@/components/doodles";
 import { ImportApiDialog } from "@/components/ImportApiDialog";
 import { ink, line, pastel, pastelInk, secondaryText } from "@/components/theme";
 
@@ -65,7 +64,7 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
         </IconButton>
       </Tooltip>
 
-      {/* Brand — a little notebook you flip open every day */}
+      {/* Product identity stays compact so workspace controls keep priority. */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
         <Box
           sx={{
@@ -73,26 +72,24 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
             width: 36,
             height: 36,
             flexShrink: 0,
-            borderRadius: "12px",
-            bgcolor: pastel.pink,
-            color: pastelInk.pink,
+            borderRadius: 0,
+            bgcolor: "#1F1D2B",
+            color: "#FFFFFF",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            border: `1.5px solid ${pastelInk.pink}33`,
-            boxShadow: "0 2px 0 rgba(194,78,124,0.18)",
-            transform: "rotate(-4deg)",
+            border: "1px solid #1F1D2B",
+            boxShadow: "3px 3px 0 #D9D3F7",
           }}
         >
-          <MenuBookRoundedIcon sx={{ fontSize: 20 }} />
-          <DoodleStar size={13} style={{ position: "absolute", top: -6, right: -6 }} />
+          <TerminalRoundedIcon sx={{ fontSize: 20 }} />
         </Box>
         <Box sx={{ display: { xs: "none", sm: "block" }, lineHeight: 1.1 }}>
-          <Typography className="font-hand" sx={{ fontSize: 16, fontWeight: 700, color: ink, lineHeight: 1.05 }}>
-            Kingdom Workspace
+          <Typography sx={{ fontSize: 15, fontWeight: 800, color: ink, lineHeight: 1.05, letterSpacing: "-0.01em" }}>
+            Live Workspace
           </Typography>
           <Typography sx={{ fontSize: 11, fontWeight: 500, color: secondaryText, lineHeight: 1.1 }}>
-            Collaborative API notebook
+            API collaboration environment
           </Typography>
         </Box>
       </Box>
@@ -128,7 +125,7 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
 
       <Box sx={{ ml: "auto" }}>{view === "workspace" ? <ImportApiDialog /> : null}</Box>
 
-      {/* Room badge — a taped luggage tag */}
+      {/* Shareable workspace code */}
       {roomCode && (
         <Tooltip title={copied ? "Copied!" : "Copy room code to share"}>
           <Box
@@ -139,12 +136,11 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
               gap: 0.75,
               px: 1.25,
               py: 0.55,
-              borderRadius: "999px",
+              borderRadius: 0,
               bgcolor: pastel.mint,
               border: `1.5px solid ${pastelInk.mint}33`,
               cursor: "pointer",
-              transition: "transform .15s ease",
-              "&:hover": { transform: "rotate(-1.5deg)" },
+              boxShadow: `2px 2px 0 ${pastelInk.mint}22`,
             }}
           >
             <Typography sx={{ fontSize: 11, fontWeight: 700, color: pastelInk.mint }}>Room</Typography>

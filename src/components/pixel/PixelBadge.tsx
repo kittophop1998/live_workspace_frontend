@@ -3,6 +3,7 @@
 import { Box, type SxProps, type Theme } from "@mui/material";
 import type { ReactNode } from "react";
 import { methodColor } from "@/components/theme";
+import { Badge as PixelactBadge } from "@/components/ui/pixelact-ui/badge";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PixelBadge — a compact monospace pill with a chunky, slightly-square pixel
@@ -24,7 +25,9 @@ export function PixelBadge({
 }) {
   return (
     <Box
-      component="span"
+      component={PixelactBadge}
+      font="normal"
+      variant="outline"
       sx={{
         display: "inline-flex",
         alignItems: "center",
@@ -39,7 +42,8 @@ export function PixelBadge({
         color: fg,
         bgcolor: bg ?? `${fg}1F`,
         border: `1.5px solid ${fg}59`,
-        borderRadius: "5px", // squarer than pills → reads a touch "pixel"
+        borderRadius: 0,
+        boxShadow: `2px 2px 0 ${fg}30`,
         whiteSpace: "nowrap",
         ...sx,
       }}

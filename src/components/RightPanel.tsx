@@ -8,7 +8,6 @@ import { ActivityLog } from "@/components/ActivityLog";
 import { CommentThread } from "@/components/CommentThread";
 import { BookmarkTab } from "@/components/common";
 import { line } from "@/components/theme";
-import { PixelMascot } from "@/components/PixelMascot";
 import type { RightTab } from "@/lib/types";
 
 export function RightPanel() {
@@ -34,7 +33,7 @@ export function RightPanel() {
           active={tab === "comments"}
           onClick={() => setTab("comments" as RightTab)}
         />
-        <PixelMascot pose={tab === "activity" ? "thinking" : "reading"} size={35} cat={false} style={{ marginLeft: "auto" }} />
+        <Box sx={{ ml: "auto", mb: 1, width: 7, height: 7, bgcolor: "#8B7CF6", boxShadow: "4px 0 0 #D9D3F7" }} />
       </Stack>
       <Box sx={{ flex: 1, minHeight: 0 }}>
         {tab === "comments" ? <CommentThread /> : <ActivityLog />}

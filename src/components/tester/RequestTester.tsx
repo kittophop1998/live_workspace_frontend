@@ -16,6 +16,10 @@ import { seedFromFields, nodesToExample } from "@/lib/schemaConvert";
 import { useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
 import { ResponseViewer } from "@/components/tester/ResponseViewer";
 import { line, methodColor } from "@/components/theme";
+import { PixelPanel } from "@/components/pixel/pixelBox";
+import { PixelButton } from "@/components/pixel/PixelButton";
+import { MethodBadge } from "@/components/pixel/PixelBadge";
+import { Input as PixelactInput } from "@/components/ui/pixelact-ui/input";
 import type { HttpMethod, Resource } from "@/lib/types";
 
 const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -85,13 +89,13 @@ function RowsEditor({
             readOnly={lockKeys}
             placeholder="key"
             onChange={(e) => patch(i, { key: e.target.value })}
-            sx={{ flex: 1, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: "6px", px: 0.75, py: 0.25, bgcolor: lockKeys ? "#F1F5F9" : "#fff" }}
+            sx={{ flex: 1, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: 0, px: 0.75, py: 0.4, bgcolor: lockKeys ? "#F1F5F9" : "#fff" }}
           />
           <InputBase
             value={r.value}
             placeholder="value"
             onChange={(e) => patch(i, { value: e.target.value })}
-            sx={{ flex: 1.4, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: "6px", px: 0.75, py: 0.25 }}
+            sx={{ flex: 1.4, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: 0, px: 0.75, py: 0.4 }}
           />
           {lockKeys ? (
             <Box sx={{ width: 28 }} />
@@ -207,14 +211,16 @@ export function RequestTester({ resource }: { resource: Resource }) {
   const showBody = BODY_METHODS.has(draft.method);
 
   return (
-    <Box sx={{ mt: 3, border: `1px solid ${line}`, borderRadius: "16px", boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 6px 20px rgba(15,23,42,0.07)", bgcolor: "#fff", overflow: "hidden" }}>
+    <PixelPanel sx={{ mt: 0, p: 0, overflow: "hidden" }}>
       <Stack
         direction="row"
         onClick={() => setOpen((v) => !v)}
         sx={{ alignItems: "center", justifyContent: "space-between", p: 2, cursor: "pointer", bgcolor: open ? "#F8FAFC" : "#fff" }}
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <ScienceOutlinedIcon sx={{ fontSize: 20 }} />
+          <Box sx={{ width: 28, height: 28, display: "grid", placeItems: "center", bgcolor: "#EEEAFE", border: "1px solid #CFC7FA", boxShadow: "2px 2px 0 #D9D3F7" }}>
+            <ScienceOutlinedIcon sx={{ fontSize: 17, color: "#6D5DD3" }} />
+          </Box>
           <Typography variant="h2">Try it</Typography>
           <Typography variant="caption" sx={{ color: "#6B7280" }}>send a live test request</Typography>
         </Stack>
@@ -241,17 +247,18 @@ export function RequestTester({ resource }: { resource: Resource }) {
               size="small"
               value={draft.method}
               onChange={(e) => update({ method: e.target.value as HttpMethod })}
-              sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600, color: methodColor[draft.method], minWidth: 108 }}
+              renderValue={() => <MethodBadge method={draft.method} />}
+              sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600, color: methodColor[draft.method], minWidth: 112, borderRadius: 0 }}
             >
               {HTTP_METHODS.map((m) => (
                 <MenuItem key={m} value={m} sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: methodColor[m] }}>{m}</MenuItem>
               ))}
             </Select>
-            <InputBase
+            <PixelactInput
               value={draft.path}
               onChange={(e) => update({ path: e.target.value })}
               placeholder="/api/v1/resource/{id}"
-              sx={{ flex: 1, fontFamily: "var(--font-mono, monospace)", fontSize: 13, border: `1px solid ${line}`, borderRadius: "8px", px: 1 }}
+              className="min-w-0 flex-1 font-mono text-sm"
             />
           </Stack>
           <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: "#6B7280", fontFamily: "var(--font-mono, monospace)", wordBreak: "break-all" }}>
@@ -279,16 +286,16 @@ export function RequestTester({ resource }: { resource: Resource }) {
                 onChange={(e) => update({ body: e.target.value })}
                 multiline
                 minRows={4}
-                sx={{ width: "100%", fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: "10px", p: 1.25, bgcolor: "#F8FAFC" }}
+                sx={{ width: "100%", fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: 0, p: 1.25, bgcolor: "#F8FAFC" }}
               />
             </>
           ) : null}
 
           {/* Actions */}
           <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
-            <Button variant="contained" startIcon={<PlayArrowIcon />} onClick={send} disabled={loading}>
+            <PixelButton startIcon={<PlayArrowIcon />} onClick={send} disabled={loading}>
               {loading ? "Sending…" : "Send"}
-            </Button>
+            </PixelButton>
             <Tooltip title="Reset to the API spec definition">
               <Button variant="outlined" startIcon={<RestartAltIcon sx={{ fontSize: 18 }} />} onClick={reset}>
                 Reset
@@ -299,6 +306,6 @@ export function RequestTester({ resource }: { resource: Resource }) {
           <ResponseViewer result={result} loading={loading} />
         </Box>
       </Collapse>
-    </Box>
+    </PixelPanel>
   );
 }

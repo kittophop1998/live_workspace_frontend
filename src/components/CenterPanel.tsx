@@ -29,7 +29,6 @@ import { ResponseTabs } from "@/components/schema/ResponseTabs";
 import { RequestTester } from "@/components/tester/RequestTester";
 import { ProposalPanel } from "@/components/proposals/ProposalPanel";
 import { MonoTag, Sticker, type PastelName, relativeTime, useNow } from "@/components/common";
-import { DoodleStar } from "@/components/doodles";
 import { blue, blueSoft, ink, methodColor, pastel, secondaryText } from "@/components/theme";
 import { PixelTabs } from "@/components/pixel/PixelTabs";
 import { PixelEmptyState } from "@/components/pixel/PixelEmptyState";
@@ -251,7 +250,7 @@ function EditableName({ resource }: { resource: Resource }) {
   if (!editing) {
     return (
       <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-        <Typography variant="h1" className="font-hand" sx={{ fontSize: 26 }}>{resource.name}</Typography>
+        <Typography variant="h1" sx={{ fontSize: 23 }}>{resource.name}</Typography>
         <EditIcon
           onClick={() => {
             setDraft(resource.name);
@@ -333,7 +332,7 @@ export function CenterPanel() {
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "transparent" }}>
-      <Box sx={{ px: { xs: 2, sm: 4 }, pt: { xs: 2, sm: 2.5 }, pb: 0, bgcolor: "#FFFFFF", borderBottom: "1px solid #E9E2D0", position: "relative" }}>
+      <Box sx={{ px: { xs: 2, sm: 3 }, pt: { xs: 2, sm: 2.25 }, pb: 0, bgcolor: "#FFFFFF", borderBottom: "1px solid #E9E2D0", position: "relative" }}>
         <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 1.5 }}>
           <Box sx={{ minWidth: 0 }}>
             <Sticker color={kindColor} sx={{ mb: 0.75 }}>
@@ -356,8 +355,8 @@ export function CenterPanel() {
           ) : resource.path ? (
             <MonoTag>{resource.path}</MonoTag>
           ) : null}
-          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
-            <DoodleStar size={13} />
+          <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
+            <Box sx={{ width: 5, height: 5, bgcolor: "#8B7CF6" }} />
             <Typography sx={{ fontSize: 12, color: secondaryText }}>
               Updated {relativeTime(resource.updatedAt)} by {resource.updatedBy}
             </Typography>
@@ -380,8 +379,7 @@ export function CenterPanel() {
         )}
       </Box>
 
-      {/* Notebook page content */}
-      <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
+      <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 2, sm: 3 }, py: { xs: 2.5, sm: 3 }, bgcolor: "#F7F6FA" }}>
         {activeTab === "request" ? (
           <Box sx={{ animation: "fade-in .2s ease" }}>
             <PixelPanel>

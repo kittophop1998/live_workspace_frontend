@@ -14,8 +14,6 @@ import { useBookmarkStore } from "@/lib/bookmarks";
 import { openProposalCount, useProposalStore } from "@/lib/proposals";
 import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, DEFAULT_ENDPOINT_STATUS, useEndpointStatusStore } from "@/lib/endpointStatus";
 import { Sticker, EmptyState } from "@/components/common";
-import { DoodleSparkle } from "@/components/doodles";
-import { PixelMascot } from "@/components/PixelMascot";
 import { ink, line, methodColor, pastel, pastelInk, secondaryText } from "@/components/theme";
 import type { EndpointStatus, Resource, ResourceKind } from "@/lib/types";
 
@@ -163,19 +161,19 @@ function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }
         px: 1.25,
         py: 1,
         mb: 0.6,
-        borderRadius: "14px",
+        borderRadius: 0,
         cursor: "pointer",
-        bgcolor: active ? "#EEEAFE" : "transparent",
-        border: `1px solid ${active ? "#DDD6FC" : "transparent"}`,
-        boxShadow: active ? "0 3px 10px rgba(80,65,160,0.07)" : "none",
+        bgcolor: active ? "#F2EFFF" : "transparent",
+        border: `1px solid ${active ? "#CFC7FA" : "transparent"}`,
+        boxShadow: active ? "2px 2px 0 #D9D3F7" : "none",
         transition: "background-color .15s ease, border-color .15s ease, transform .15s ease",
         "&:hover": {
-          bgcolor: active ? "#EEEAFE" : "#F7F5F0",
+          bgcolor: active ? "#F2EFFF" : "#F5F4F8",
           "& .bookmark-star": { opacity: 1 },
         },
         // highlighter marker down the selected page edge
         "&::before": active
-          ? { content: '""', position: "absolute", left: -1, top: 8, bottom: 8, width: 4, borderRadius: 999, bgcolor: "#F5799F" }
+          ? { content: '""', position: "absolute", left: -1, top: 6, bottom: 6, width: 3, bgcolor: "#7C6FE0" }
           : {},
       }}
     >
@@ -192,7 +190,7 @@ function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }
             color: methodColor[r.method],
             bgcolor: `${methodColor[r.method]}1A`,
             border: `1.5px solid ${methodColor[r.method]}33`,
-            borderRadius: "8px",
+            borderRadius: 0,
             py: 0.35,
           }}
         >
@@ -211,7 +209,7 @@ function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }
           </Typography>
         ) : null}
       </Box>
-      {active ? <PixelMascot pose="idle" size={29} cat={false} /> : null}
+      {active ? <Box aria-hidden sx={{ width: 6, height: 6, bgcolor: "#7C6FE0", boxShadow: "4px 0 0 #BEB6F5" }} /> : null}
       {r.kind === "endpoint" ? <ProposalBadge resourceId={r.id} /> : null}
       <BookmarkStar resourceId={r.id} />
     </Box>
@@ -245,8 +243,8 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `1px solid ${line}`, bgcolor: "#FBFAF7" }}>
       <Box sx={{ px: 2, pt: 2.25, pb: 1.5 }}>
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-          <Sticker color="purple">Explorer</Sticker>
-          <DoodleSparkle size={15} className="animate-twinkle" />
+          <Typography sx={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>Explorer</Typography>
+          <Box sx={{ width: 5, height: 5, bgcolor: "#8B7CF6" }} />
         </Stack>
         <Box
           sx={{
@@ -256,11 +254,11 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
             gap: 0.75,
             px: 1.4,
             height: 42,
-            borderRadius: "999px",
+            borderRadius: 0,
             bgcolor: "#FFFDF8",
             border: `1.5px solid ${line}`,
             transition: "border-color .15s ease, box-shadow .15s ease",
-            "&:focus-within": { borderColor: "#F5799F", boxShadow: `0 0 0 3px #FFE6EE` },
+            "&:focus-within": { borderColor: "#8B7CF6", boxShadow: `2px 2px 0 #D9D3F7` },
           }}
         >
           <SearchIcon sx={{ fontSize: 18, color: secondaryText }} />
@@ -324,7 +322,7 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
                       justifyContent: "center",
                       width: 26,
                       height: 26,
-                      borderRadius: "9px",
+                      borderRadius: 0,
                       cursor: "pointer",
                       color: pastelInk[color],
                       bgcolor: pastel[color],

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Chip, Collapse, Stack, Typography } from "@mui/material";
+import { Box, Collapse, Stack, Typography } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import { JsonView } from "@/components/schema/JsonView";
-import { EmptyState, MonoTag } from "@/components/common";
+import { MonoTag } from "@/components/common";
 import { line } from "@/components/theme";
+import { PixelBadge } from "@/components/pixel/PixelBadge";
+import { PixelEmptyState } from "@/components/pixel/PixelEmptyState";
 import type { TestResult } from "@/services/testerService";
 
 function statusColor(status: number): string {
@@ -38,12 +40,11 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
   }
   if (!result) {
     return (
-      <EmptyState
-        image="/images/no_response.png"
-        imageAlt="No response yet"
-        imageWidth={180}
+      <PixelEmptyState
+        pose="coding"
+        mascotSize={64}
         title="No response yet"
-        subtitle="Hit Send to run this request and see the response here."
+        subtitle="Send this request to inspect status, timing, headers, and body."
         sx={{ py: 3 }}
       />
     );
@@ -70,16 +71,12 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
 
   return (
     <Box sx={{ mt: 1.5 }}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-        <Chip
-          size="small"
-          label={result.status || "—"}
-          sx={{ fontWeight: 600, color: "#fff", bgcolor: statusColor(result.status), border: `1px solid ${line}` }}
-        />
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", p: 1.25, border: `1px solid ${line}`, bgcolor: "#FAFAFC" }}>
+        <PixelBadge fg="#FFFFFF" bg={statusColor(result.status)}>{result.status || "—"}</PixelBadge>
         <MonoTag>{result.durationMs} ms</MonoTag>
         <MonoTag>{result.size} B</MonoTag>
         {result.truncated ? (
-          <Chip size="small" variant="outlined" label="truncated" sx={{ height: 22, color: "#D97706" }} />
+          <PixelBadge fg="#D97706">truncated</PixelBadge>
         ) : null}
       </Stack>
 
@@ -97,7 +94,7 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
             </Typography>
           </Stack>
           <Collapse in={showHeaders}>
-            <Box sx={{ mt: 0.75, p: 1.25, border: `1px solid ${line}`, borderRadius: "10px", bgcolor: "#F8FAFC", fontFamily: "var(--font-mono, monospace)", fontSize: 12 }}>
+            <Box sx={{ mt: 0.75, p: 1.25, border: `1px solid ${line}`, borderRadius: 0, bgcolor: "#F8FAFC", fontFamily: "var(--font-mono, monospace)", fontSize: 12 }}>
               {headerEntries.map(([key, values]) => (
                 <Box key={key} sx={{ display: "flex", gap: 1, py: 0.15 }}>
                   <Box component="span" sx={{ color: "#2563EB", fontWeight: 700 }}>{key}:</Box>

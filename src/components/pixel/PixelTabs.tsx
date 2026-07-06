@@ -43,7 +43,7 @@ export function PixelTabs<T extends string>({
   };
 
   return (
-    <Box role="tablist" aria-orientation="horizontal" sx={{ position: "relative", display: "flex", gap: 0.5, borderBottom: `1.5px solid ${line}`, ...sx }}>
+    <Box role="tablist" aria-orientation="horizontal" sx={{ position: "relative", display: "flex", gap: 0.25, borderBottom: `1px solid ${line}`, ...sx }}>
       {tabs.map((t) => {
         const active = t.value === value;
         return (
@@ -67,10 +67,12 @@ export function PixelTabs<T extends string>({
               display: "inline-flex",
               alignItems: "center",
               gap: 0.6,
-              px: 1.5,
-              py: 1.1,
-              border: "none",
-              background: "none",
+              px: 1.25,
+              py: 1,
+              border: `1px solid ${active ? line : "transparent"}`,
+              borderBottom: "none",
+              borderRadius: 0,
+              background: active ? "#F7F5FF" : "none",
               cursor: "pointer",
               font: "inherit",
               fontSize: 13.5,
@@ -78,7 +80,7 @@ export function PixelTabs<T extends string>({
               color: active ? ink : secondaryText,
               transition: "color .15s ease",
               "&:hover": { color: ink },
-              "&:focus-visible": { outline: `2px solid ${blue}`, outlineOffset: 2, borderRadius: 6 },
+              "&:focus-visible": { outline: `2px solid ${blue}`, outlineOffset: 2 },
             }}
           >
             {t.icon}
@@ -93,7 +95,7 @@ export function PixelTabs<T extends string>({
           position: "absolute",
           bottom: -1.5,
           height: 3,
-          borderRadius: "3px 3px 0 0",
+          borderRadius: 0,
           bgcolor: blue,
           left: indicator.left,
           width: indicator.width,

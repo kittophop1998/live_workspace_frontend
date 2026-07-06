@@ -12,12 +12,17 @@ avatar to control — the player works through **numbers, cards, progress bars, 
 logs**. Target feel: cozy, idle, strategic, lightweight, solo-dev-friendly.
 
 ## 2. Tech stack (do not change without strong reason)
-- **Next.js 16** (App Router) + **React 19** + **TypeScript**
-- **MUI v9** (`@mui/material`) + **Emotion** — components & theming
-- **Tailwind CSS v4** — utility classes alongside MUI
+- **Next.js 16** (App Router)
+- **React 19**
+- **TypeScript**
+- **Tailwind CSS v4**
+- **shadcn/ui**
+- **Pixelact UI** (preferred UI registry)
+- **Lucide React**
+- **Motion** (for lightweight animations when needed)
 - **Zustand v5** — single global store `useKingdomStore`
 - **Axios** — HTTP via `src/lib/api.ts`
-- Backend (future): **Go**, contract in `api-spec.md`
+- Backend (future): **Go**, contract defined in `api-spec.md`
 
 ## 3. Game design constraints
 - **NO real AI/LLM.** Any "smart"/"AI" behavior = simple rule-based policy logic
@@ -45,17 +50,14 @@ logs**. Target feel: cozy, idle, strategic, lightweight, solo-dev-friendly.
 - A real sprite/tilemap renderer.
 
 ## 6. Coding rules
-- Output minimal, idiomatic code that matches surrounding style.
-- **Strict TypeScript** — no `any` in committed code; model from api-spec types.
-- Functional components + hooks. `"use client"` only where interactivity needs it.
-- MUI-first for components; `sx` prop or Tailwind utilities for layout/spacing.
-- Reusable components — no copy-pasted card markup; extract to `components/`.
-- Don't compute final resource totals on the client (display/interpolate only).
-- Respect `prefers-reduced-motion` for animations.
-- **VERIFY BEFORE DONE**: run `npm run build` / `npm run lint`; never claim done
-  without evidence.
-- Every visual element must have a purpose. If an illustration, decoration, or pixel element does not improve navigation, feedback, or delight, remove it. Minimalism always
-  wins over decoration.
+- Tailwind CSS is the primary styling system.
+- Prefer shadcn/ui components.
+- Prefer Pixelact UI components whenever an official registry component exists.
+- Do not introduce new MUI components.
+- Existing MUI code may remain temporarily but should be migrated gradually.
+- Do not manually recreate registry components.
+- Prefer composition over customization.
+- Reuse registry components instead of creating similar custom components.
 
 ## 7. Frontend architecture expectations
 ```
@@ -125,3 +127,51 @@ src/
 - When the Go backend lands, only `kingdom.service.ts` switches from mock to
   `apiClient`; components, store, and types stay unchanged.
 - If a mismatch is found, fix `api-spec.md` first, then the code.
+
+## 15. UI Component System
+
+### Design System Priority
+
+This project uses a single UI system built on shadcn/ui.
+
+Priority order:
+
+1. Existing shared components
+2. Pixelact UI registry
+3. Official shadcn/ui registry
+4. Custom component (only if no registry component exists)
+
+Do NOT introduce another component library.
+
+---
+
+### Registry First
+
+Before implementing any new UI component, always check whether an equivalent
+component exists in the Pixelact UI or shadcn registry.
+
+If a suitable component exists, install and compose it instead of implementing
+a custom version.
+
+Only implement a custom component when no suitable registry component exists.
+
+---
+
+### MCP
+
+AI agents should use the shadcn MCP server whenever possible.
+
+The MCP server should be used to:
+
+- discover components
+- inspect registry metadata
+- install official components
+- avoid recreating existing registry components
+
+Example Codex configuration:
+
+```toml
+[mcp_servers.shadcn]
+command = "npx"
+args = ["shadcn@latest", "mcp"]
+
