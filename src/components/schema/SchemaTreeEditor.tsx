@@ -161,9 +161,8 @@ export function SchemaTreeEditor({ scope }: { scope: string }) {
           <EmptyState
             image="/images/no_response.png"
             imageAlt="No fields yet"
-            imageWidth={180}
+            imageWidth={280}
             title="No fields yet"
-            subtitle="Add one, or use Ask AI / paste JSON."
             sx={{ py: 4 }}
           />
         ) : (
