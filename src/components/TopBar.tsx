@@ -11,7 +11,7 @@ import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar } from "@/components/common";
 import { ImportApiDialog } from "@/components/ImportApiDialog";
-import { ink, line, pastel, pastelInk, secondaryText } from "@/components/theme";
+import { blue, ink, line, paper, pastel, pastelInk, secondaryText, softShadowSm } from "@/components/theme";
 
 export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; onOpenRight?: () => void } = {}) {
   const collaborators = useWorkspaceStore((s) => s.collaborators);
@@ -72,20 +72,19 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
             width: 36,
             height: 36,
             flexShrink: 0,
-            borderRadius: 0,
-            bgcolor: "#1F1D2B",
+            borderRadius: "10px",
+            bgcolor: blue,
             color: "#FFFFFF",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            border: "1px solid #1F1D2B",
-            boxShadow: "3px 3px 0 #D9D3F7",
+            boxShadow: "0 2px 8px rgba(79,142,247,0.28)",
           }}
         >
           <TerminalRoundedIcon sx={{ fontSize: 20 }} />
         </Box>
         <Box sx={{ display: { xs: "none", sm: "block" }, lineHeight: 1.1 }}>
-          <Typography sx={{ fontSize: 15, fontWeight: 800, color: ink, lineHeight: 1.05, letterSpacing: "-0.01em" }}>
+          <Typography sx={{ fontSize: 15, fontWeight: 700, color: ink, lineHeight: 1.05, letterSpacing: "-0.01em" }}>
             Live Workspace
           </Typography>
           <Typography sx={{ fontSize: 11, fontWeight: 500, color: secondaryText, lineHeight: 1.1 }}>
@@ -94,7 +93,7 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
         </Box>
       </Box>
 
-      <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0.5, md: 2 }, p: 0.4, borderRadius: "10px", bgcolor: "#F5F3FA", flexShrink: 0 }}>
+      <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0.5, md: 2 }, p: 0.4, borderRadius: "10px", bgcolor: pastel.cream, flexShrink: 0 }}>
         {([
           { key: "workspace", label: "Workspace", short: "Workspace" },
           { key: "flows", label: "E2E Flow Testing", short: "Flows" },
@@ -107,13 +106,13 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
               aria-pressed={active}
               onClick={() => setView(tab.key)}
               sx={{
-                px: { xs: 1.25, sm: 1.75 }, py: 0.55, borderRadius: "8px", cursor: "pointer", fontSize: 13, fontWeight: 650, whiteSpace: "nowrap",
-                color: active ? pastelInk.purple : secondaryText,
-                bgcolor: active ? "#FFFFFF" : "transparent",
+                px: { xs: 1.25, sm: 1.75 }, py: 0.55, borderRadius: "8px", cursor: "pointer", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap",
+                color: active ? ink : secondaryText,
+                bgcolor: active ? paper : "transparent",
                 border: "1px solid transparent",
-                boxShadow: active ? "0 1px 3px rgba(46,46,46,.08)" : "none",
-                transition: "color .15s ease, background-color .15s ease, transform .15s ease",
-                "&:hover": { color: pastelInk.purple, transform: "translateY(-1px)" },
+                boxShadow: active ? softShadowSm : "none",
+                transition: "color .15s ease, background-color .15s ease",
+                "&:hover": { color: ink },
               }}
             >
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>{tab.label}</Box>
@@ -136,11 +135,12 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
               gap: 0.75,
               px: 1.25,
               py: 0.55,
-              borderRadius: 0,
+              borderRadius: "8px",
               bgcolor: pastel.mint,
-              border: `1.5px solid ${pastelInk.mint}33`,
+              border: `1px solid ${pastelInk.mint}33`,
               cursor: "pointer",
-              boxShadow: `2px 2px 0 ${pastelInk.mint}22`,
+              transition: "filter .15s ease",
+              "&:hover": { filter: "brightness(0.98)" },
             }}
           >
             <Typography sx={{ fontSize: 11, fontWeight: 700, color: pastelInk.mint }}>Room</Typography>
@@ -169,7 +169,7 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
             bgcolor: pastel.mint,
           }}
         >
-          <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#4FB477", boxShadow: "0 0 0 3px rgba(79,180,119,0.22)" }} />
+          <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#22C55E", boxShadow: "0 0 0 3px rgba(34,197,94,0.22)" }} />
           <Typography sx={{ fontSize: 11.5, fontWeight: 700, color: pastelInk.mint }}>{onlineCount} here</Typography>
         </Box>
         <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", pl: 0.5 }}>

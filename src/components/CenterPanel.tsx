@@ -29,7 +29,7 @@ import { ResponseTabs } from "@/components/schema/ResponseTabs";
 import { RequestTester } from "@/components/tester/RequestTester";
 import { ProposalPanel } from "@/components/proposals/ProposalPanel";
 import { MonoTag, Sticker, type PastelName, relativeTime, useNow } from "@/components/common";
-import { blue, blueSoft, ink, methodColor, pastel, secondaryText } from "@/components/theme";
+import { blue, blueSoft, ink, line, methodColor, paper, pastel, pastelInk, secondaryText, wash } from "@/components/theme";
 import { PixelTabs } from "@/components/pixel/PixelTabs";
 import { PixelEmptyState } from "@/components/pixel/PixelEmptyState";
 import { PixelButton } from "@/components/pixel/PixelButton";
@@ -65,11 +65,11 @@ function EndpointStatusPicker({ resourceId }: { resourceId: string }) {
             color: meta.fg,
             border: `1.5px solid ${meta.fg}2E`,
             fontSize: 11.5,
-            fontWeight: 700,
+            fontWeight: 600,
             lineHeight: 1.4,
             whiteSpace: "nowrap",
-            transition: "transform .15s ease",
-            "&:hover": { transform: "translateY(-1px) rotate(-1deg)" },
+            transition: "filter .15s ease",
+            "&:hover": { filter: "brightness(0.97)" },
           }}
         >
           {meta.label}
@@ -197,9 +197,9 @@ function BookmarkToggle({ resourceId }: { resourceId: string }) {
           cursor: "pointer",
           p: 0.6,
           borderRadius: "10px",
-          color: bookmarked ? "#F0A93C" : secondaryText,
-          transition: "color .15s ease, transform .15s ease",
-          "&:hover": { color: "#F0A93C", transform: "rotate(-12deg) scale(1.1)" },
+          color: bookmarked ? "#F59E0B" : secondaryText,
+          transition: "color .15s ease",
+          "&:hover": { color: "#F59E0B" },
         }}
       >
         {bookmarked ? <StarIcon sx={{ fontSize: 20 }} /> : <StarBorderIcon sx={{ fontSize: 20 }} />}
@@ -232,7 +232,7 @@ function MoreMenu({ resource }: { resource: Resource }) {
               deleteResource(resource.id);
             }
           }}
-          sx={{ fontSize: 13, fontWeight: 600, color: "#E86A6A", gap: 1 }}
+          sx={{ fontSize: 13, fontWeight: 600, color: "#EF4444", gap: 1 }}
         >
           <DeleteIcon sx={{ fontSize: 18 }} />
           Delete {resource.kind}
@@ -256,7 +256,7 @@ function EditableName({ resource }: { resource: Resource }) {
             setDraft(resource.name);
             setEditing(true);
           }}
-          sx={{ fontSize: 17, color: "#D3C3A6", cursor: "pointer", transition: "transform .15s ease", "&:hover": { color: ink, transform: "rotate(-10deg)" } }}
+          sx={{ fontSize: 17, color: "#C3C7CE", cursor: "pointer", transition: "color .15s ease", "&:hover": { color: ink } }}
         />
       </Stack>
     );
@@ -287,6 +287,67 @@ const TABS: { value: CenterTab; label: string; color: PastelName; icon: React.Re
   { value: "settings", label: "Settings", color: "blue", icon: <SettingsOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "proposals", label: "Proposals", color: "purple", icon: <RateReviewOutlinedIcon sx={{ fontSize: 16 }} /> },
 ];
+
+// Small "Coming soon" pill for reserved, not-yet-built surfaces.
+function ComingSoonPill() {
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        px: 1,
+        py: 0.25,
+        borderRadius: "999px",
+        bgcolor: pastel.blue,
+        color: pastelInk.blue,
+        border: `1px solid ${pastelInk.blue}22`,
+        fontSize: 10.5,
+        fontWeight: 700,
+        letterSpacing: "0.03em",
+        textTransform: "uppercase",
+      }}
+    >
+      Coming soon
+    </Box>
+  );
+}
+
+// Reserved visual space for future collaboration features — no logic, just a
+// signpost so the workspace reads as extensible (Proposal Mode is already live).
+const ROADMAP: { label: string; hint: string }[] = [
+  { label: "API Graph", hint: "See how endpoints & schemas connect." },
+  { label: "API Story", hint: "A narrated walkthrough of a flow." },
+  { label: "Decision Log", hint: "Why the API is shaped this way." },
+];
+
+function RoadmapReserve() {
+  return (
+    <Box sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1.25 }}>
+        <Typography variant="h3" sx={{ color: secondaryText }}>On the roadmap</Typography>
+        <ComingSoonPill />
+      </Stack>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 1.25 }}>
+        {ROADMAP.map((f) => (
+          <Box
+            key={f.label}
+            sx={{
+              p: 1.75,
+              borderRadius: "12px",
+              border: `1px dashed ${line}`,
+              bgcolor: paper,
+              opacity: 0.9,
+            }}
+          >
+            <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: ink }}>{f.label}</Typography>
+            <Typography sx={{ fontSize: 12, color: secondaryText, mt: 0.4, lineHeight: 1.55 }}>{f.hint}</Typography>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
 export function CenterPanel() {
   const resource = useWorkspaceStore((s) => s.resources.find((r) => r.id === s.selectedId));
@@ -332,7 +393,7 @@ export function CenterPanel() {
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "transparent" }}>
-      <Box sx={{ px: { xs: 2, sm: 3 }, pt: { xs: 2, sm: 2.25 }, pb: 0, bgcolor: "#FFFFFF", borderBottom: "1px solid #E9E2D0", position: "relative" }}>
+      <Box sx={{ px: { xs: 2, sm: 3 }, pt: { xs: 2, sm: 2.25 }, pb: 0, bgcolor: "#FFFFFF", borderBottom: `1px solid ${line}`, position: "relative" }}>
         <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 1.5 }}>
           <Box sx={{ minWidth: 0 }}>
             <Sticker color={kindColor} sx={{ mb: 0.75 }}>
@@ -356,7 +417,7 @@ export function CenterPanel() {
             <MonoTag>{resource.path}</MonoTag>
           ) : null}
           <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-            <Box sx={{ width: 5, height: 5, bgcolor: "#8B7CF6" }} />
+            <Box sx={{ width: 5, height: 5, borderRadius: "50%", bgcolor: blue }} />
             <Typography sx={{ fontSize: 12, color: secondaryText }}>
               Updated {relativeTime(resource.updatedAt)} by {resource.updatedBy}
             </Typography>
@@ -379,7 +440,7 @@ export function CenterPanel() {
         )}
       </Box>
 
-      <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 2, sm: 3 }, py: { xs: 2.5, sm: 3 }, bgcolor: "#F7F6FA" }}>
+      <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 2, sm: 3 }, py: { xs: 2.5, sm: 3 }, bgcolor: wash }}>
         {activeTab === "request" ? (
           <Box sx={{ animation: "fade-in .2s ease" }}>
             <PixelPanel>
@@ -424,13 +485,16 @@ export function CenterPanel() {
 
         {isEndpoint && activeTab === "history" ? (
           <PixelPanel>
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}><ComingSoonPill /></Box>
             <PixelEmptyState pose="reading" title="No saved versions yet." subtitle="Changes to this endpoint will become a readable timeline." />
           </PixelPanel>
         ) : null}
 
         {isEndpoint && activeTab === "settings" ? (
           <PixelPanel>
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}><ComingSoonPill /></Box>
             <PixelEmptyState pose="coding" title="Endpoint settings" subtitle="Advanced endpoint controls will live on this quiet page." />
+            <RoadmapReserve />
           </PixelPanel>
         ) : null}
       </Box>

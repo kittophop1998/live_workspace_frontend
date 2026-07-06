@@ -301,7 +301,7 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
         ) : (
           <Stack spacing={1.25} sx={{ mb: 1.5 }}>
             {proposal.comments.map((c) => (
-              <Box key={c.id} sx={{ bgcolor: "#FFFDF8", border: `1.5px solid ${line}`, borderRadius: "4px 16px 16px 16px", p: 1.5, opacity: c.resolved ? 0.6 : 1 }}>
+              <Box key={c.id} sx={{ bgcolor: "#FFFFFF", border: `1.5px solid ${line}`, borderRadius: "4px 16px 16px 16px", p: 1.5, opacity: c.resolved ? 0.6 : 1 }}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
                   <Avatar name={c.author} color={colorFor(c.role)} size={22} />
                   <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: ink }}>{c.author}</Typography>
@@ -330,7 +330,7 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
           </Stack>
         ) : null}
         <Stack direction="row" spacing={1} sx={{ alignItems: "flex-end" }}>
-          <Box sx={{ flex: 1, border: `1.5px solid ${line}`, borderRadius: "14px", bgcolor: "#FFFDF8", px: 1.25, py: 0.75, "&:focus-within": { borderColor: blue, boxShadow: `0 0 0 3px ${blueSoft}` } }}>
+          <Box sx={{ flex: 1, border: `1.5px solid ${line}`, borderRadius: "14px", bgcolor: "#FFFFFF", px: 1.25, py: 0.75, "&:focus-within": { borderColor: blue, boxShadow: `0 0 0 3px ${blueSoft}` } }}>
             <InputBase
               multiline
               maxRows={4}

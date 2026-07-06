@@ -48,7 +48,7 @@ export function PixelEmptyState({
         ...sx,
       }}
     >
-      <EmptyMedia variant="icon" className="bg-violet-50 text-violet-700">
+      <EmptyMedia variant="icon" className="bg-blue-50 text-blue-600">
         <PixelMascot pose={pose} size={mascotSize} />
       </EmptyMedia>
       <EmptyHeader>

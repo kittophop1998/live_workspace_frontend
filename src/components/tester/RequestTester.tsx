@@ -218,8 +218,8 @@ export function RequestTester({ resource }: { resource: Resource }) {
         sx={{ alignItems: "center", justifyContent: "space-between", p: 2, cursor: "pointer", bgcolor: open ? "#F8FAFC" : "#fff" }}
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Box sx={{ width: 28, height: 28, display: "grid", placeItems: "center", bgcolor: "#EEEAFE", border: "1px solid #CFC7FA", boxShadow: "2px 2px 0 #D9D3F7" }}>
-            <ScienceOutlinedIcon sx={{ fontSize: 17, color: "#6D5DD3" }} />
+          <Box sx={{ width: 28, height: 28, borderRadius: "8px", display: "grid", placeItems: "center", bgcolor: "#EAF2FE", border: "1px solid #BBD4FB" }}>
+            <ScienceOutlinedIcon sx={{ fontSize: 17, color: "#2C6FD6" }} />
           </Box>
           <Typography variant="h2">Try it</Typography>
           <Typography variant="caption" sx={{ color: "#6B7280" }}>send a live test request</Typography>

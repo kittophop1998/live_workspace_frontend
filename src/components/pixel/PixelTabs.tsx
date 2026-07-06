@@ -2,12 +2,11 @@
 
 import { Box, type SxProps, type Theme } from "@mui/material";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { blue, line, secondaryText, ink } from "@/components/theme";
+import { blue, blueSoft, line, paper, secondaryText, ink } from "@/components/theme";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PixelTabs — clean horizontal tabs with a single lavender underline that slides
-// smoothly to the active tab. Keyboard-navigable (arrow keys / Home / End).
-// Text is a normal sans font; only the motion is the accent.
+// PixelTabs — clean notebook-bookmark tabs with a single blue underline that
+// slides smoothly to the active tab. Keyboard-navigable (arrow keys / Home / End).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PixelTabItem<T extends string> {
@@ -67,19 +66,19 @@ export function PixelTabs<T extends string>({
               display: "inline-flex",
               alignItems: "center",
               gap: 0.6,
-              px: 1.25,
+              px: 1.5,
               py: 1,
               border: `1px solid ${active ? line : "transparent"}`,
               borderBottom: "none",
-              borderRadius: 0,
-              background: active ? "#F7F5FF" : "none",
+              borderRadius: "10px 10px 0 0",
+              background: active ? paper : "none",
               cursor: "pointer",
               font: "inherit",
               fontSize: 13.5,
-              fontWeight: 700,
+              fontWeight: 600,
               color: active ? ink : secondaryText,
-              transition: "color .15s ease",
-              "&:hover": { color: ink },
+              transition: "color .15s ease, background-color .15s ease",
+              "&:hover": { color: ink, background: active ? paper : blueSoft },
               "&:focus-visible": { outline: `2px solid ${blue}`, outlineOffset: 2 },
             }}
           >
@@ -94,8 +93,8 @@ export function PixelTabs<T extends string>({
         sx={{
           position: "absolute",
           bottom: -1.5,
-          height: 3,
-          borderRadius: 0,
+          height: 2.5,
+          borderRadius: 2,
           bgcolor: blue,
           left: indicator.left,
           width: indicator.width,

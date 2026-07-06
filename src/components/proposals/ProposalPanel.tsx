@@ -26,7 +26,7 @@ function ProposalCard({ resource, proposalId, onOpen }: { resource: Resource; pr
       sx={{
         p: 1.75,
         borderRadius: "16px",
-        bgcolor: "#FFFDF8",
+        bgcolor: "#FFFFFF",
         border: `1.5px solid ${line}`,
         boxShadow: "0 1px 2px rgba(120,88,44,0.06)",
         cursor: "pointer",

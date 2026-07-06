@@ -6,7 +6,7 @@ import SendIcon from "@mui/icons-material/Send";
 import CloseIcon from "@mui/icons-material/Close";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar, EmptyState, MonoTag, relativeTime, useNow } from "@/components/common";
-import { blue, blueSoft, ink, line, secondaryText } from "@/components/theme";
+import { blue, blueSoft, ink, line, paper, secondaryText, softShadowSm, wash } from "@/components/theme";
 
 export function CommentThread() {
   const selectedId = useWorkspaceStore((s) => s.selectedId);
@@ -68,7 +68,7 @@ export function CommentThread() {
             {thread.map((c) => {
               const field = resource?.fields.find((f) => f.id === c.fieldId);
               return (
-                <Box key={c.id} sx={{ bgcolor: "#FFFDF8", border: `1.5px solid ${line}`, borderRadius: "4px 16px 16px 16px", boxShadow: "0 1px 2px rgba(120,88,44,0.06)", p: 1.5 }}>
+                <Box key={c.id} sx={{ bgcolor: paper, border: `1px solid ${line}`, borderRadius: "4px 12px 12px 12px", boxShadow: softShadowSm, p: 1.5 }}>
                   <Stack direction="row" spacing={1} sx={{ mb: 0.75, alignItems: "center" }}>
                     <Avatar name={c.author} color={colorFor(c.author)} size={24} />
                     <Typography sx={{ fontSize: 13, fontWeight: 600, color: ink }}>{c.author}</Typography>
@@ -77,7 +77,7 @@ export function CommentThread() {
                       label={c.role}
                       sx={{ height: 18, fontSize: 9.5, fontWeight: 600, textTransform: "uppercase", bgcolor: c.role === "backend" ? "#DBEAFE" : "#FCE7F3", color: c.role === "backend" ? "#1D4ED8" : "#BE185D" }}
                     />
-                    <Typography sx={{ fontSize: 10.5, color: "#B8C1CD", ml: "auto" }}>{relativeTime(c.at)}</Typography>
+                    <Typography sx={{ fontSize: 10.5, color: secondaryText, ml: "auto" }}>{relativeTime(c.at)}</Typography>
                   </Stack>
                   {!activeFieldId && field ? (
                     <Box sx={{ mb: 0.75 }}>
@@ -93,14 +93,14 @@ export function CommentThread() {
       </Box>
 
       {/* Composer */}
-      <Box sx={{ p: 1.75, borderTop: `2px dashed ${line}`, bgcolor: "#FFFAF0" }}>
+      <Box sx={{ p: 1.75, borderTop: `1px solid ${line}`, bgcolor: wash }}>
         <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
           <Box
             sx={{
               flex: 1,
-              border: `1.5px solid ${line}`,
-              borderRadius: "14px",
-              bgcolor: "#FFFDF8",
+              border: `1px solid ${line}`,
+              borderRadius: "12px",
+              bgcolor: paper,
               px: 1.25,
               py: 0.75,
               transition: "border-color .15s ease, background-color .15s ease, box-shadow .15s ease",
@@ -124,7 +124,7 @@ export function CommentThread() {
             <SendIcon sx={{ fontSize: 17 }} />
           </Button>
         </Box>
-        <Typography sx={{ fontSize: 10.5, color: "#B8C1CD", mt: 0.75 }}>
+        <Typography sx={{ fontSize: 10.5, color: secondaryText, mt: 0.75 }}>
           Posting as <Box component="b" sx={{ color: secondaryText, fontWeight: 600 }}>{me?.name ?? "…"}</Box> · ⌘/Ctrl+Enter to send
         </Typography>
       </Box>
