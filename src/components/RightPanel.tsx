@@ -1,12 +1,13 @@
 "use client";
 
-import { Box, Tab, Tabs } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { ActivityLog } from "@/components/ActivityLog";
 import { CommentThread } from "@/components/CommentThread";
-import { blue, line } from "@/components/theme";
+import { BookmarkTab } from "@/components/common";
+import { line } from "@/components/theme";
 import type { RightTab } from "@/lib/types";
 
 export function RightPanel() {
@@ -16,21 +17,23 @@ export function RightPanel() {
   const commentCount = useWorkspaceStore((s) => s.comments.filter((c) => c.resourceId === selectedId).length);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderLeft: `1px solid ${line}`, bgcolor: "#fff" }}>
-      <Tabs
-        value={tab}
-        onChange={(_, v: RightTab) => setTab(v)}
-        variant="fullWidth"
-        sx={{
-          minHeight: 48,
-          borderBottom: `1px solid ${line}`,
-          "& .MuiTab-root": { minHeight: 48, fontWeight: 500, fontSize: 13, flexDirection: "row" },
-          "& .MuiTabs-indicator": { height: 2, borderRadius: 2, bgcolor: blue },
-        }}
-      >
-        <Tab value="activity" icon={<HistoryIcon sx={{ fontSize: 17 }} />} iconPosition="start" label="Activity" />
-        <Tab value="comments" icon={<ForumOutlinedIcon sx={{ fontSize: 17 }} />} iconPosition="start" label={`Comments${commentCount ? ` (${commentCount})` : ""}`} />
-      </Tabs>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderLeft: `2px dashed ${line}`, bgcolor: "#FFFAF0" }}>
+      <Stack direction="row" spacing={0.75} sx={{ px: 1.75, pt: 1.75, alignItems: "flex-end", borderBottom: `2px dashed ${line}` }}>
+        <BookmarkTab
+          label="Diary"
+          icon={<HistoryIcon sx={{ fontSize: 16 }} />}
+          color="purple"
+          active={tab === "activity"}
+          onClick={() => setTab("activity" as RightTab)}
+        />
+        <BookmarkTab
+          label={`Notes${commentCount ? ` (${commentCount})` : ""}`}
+          icon={<ForumOutlinedIcon sx={{ fontSize: 16 }} />}
+          color="orange"
+          active={tab === "comments"}
+          onClick={() => setTab("comments" as RightTab)}
+        />
+      </Stack>
       <Box sx={{ flex: 1, minHeight: 0 }}>
         {tab === "comments" ? <CommentThread /> : <ActivityLog />}
       </Box>

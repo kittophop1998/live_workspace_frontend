@@ -6,6 +6,7 @@ import { dResponseSchema, workspaceApi, type RoomSession } from "@/services/work
 import { inferField } from "@/lib/codegen";
 import { buildResponseSchemas, useResponseSchemaStore } from "@/lib/responseSchemas";
 import type { ImportedOperation } from "@/lib/specImport";
+import type { FieldDiff } from "@/lib/proposalDiff";
 import type {
   ActivityEvent,
   Collaborator,
@@ -95,6 +96,9 @@ interface StoreState {
   updateEndpoint: (resourceId: string, patch: { method?: HttpMethod; path?: string }) => void;
   deleteResource: (resourceId: string) => void;
   addComment: (resourceId: string, fieldId: string | undefined, body: string) => void;
+  // Apply a merged proposal's diff to the published endpoint via the real field
+  // APIs (client-only Proposal Mode — see lib/proposals.ts). Returns success.
+  mergeProposalChanges: (resourceId: string, diffs: FieldDiff[]) => Promise<boolean>;
 }
 
 // A non-colliding field key so POST /fields never 409s on a duplicate.
@@ -493,6 +497,49 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         get().upsertComment(rev, comment);
       } catch (err) {
         fail(err);
+      }
+    },
+
+    // Replay a proposal's field diff onto the published resource using only the
+    // existing field endpoints — remove/add/modify by the field id the proposal
+    // carried over from the published schema. Aborts (returns false) on the first
+    // failure so a half-merged endpoint surfaces the error rather than lying.
+    mergeProposalChanges: async (resourceId, diffs) => {
+      try {
+        for (const d of diffs) {
+          if (d.op === "remove") {
+            const { rev, resource } = await workspaceApi.deleteField(resourceId, d.field.id);
+            get().upsertResource(rev, resource);
+          } else if (d.op === "add") {
+            const { rev, resource } = await workspaceApi.addField(resourceId, {
+              key: d.field.key,
+              type: d.field.type,
+              required: d.field.required,
+              description: d.field.description,
+              value: d.field.value,
+            });
+            // Re-apply nested JSON value locally (backend may not persist it yet).
+            const merged =
+              d.field.value !== undefined
+                ? { ...resource, fields: resource.fields.map((f) => (f.key === d.field.key ? { ...f, value: d.field.value } : f)) }
+                : resource;
+            get().upsertResource(rev, merged);
+          } else {
+            const { rev, resource } = await workspaceApi.updateField(resourceId, d.field.id, {
+              key: d.field.key,
+              type: d.field.type,
+              required: d.field.required,
+              description: d.field.description,
+              value: d.field.value,
+            });
+            const merged = { ...resource, fields: resource.fields.map((f) => (f.id === d.field.id ? { ...f, value: d.field.value } : f)) };
+            get().upsertResource(rev, merged);
+          }
+        }
+        return true;
+      } catch (err) {
+        fail(err);
+        return false;
       }
     },
   };

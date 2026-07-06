@@ -41,10 +41,10 @@ export function AppRoot() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "#F8FAFC",
+            bgcolor: "#FFF8EC",
           }}
         >
-          <CircularProgress sx={{ color: "#3B82F6" }} />
+          <CircularProgress sx={{ color: "#F5799F" }} />
         </Box>
       ) : authed ? (
         <WorkspaceLayout />

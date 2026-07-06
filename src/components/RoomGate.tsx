@@ -11,11 +11,11 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import BoltIcon from "@mui/icons-material/Bolt";
 import { useWorkspaceStore } from "@/lib/store";
 import { workspaceApi } from "@/services/workspace.service";
 import { apiErrorMessage } from "@/lib/api";
-import { blue, flatShadow, line } from "@/components/theme";
+import { line, secondaryText, softShadowLg } from "@/components/theme";
+import { ChibiReader, DoodleCloud, DoodleStar, DoodleSparkle } from "@/components/doodles";
 
 type Mode = "create" | "join";
 
@@ -56,14 +56,21 @@ export function RoomGate() {
   return (
     <Box
       sx={{
+        position: "relative",
         height: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "#F1F5F9",
         p: 2,
+        overflow: "hidden",
       }}
     >
+      {/* Floating doodles in the margins */}
+      <DoodleCloud size={90} style={{ position: "absolute", top: "12%", left: "12%", opacity: 0.8 }} className="animate-float" />
+      <DoodleCloud size={64} style={{ position: "absolute", bottom: "16%", right: "14%", opacity: 0.7 }} className="animate-float" />
+      <DoodleStar size={22} style={{ position: "absolute", top: "22%", right: "24%" }} className="animate-twinkle" />
+      <DoodleSparkle size={20} style={{ position: "absolute", bottom: "26%", left: "22%" }} className="animate-twinkle" />
+
       <Box
         component="form"
         onSubmit={(e) => {
@@ -71,39 +78,28 @@ export function RoomGate() {
           void submit();
         }}
         sx={{
+          position: "relative",
           width: "100%",
-          maxWidth: 400,
-          bgcolor: "#fff",
-          border: `1px solid ${line}`,
-          borderRadius: "12px",
-          boxShadow: flatShadow,
-          p: 3,
+          maxWidth: 410,
+          bgcolor: "#FFFDF8",
+          border: `1.5px solid ${line}`,
+          borderRadius: "26px",
+          boxShadow: softShadowLg,
+          p: 3.5,
         }}
       >
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
-          <Box
-            sx={{
-              width: 34,
-              height: 34,
-              borderRadius: "10px",
-              bgcolor: blue,
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 1px 2px rgba(15,23,42,0.05), 0 1px 3px rgba(15,23,42,0.08)",
-            }}
-          >
-            <BoltIcon sx={{ fontSize: 20 }} />
-          </Box>
-          <Box>
-            <Typography variant="h1" sx={{ lineHeight: 1 }}>
-              Live Workspace
-            </Typography>
-            <Typography variant="caption" sx={{ color: "#6B7280" }}>
-              Schema collaboration hub
-            </Typography>
-          </Box>
+        {/* Mascot peeking over the top of the page */}
+        <Box sx={{ position: "absolute", top: -46, left: "50%", ml: "-44px" }} className="animate-float">
+          <ChibiReader size={88} />
+        </Box>
+
+        <Stack sx={{ alignItems: "center", mb: 2.5, mt: 3.5 }}>
+          <Typography variant="h1" className="font-hand" sx={{ fontSize: 28, lineHeight: 1 }}>
+            Live Workspace
+          </Typography>
+          <Typography sx={{ fontSize: 12.5, color: secondaryText, mt: 0.5 }}>
+            our little schema notebook ✎ ♡
+          </Typography>
         </Stack>
 
         <ToggleButtonGroup
@@ -116,15 +112,15 @@ export function RoomGate() {
               setError(null);
             }
           }}
-          sx={{ my: 2.5, "& .MuiToggleButton-root": { py: 0.75, fontWeight: 700 } }}
+          sx={{ mb: 2.5, gap: 1, "& .MuiToggleButton-root": { py: 0.75, borderRadius: "999px !important", border: `1.5px solid ${line} !important` } }}
         >
-          <ToggleButton value="create">Create room</ToggleButton>
-          <ToggleButton value="join">Join room</ToggleButton>
+          <ToggleButton value="create">✎ New notebook</ToggleButton>
+          <ToggleButton value="join">→ Join one</ToggleButton>
         </ToggleButtonGroup>
 
         <Stack spacing={1.75}>
           <TextField
-            label="Your name"
+            label="What should we call you?"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Ava Chen"
@@ -145,29 +141,28 @@ export function RoomGate() {
           )}
 
           {error && (
-            <Alert severity="error" sx={{ border: `1px solid ${line}`, borderRadius: "8px", py: 0 }}>
+            <Alert severity="error" sx={{ border: `1.5px solid ${line}`, borderRadius: "12px", py: 0 }}>
               {error}
             </Alert>
           )}
 
-          <Button type="submit" variant="contained" disabled={!canSubmit} sx={{ py: 1 }}>
+          <Button type="submit" variant="contained" disabled={!canSubmit} sx={{ py: 1.1, fontSize: 15 }}>
             {busy
               ? mode === "create"
-                ? "Creating…"
+                ? "Opening…"
                 : "Joining…"
               : mode === "create"
-                ? "Create room"
-                : "Join room"}
+                ? "Open my notebook ♡"
+                : "Join the room →"}
           </Button>
         </Stack>
 
         <Typography
-          variant="caption"
-          sx={{ display: "block", mt: 2, color: "#6B7280", textAlign: "center" }}
+          sx={{ display: "block", fontSize: 12, mt: 2, color: secondaryText, textAlign: "center" }}
         >
           {mode === "create"
-            ? "You'll get a room code to share with your team."
-            : "Enter the code a teammate shared with you."}
+            ? "You'll get a room code to share with your team 🐣"
+            : "Enter the code a teammate scribbled down for you ✏️"}
         </Typography>
       </Box>
     </Box>

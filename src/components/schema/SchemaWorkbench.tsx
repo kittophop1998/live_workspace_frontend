@@ -188,6 +188,14 @@ export function SchemaWorkbench({ scope, seedFields, typeName = "Schema" }: { sc
     ensureSeed(scope, () => seedFromFields(seedFields));
   }, [scope, seedFields, ensureSeed]);
 
+  // The corner mascot's AI menu opens this panel via a window event (only the
+  // currently-mounted workbench — i.e. the active tab's request body — reacts).
+  useEffect(() => {
+    const openAi = () => setAiOpen(true);
+    window.addEventListener("kingdom:ask-ai", openAi);
+    return () => window.removeEventListener("kingdom:ask-ai", openAi);
+  }, []);
+
   return (
     <Box sx={{ position: "relative" }}>
       {/* Contextual toolbar: view modes on the left, AI assistant on the right. */}

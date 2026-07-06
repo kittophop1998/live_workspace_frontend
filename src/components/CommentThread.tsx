@@ -4,9 +4,8 @@ import { useState } from "react";
 import { Box, Button, Chip, IconButton, InputBase, Stack, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import CloseIcon from "@mui/icons-material/Close";
-import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import { useWorkspaceStore } from "@/lib/store";
-import { Avatar, MonoTag, relativeTime, useNow } from "@/components/common";
+import { Avatar, EmptyState, MonoTag, relativeTime, useNow } from "@/components/common";
 import { blue, blueSoft, ink, line, secondaryText } from "@/components/theme";
 
 export function CommentThread() {
@@ -56,18 +55,20 @@ export function CommentThread() {
 
       <Box sx={{ flex: 1, overflowY: "auto", p: 1.75 }}>
         {thread.length === 0 ? (
-          <Stack spacing={1.25} sx={{ alignItems: "center", mt: 6, color: "#B8C1CD", px: 3, textAlign: "center" }}>
-            <ForumOutlinedIcon sx={{ fontSize: 30 }} />
-            <Typography sx={{ fontSize: 13, color: secondaryText }}>
-              {activeField ? "No comments on this field yet." : "No comments yet — start the discussion."}
-            </Typography>
-          </Stack>
+          <EmptyState
+            chibi="ghost"
+            chibiSize={90}
+            color="orange"
+            title={activeField ? "No notes here yet!" : "Start the chit-chat! 💬"}
+            subtitle={activeField ? "Be the first to leave a sticky note on this field." : "Leave a note and your teammates will see it right away."}
+            sx={{ mt: 3 }}
+          />
         ) : (
           <Stack spacing={1.25}>
             {thread.map((c) => {
               const field = resource?.fields.find((f) => f.id === c.fieldId);
               return (
-                <Box key={c.id} sx={{ bgcolor: "#F8FAFC", border: `1px solid ${line}`, borderRadius: "12px", p: 1.5 }}>
+                <Box key={c.id} sx={{ bgcolor: "#FFFDF8", border: `1.5px solid ${line}`, borderRadius: "4px 16px 16px 16px", boxShadow: "0 1px 2px rgba(120,88,44,0.06)", p: 1.5 }}>
                   <Stack direction="row" spacing={1} sx={{ mb: 0.75, alignItems: "center" }}>
                     <Avatar name={c.author} color={colorFor(c.author)} size={24} />
                     <Typography sx={{ fontSize: 13, fontWeight: 600, color: ink }}>{c.author}</Typography>
@@ -92,14 +93,14 @@ export function CommentThread() {
       </Box>
 
       {/* Composer */}
-      <Box sx={{ p: 1.75, borderTop: `1px solid ${line}`, bgcolor: "#fff" }}>
+      <Box sx={{ p: 1.75, borderTop: `2px dashed ${line}`, bgcolor: "#FFFAF0" }}>
         <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
           <Box
             sx={{
               flex: 1,
-              border: `1px solid ${line}`,
-              borderRadius: "10px",
-              bgcolor: "#F8FAFC",
+              border: `1.5px solid ${line}`,
+              borderRadius: "14px",
+              bgcolor: "#FFFDF8",
               px: 1.25,
               py: 0.75,
               transition: "border-color .15s ease, background-color .15s ease, box-shadow .15s ease",

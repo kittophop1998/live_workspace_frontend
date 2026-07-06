@@ -11,11 +11,14 @@ import { useSchemaTreeStore } from "@/lib/schemaTree";
 import { useBookmarkStore } from "@/lib/bookmarks";
 import { useEndpointStatusStore } from "@/lib/endpointStatus";
 import { useApiTesterStore } from "@/lib/apiTester";
+import { useProposalStore } from "@/lib/proposals";
 import { TopBar } from "@/components/TopBar";
 import { LeftPanel } from "@/components/LeftPanel";
 import { CenterPanel } from "@/components/CenterPanel";
 import { RightPanel } from "@/components/RightPanel";
 import { FlowTestingPage } from "@/components/flows/FlowTestingPage";
+import { AiMascot } from "@/components/AiMascot";
+import { MergeCelebration } from "@/components/proposals/MergeCelebration";
 import { ink, line, secondaryText } from "@/components/theme";
 
 // Persisted collapse state for the side panels (localStorage). WorkspaceLayout
@@ -107,19 +110,22 @@ export function WorkspaceLayout() {
   const hydrateEndpointStatus = useEndpointStatusStore((s) => s.hydrate);
   // Load locally-persisted API tester drafts + base URL once.
   const hydrateApiTester = useApiTesterStore((s) => s.hydrate);
+  // Load locally-persisted Proposal Mode proposals once.
+  const hydrateProposals = useProposalStore((s) => s.hydrate);
   useEffect(() => {
     hydrateResponseSchemas();
     hydrateSchemaTrees();
     hydrateBookmarks();
     hydrateEndpointStatus();
     hydrateApiTester();
-  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateEndpointStatus, hydrateApiTester]);
+    hydrateProposals();
+  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateEndpointStatus, hydrateApiTester, hydrateProposals]);
 
   const leftW = leftCollapsed ? "0px" : "280px";
   const rightW = rightCollapsed ? "0px" : "340px";
 
   return (
-    <Box sx={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "#F8FAFC" }}>
+    <Box sx={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "transparent" }}>
       <TopBar onOpenLeft={() => setLeftOpen(true)} onOpenRight={() => setRightOpen(true)} />
       {view === "flows" ? (
         <Box sx={{ flex: 1, minHeight: 0 }}>
@@ -172,8 +178,13 @@ export function WorkspaceLayout() {
           >
             <RightPanel />
           </Drawer>
+
+          <AiMascot />
         </>
       )}
+
+      {/* Merge celebration overlay — fired by ProposalReview on a successful merge. */}
+      <MergeCelebration />
     </Box>
   );
 }

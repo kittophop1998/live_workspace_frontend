@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, InputBase, Menu, MenuItem, Stack, Tab, Tabs, Tooltip, Typography } from "@mui/material";
+import { Box, InputBase, Menu, MenuItem, Stack, Tooltip, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
@@ -8,19 +8,25 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ApiIcon from "@mui/icons-material/Api";
 import StorageIcon from "@mui/icons-material/Storage";
 import SchemaOutlinedIcon from "@mui/icons-material/SchemaOutlined";
-import LayersOutlinedIcon from "@mui/icons-material/LayersOutlined";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorderOutlined";
-import { useState } from "react";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import ReplyAllOutlinedIcon from "@mui/icons-material/ReplyAllOutlined";
+import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
+import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
+import { useEffect, useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { useBookmarkStore } from "@/lib/bookmarks";
 import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, useEndpointStatusStore } from "@/lib/endpointStatus";
+import { openProposalCount, useProposalStore } from "@/lib/proposals";
 import { ImportSpecDialog } from "@/components/ImportSpecDialog";
 import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
 import { ResponseTabs } from "@/components/schema/ResponseTabs";
 import { RequestTester } from "@/components/tester/RequestTester";
-import { MonoTag, relativeTime, useNow } from "@/components/common";
-import { blue, blueSoft, ink, line, methodColor, secondaryText } from "@/components/theme";
+import { ProposalPanel } from "@/components/proposals/ProposalPanel";
+import { BookmarkTab, EmptyState, MonoTag, PaperCard, Sticker, type PastelName, relativeTime, useNow } from "@/components/common";
+import { DoodleStar } from "@/components/doodles";
+import { blue, blueSoft, ink, methodColor, pastel, secondaryText } from "@/components/theme";
 import type { HttpMethod, Resource } from "@/lib/types";
 
 const STATUS_META = ENDPOINT_STATUS_META;
@@ -44,18 +50,19 @@ function EndpointStatusPicker({ resourceId }: { resourceId: string }) {
             alignItems: "center",
             gap: 0.25,
             cursor: "pointer",
-            pl: 1.1,
-            pr: 0.6,
-            py: 0.5,
-            borderRadius: "8px",
+            pl: 1.2,
+            pr: 0.7,
+            py: 0.55,
+            borderRadius: "999px",
             bgcolor: meta.bg,
             color: meta.fg,
+            border: `1.5px solid ${meta.fg}2E`,
             fontSize: 11.5,
-            fontWeight: 600,
+            fontWeight: 700,
             lineHeight: 1.4,
             whiteSpace: "nowrap",
-            transition: "filter .15s ease",
-            "&:hover": { filter: "brightness(0.97)" },
+            transition: "transform .15s ease",
+            "&:hover": { transform: "translateY(-1px) rotate(-1deg)" },
           }}
         >
           {meta.label}
@@ -71,7 +78,7 @@ function EndpointStatusPicker({ resourceId }: { resourceId: string }) {
               setStatus(resourceId, s);
               setAnchorEl(null);
             }}
-            sx={{ fontSize: 13, fontWeight: 500, color: STATUS_META[s].fg }}
+            sx={{ fontSize: 13, fontWeight: 600, color: STATUS_META[s].fg }}
           >
             {STATUS_META[s].label}
           </MenuItem>
@@ -87,10 +94,16 @@ const KIND_LABEL: Record<Resource["kind"], string> = {
   model: "Schema Model",
 };
 
+const KIND_COLOR: Record<Resource["kind"], PastelName> = {
+  endpoint: "blue",
+  database: "mint",
+  model: "purple",
+};
+
 const KIND_ICON: Record<Resource["kind"], React.ReactNode> = {
-  endpoint: <ApiIcon sx={{ fontSize: 18 }} />,
-  database: <StorageIcon sx={{ fontSize: 18 }} />,
-  model: <SchemaOutlinedIcon sx={{ fontSize: 18 }} />,
+  endpoint: <ApiIcon sx={{ fontSize: 16 }} />,
+  database: <StorageIcon sx={{ fontSize: 16 }} />,
+  model: <SchemaOutlinedIcon sx={{ fontSize: 16 }} />,
 };
 
 const HTTP_METHODS: HttpMethod[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -125,7 +138,7 @@ function EndpointMeta({ resource }: { resource: Resource }) {
           onClick={(e) => setAnchorEl(e.currentTarget)}
           sx={{ display: "inline-flex", alignItems: "center", cursor: "pointer" }}
         >
-          <MonoTag sx={{ color: methodColor[currentMethod], display: "inline-flex", alignItems: "center", gap: 0.1 }}>
+          <MonoTag sx={{ color: methodColor[currentMethod], bgcolor: `${methodColor[currentMethod]}18`, borderColor: `${methodColor[currentMethod]}44`, display: "inline-flex", alignItems: "center", gap: 0.1 }}>
             {currentMethod}
             <ArrowDropDownIcon sx={{ fontSize: 16, ml: -0.25 }} />
           </MonoTag>
@@ -137,7 +150,7 @@ function EndpointMeta({ resource }: { resource: Resource }) {
             key={m}
             selected={m === currentMethod}
             onClick={() => pickMethod(m)}
-            sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600, color: methodColor[m] }}
+            sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: methodColor[m] }}
           >
             {m}
           </MenuItem>
@@ -150,7 +163,7 @@ function EndpointMeta({ resource }: { resource: Resource }) {
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commitPath}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          sx={{ fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, fontWeight: 500, border: `1px solid ${blue}`, borderRadius: "7px", px: 0.9, py: 0.25, boxShadow: `0 0 0 3px ${blueSoft}` }}
+          sx={{ fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, fontWeight: 500, border: `1.5px solid ${blue}`, borderRadius: "9px", px: 0.9, py: 0.25, boxShadow: `0 0 0 3px ${blueSoft}` }}
         />
       ) : (
         <Tooltip title="Click to edit path">
@@ -176,20 +189,19 @@ function BookmarkToggle({ resourceId }: { resourceId: string }) {
           display: "flex",
           cursor: "pointer",
           p: 0.6,
-          borderRadius: "9px",
-          color: bookmarked ? "#F59E0B" : secondaryText,
-          transition: "color .15s ease, background-color .15s ease",
-          "&:hover": { color: "#F59E0B", bgcolor: "#FEF6E7" },
+          borderRadius: "10px",
+          color: bookmarked ? "#F0A93C" : secondaryText,
+          transition: "color .15s ease, transform .15s ease",
+          "&:hover": { color: "#F0A93C", transform: "rotate(-12deg) scale(1.1)" },
         }}
       >
-        {bookmarked ? <StarIcon sx={{ fontSize: 19 }} /> : <StarBorderIcon sx={{ fontSize: 19 }} />}
+        {bookmarked ? <StarIcon sx={{ fontSize: 20 }} /> : <StarBorderIcon sx={{ fontSize: 20 }} />}
       </Box>
     </Tooltip>
   );
 }
 
-// Overflow menu — tucks the destructive Delete action away so it never competes
-// with the primary editing surface.
+// Overflow menu — tucks the destructive Delete action away.
 function MoreMenu({ resource }: { resource: Resource }) {
   const deleteResource = useWorkspaceStore((s) => s.deleteResource);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
@@ -200,7 +212,7 @@ function MoreMenu({ resource }: { resource: Resource }) {
           role="button"
           aria-label="More actions"
           onClick={(e) => setAnchorEl(e.currentTarget)}
-          sx={{ display: "flex", cursor: "pointer", p: 0.6, borderRadius: "9px", color: secondaryText, "&:hover": { color: ink, bgcolor: "#F1F5F9" } }}
+          sx={{ display: "flex", cursor: "pointer", p: 0.6, borderRadius: "10px", color: secondaryText, "&:hover": { color: ink, bgcolor: pastel.cream } }}
         >
           <MoreHorizIcon sx={{ fontSize: 20 }} />
         </Box>
@@ -213,7 +225,7 @@ function MoreMenu({ resource }: { resource: Resource }) {
               deleteResource(resource.id);
             }
           }}
-          sx={{ fontSize: 13, fontWeight: 500, color: "#EF4444", gap: 1 }}
+          sx={{ fontSize: 13, fontWeight: 600, color: "#E86A6A", gap: 1 }}
         >
           <DeleteIcon sx={{ fontSize: 18 }} />
           Delete {resource.kind}
@@ -231,13 +243,13 @@ function EditableName({ resource }: { resource: Resource }) {
   if (!editing) {
     return (
       <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-        <Typography variant="h1">{resource.name}</Typography>
+        <Typography variant="h1" className="font-hand" sx={{ fontSize: 26 }}>{resource.name}</Typography>
         <EditIcon
           onClick={() => {
             setDraft(resource.name);
             setEditing(true);
           }}
-          sx={{ fontSize: 16, color: "#B8C1CD", cursor: "pointer", "&:hover": { color: ink } }}
+          sx={{ fontSize: 17, color: "#D3C3A6", cursor: "pointer", transition: "transform .15s ease", "&:hover": { color: ink, transform: "rotate(-10deg)" } }}
         />
       </Stack>
     );
@@ -252,28 +264,43 @@ function EditableName({ resource }: { resource: Resource }) {
         setEditing(false);
       }}
       onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-      sx={{ fontSize: 22, fontWeight: 600, border: `1px solid ${blue}`, borderRadius: "9px", px: 1, py: 0.25, boxShadow: `0 0 0 3px ${blueSoft}` }}
+      sx={{ fontSize: 24, fontWeight: 700, border: `1.5px solid ${blue}`, borderRadius: "11px", px: 1, py: 0.25, boxShadow: `0 0 0 3px ${blueSoft}` }}
     />
   );
 }
 
-type CenterTab = "request" | "responses" | "try";
+type CenterTab = "request" | "responses" | "try" | "proposals";
+
+const TABS: { value: CenterTab; label: string; color: PastelName; icon: React.ReactNode }[] = [
+  { value: "request", label: "Request", color: "pink", icon: <DescriptionOutlinedIcon sx={{ fontSize: 16 }} /> },
+  { value: "responses", label: "Responses", color: "blue", icon: <ReplyAllOutlinedIcon sx={{ fontSize: 16 }} /> },
+  { value: "try", label: "Try it", color: "mint", icon: <ScienceOutlinedIcon sx={{ fontSize: 16 }} /> },
+  { value: "proposals", label: "Proposals", color: "purple", icon: <RateReviewOutlinedIcon sx={{ fontSize: 16 }} /> },
+];
 
 export function CenterPanel() {
   const resource = useWorkspaceStore((s) => s.resources.find((r) => r.id === s.selectedId));
   const [tab, setTab] = useState<CenterTab>("request");
+  const openCount = useProposalStore((s) => (resource ? openProposalCount(s.byId, resource.id) : 0));
   useNow(); // keep "updated Xs ago" fresh
+
+  // The mascot's "Review proposals" action jumps straight to the Proposals tab.
+  useEffect(() => {
+    const go = () => setTab("proposals");
+    window.addEventListener("kingdom:open-proposals", go);
+    return () => window.removeEventListener("kingdom:open-proposals", go);
+  }, []);
 
   if (!resource) {
     return (
-      <Box sx={{ height: "100%", display: "flex", flexDirection: "column", gap: 2, alignItems: "center", justifyContent: "center", color: secondaryText, p: 4, textAlign: "center" }}>
-        <Box sx={{ width: 72, height: 72, borderRadius: "18px", bgcolor: "#fff", border: `1px solid ${line}`, boxShadow: "0 1px 2px rgba(15,23,42,0.05), 0 8px 24px rgba(15,23,42,0.06)", display: "flex", alignItems: "center", justifyContent: "center", color: blue }}>
-          <LayersOutlinedIcon sx={{ fontSize: 32 }} />
-        </Box>
-        <Box>
-          <Typography sx={{ fontWeight: 600, fontSize: 16, color: ink }}>Nothing selected</Typography>
-          <Typography sx={{ fontSize: 13.5, color: secondaryText, mt: 0.5 }}>Pick an endpoint or schema from the Explorer to start editing.</Typography>
-        </Box>
+      <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", p: 4 }}>
+        <EmptyState
+          chibi="reader"
+          chibiSize={132}
+          color="pink"
+          title="Pick a page to start! 📖"
+          subtitle="Choose an endpoint or schema from the left, and we'll open its notebook page here."
+        />
       </Box>
     );
   }
@@ -297,23 +324,20 @@ export function CenterPanel() {
       : "Fields that make up this schema model.";
 
   const activeTab: CenterTab = isEndpoint ? tab : "request";
+  const kindColor = KIND_COLOR[resource.kind];
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "#F8FAFC" }}>
-      {/* Hero header */}
-      <Box sx={{ px: { xs: 2, sm: 4 }, pt: { xs: 2, sm: 3 }, pb: 0, bgcolor: "#fff", borderBottom: `1px solid ${line}` }}>
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "transparent" }}>
+      {/* Chapter header — the manga title page */}
+      <Box sx={{ px: { xs: 2, sm: 4 }, pt: { xs: 2, sm: 3 }, pb: 0, bgcolor: "#FFFDF8", borderBottom: `2px dashed #EADBC2`, position: "relative" }}>
         <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 1.5 }}>
-          <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", minWidth: 0 }}>
-            <Box sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: "11px", bgcolor: blueSoft, color: blue, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Sticker color={kindColor} sx={{ mb: 1 }}>
               {KIND_ICON[resource.kind]}
-            </Box>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ fontSize: 11, fontWeight: 500, color: secondaryText, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                {KIND_LABEL[resource.kind]}
-              </Typography>
-              <EditableName resource={resource} key={resource.id} />
-            </Box>
-          </Stack>
+              {KIND_LABEL[resource.kind]}
+            </Sticker>
+            <EditableName resource={resource} key={resource.id} />
+          </Box>
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
             {resource.kind === "endpoint" ? <EndpointStatusPicker resourceId={resource.id} /> : null}
             {resource.kind === "endpoint" ? <BookmarkToggle resourceId={resource.id} /> : null}
@@ -328,37 +352,51 @@ export function CenterPanel() {
           ) : resource.path ? (
             <MonoTag>{resource.path}</MonoTag>
           ) : null}
-          <Typography sx={{ fontSize: 12, color: secondaryText }}>
-            updated {relativeTime(resource.updatedAt)} by {resource.updatedBy}
-          </Typography>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+            <DoodleStar size={13} />
+            <Typography sx={{ fontSize: 12, color: secondaryText }}>
+              last doodled {relativeTime(resource.updatedAt)} by {resource.updatedBy}
+            </Typography>
+          </Stack>
         </Stack>
 
-        {/* Secondary navigation — endpoints only */}
+        {/* Bookmark tabs sticking out of the notebook — endpoints only */}
         {isEndpoint ? (
-          <Tabs
-            value={activeTab}
-            onChange={(_, v: CenterTab) => setTab(v)}
-            sx={{
-              mt: 1.5,
-              minHeight: 40,
-              "& .MuiTab-root": { minHeight: 40, py: 1, px: 0, mr: 3, fontSize: 13.5, fontWeight: 500, minWidth: 0 },
-              "& .MuiTabs-indicator": { height: 2, borderRadius: 2, bgcolor: blue },
-            }}
-          >
-            <Tab value="request" label="Request" />
-            <Tab value="responses" label="Responses" />
-            <Tab value="try" label="Try it" />
-          </Tabs>
-        ) : null}
+          <Stack direction="row" spacing={0.75} sx={{ mt: 2, px: 0.5 }}>
+            {TABS.map((t) => (
+              <BookmarkTab
+                key={t.value}
+                label={
+                  t.value === "proposals" && openCount ? (
+                    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+                      Proposals
+                      <Box component="span" sx={{ minWidth: 16, px: 0.5, py: 0.1, borderRadius: "999px", bgcolor: pastel.purple, color: "#6C55C0", fontSize: 10.5, fontWeight: 800, textAlign: "center", border: "1.5px solid #6C55C033" }}>
+                        {openCount}
+                      </Box>
+                    </Box>
+                  ) : (
+                    t.label
+                  )
+                }
+                icon={t.icon}
+                color={t.color}
+                active={activeTab === t.value}
+                onClick={() => setTab(t.value)}
+              />
+            ))}
+          </Stack>
+        ) : (
+          <Box sx={{ height: 12 }} />
+        )}
       </Box>
 
-      {/* Content */}
+      {/* Notebook page content */}
       <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
         {activeTab === "request" ? (
           <Box sx={{ animation: "fade-in .2s ease" }}>
-            <Box sx={{ bgcolor: "#fff", border: `1px solid ${line}`, borderRadius: "16px", boxShadow: "0 1px 2px rgba(15,23,42,0.04), 0 6px 20px rgba(15,23,42,0.07)", p: { xs: 2, sm: 3 } }}>
+            <PaperCard tilt={-0.4} taped tapeTint="rgba(255,177,193,0.55)">
               <Box sx={{ mb: 2.5 }}>
-                <Typography variant="h2">{bodyLabel}</Typography>
+                <Typography variant="h2" className="font-hand" sx={{ fontSize: 20 }}>{bodyLabel}</Typography>
                 <Typography sx={{ fontSize: 13, color: secondaryText, mt: 0.5 }}>{bodyDescription}</Typography>
               </Box>
               <SchemaWorkbench
@@ -367,7 +405,7 @@ export function CenterPanel() {
                 seedFields={resource.fields}
                 typeName={isEndpoint ? `${resource.name}${endpointHasBody ? "Request" : "Query"}` : resource.name}
               />
-            </Box>
+            </PaperCard>
           </Box>
         ) : null}
 
@@ -381,6 +419,10 @@ export function CenterPanel() {
           <Box sx={{ animation: "fade-in .2s ease" }}>
             <RequestTester key={`${resource.id}::tester`} resource={resource} />
           </Box>
+        ) : null}
+
+        {isEndpoint && activeTab === "proposals" ? (
+          <ProposalPanel key={`${resource.id}::proposals`} resource={resource} />
         ) : null}
       </Box>
     </Box>

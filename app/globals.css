@@ -1,22 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #111827;
+  --background: #fff8ec;
+  --foreground: #4a3f35;
   --font-mono: "SFMono-Regular", ui-monospace, Consolas, "Liberation Mono", monospace;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-prompt), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  --font-sans: var(--font-prompt), var(--font-thai), ui-rounded, system-ui, sans-serif;
   --font-mono: var(--font-mono);
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-prompt), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-prompt), var(--font-thai), ui-rounded, "Hiragino Maru Gothic ProN", "Segoe UI", system-ui, sans-serif;
+  /* Warm paper desk: faint grid ruling + a wash of cream, like an open notebook. */
+  background-color: #fff8ec;
+  background-image:
+    radial-gradient(circle at 18% 12%, rgba(255, 229, 200, 0.55) 0, transparent 42%),
+    radial-gradient(circle at 88% 78%, rgba(255, 224, 236, 0.45) 0, transparent 46%),
+    linear-gradient(rgba(214, 190, 150, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(214, 190, 150, 0.09) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 26px 26px, 26px 26px;
+  background-attachment: fixed;
 }
 
 button,
@@ -30,43 +38,128 @@ select {
   box-sizing: border-box;
 }
 
-/* New activity-log line sliding in from the top. */
+/* Handwritten marker font utility (Yomogi) for labels & doodled captions. */
+.font-hand {
+  font-family: var(--font-hand), var(--font-prompt), cursive;
+}
+
+/* ── Motion ─────────────────────────────────────────────────────────────── */
+
+/* New activity/diary line sliding in from the top. */
 @keyframes log-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Soft fade-in for panels / expanding sections. */
+/* Soft fade-in for panels / flipping to a new notebook page. */
 @keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Slim, low-contrast scrollbars to match the calm aesthetic. */
+/* A sticker being pressed onto the page — overshoots then settles. */
+@keyframes sticker-pop {
+  0% { opacity: 0; transform: scale(0.6) rotate(-8deg); }
+  60% { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* A bookmark tab sliding out from behind the page. */
+@keyframes bookmark-slide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Speech bubble popping into view. */
+@keyframes speech-in {
+  0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Gentle idle bob for mascots & floating characters. */
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-5px) rotate(1deg); }
+}
+
+/* Tiny happy wiggle on hover. */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+/* Twinkling doodle stars. */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Mascot: an excited jump (proposal merged). */
+@keyframes mascot-jump {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  30% { transform: translateY(-14px) rotate(-6deg); }
+  55% { transform: translateY(2px) rotate(3deg); }
+  75% { transform: translateY(-6px) rotate(-2deg); }
+}
+
+/* Mascot: a worried shake (API error / panic). */
+@keyframes mascot-panic {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-3px) rotate(-3deg); }
+  40% { transform: translateX(3px) rotate(3deg); }
+  60% { transform: translateX(-2px) rotate(-2deg); }
+  80% { transform: translateX(2px) rotate(2deg); }
+}
+
+/* Mascot: a happy celebratory pop (proposal created / approved). */
+@keyframes celebrate-pop {
+  0% { transform: scale(1) rotate(0deg); }
+  35% { transform: scale(1.14) rotate(-5deg); }
+  70% { transform: scale(0.97) rotate(4deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* Confetti pieces raining down and drifting. */
+@keyframes confetti-fall {
+  0% { opacity: 0; transform: translateY(-10px) rotate(0deg); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(320px) rotate(540deg); }
+}
+
+/* Merge: the notebook page folds/closes over the content. */
+@keyframes page-close {
+  0% { opacity: 0; transform: perspective(1200px) rotateX(-70deg) scale(0.9); transform-origin: top center; }
+  45% { opacity: 1; transform: perspective(1200px) rotateX(0deg) scale(1); }
+  80% { opacity: 1; transform: perspective(1200px) rotateX(0deg) scale(1); }
+  100% { opacity: 0; transform: perspective(1200px) rotateX(70deg) scale(0.9); transform-origin: bottom center; }
+}
+
+/* Backdrop fade for the merge overlay. */
+@keyframes overlay-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-float { animation: float-bob 4s ease-in-out infinite; }
+.animate-twinkle { animation: twinkle 2.4s ease-in-out infinite; }
+.mascot-jump { animation: mascot-jump .7s cubic-bezier(.34,1.56,.64,1) 2; }
+.mascot-panic { animation: mascot-panic .5s ease-in-out 3; }
+.mascot-celebrate { animation: celebrate-pop .6s cubic-bezier(.34,1.56,.64,1) 2; }
+
+/* ── Scrollbars — like a thin colored pencil line ───────────────────────── */
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #dbe2ea;
+  background: #e7cfa8;
   border: 3px solid transparent;
   background-clip: padding-box;
   border-radius: 999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #c2ccd8;
+  background: #dcbe8f;
   border: 3px solid transparent;
   background-clip: padding-box;
 }
