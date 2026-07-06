@@ -2,7 +2,7 @@
 
 import { Box, Typography, type SxProps, type Theme } from "@mui/material";
 import { useEffect, useState, type ReactNode } from "react";
-import { ink, line, paper, pastel, pastelInk, secondaryText, softShadow, softShadowSm, stateColor, tape as tapeTints } from "@/components/theme";
+import { ink, line, pastel, pastelInk, secondaryText, softShadow, softShadowSm, stateColor, tape as tapeTints } from "@/components/theme";
 import { CHIBI, type ChibiName, DoodleSparkle } from "@/components/doodles";
 import type { FieldState } from "@/lib/types";
 
@@ -105,7 +105,7 @@ export function Avatar({ name, color, online, size = 28 }: { name: string; color
         alignItems: "center",
         justifyContent: "center",
         border: "2.5px solid #fff",
-        boxShadow: online ? "0 0 0 2.5px #fff, 0 0 0 4.5px #22C55E" : softShadowSm,
+        boxShadow: online ? "0 0 0 2.5px #fff, 0 0 0 4.5px #7ED08F" : softShadowSm,
         flexShrink: 0,
       }}
       title={name}
@@ -155,20 +155,22 @@ export function Sticker({
   return (
     <Box
       component="span"
+      className="font-hand"
       sx={{
         display: "inline-flex",
         alignItems: "center",
         gap: 0.5,
-        px: 1,
-        py: 0.3,
-        borderRadius: "8px",
+        px: 1.1,
+        py: 0.35,
+        borderRadius: "999px",
         bgcolor: pastel[color],
         color: pastelInk[color],
-        border: `1px solid ${pastelInk[color]}22`,
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: "0.04em",
-        lineHeight: 1.5,
+        border: `1.5px solid ${pastelInk[color]}2E`,
+        fontSize: 12,
+        fontWeight: 700,
+        letterSpacing: "0.03em",
+        lineHeight: 1.4,
+        boxShadow: softShadowSm,
         whiteSpace: "nowrap",
         ...sx,
       }}
@@ -242,21 +244,23 @@ export function BookmarkTab({
         alignItems: "center",
         gap: 0.6,
         cursor: "pointer",
-        px: 1.5,
+        px: 1.6,
         pt: 0.7,
-        pb: active ? 1.1 : 0.7,
-        mb: active ? "-1px" : 0,
-        borderRadius: "10px 10px 0 0",
-        bgcolor: active ? paper : "transparent",
+        pb: active ? 1.2 : 0.7,
+        mb: active ? "-6px" : 0,
+        borderRadius: "12px 12px 0 0",
+        bgcolor: active ? pastel[color] : "#FFF6E9",
         color: active ? pastelInk[color] : secondaryText,
-        border: `1px solid ${active ? line : "transparent"}`,
+        border: `1.5px solid ${active ? `${pastelInk[color]}33` : line}`,
         borderBottom: "none",
         fontSize: 13,
-        fontWeight: 600,
+        fontWeight: 700,
         whiteSpace: "nowrap",
-        boxShadow: active ? "0 -2px 8px rgba(16,24,40,0.05)" : "none",
-        transition: "background-color .16s ease, color .16s ease",
-        "&:hover": { color: active ? pastelInk[color] : ink, bgcolor: active ? paper : pastel.cream },
+        boxShadow: active ? "0 -3px 10px rgba(120,88,44,0.08)" : "none",
+        transform: active ? "translateY(0)" : "translateY(3px)",
+        transition: "transform .16s cubic-bezier(.34,1.56,.64,1), background-color .16s ease, color .16s ease",
+        animation: "bookmark-slide .25s ease",
+        "&:hover": { transform: "translateY(-2px)", color: pastelInk[color], bgcolor: active ? pastel[color] : "#FFEFDC" },
         ...sx,
       }}
     >

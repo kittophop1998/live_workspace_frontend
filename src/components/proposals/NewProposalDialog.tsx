@@ -42,7 +42,7 @@ export function NewProposalDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      slotProps={{ paper: { sx: { borderRadius: "22px", border: `1.5px solid ${line}`, width: 460, maxWidth: "94vw", bgcolor: "#FFFFFF" } } }}
+      slotProps={{ paper: { sx: { borderRadius: "22px", border: `1.5px solid ${line}`, width: 460, maxWidth: "94vw", bgcolor: "#FFFDF8" } } }}
     >
       <Box sx={{ p: 3, position: "relative" }}>
         <IconButton onClick={onClose} sx={{ position: "absolute", top: 12, right: 12 }} aria-label="Close">

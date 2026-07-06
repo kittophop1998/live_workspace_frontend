@@ -66,15 +66,15 @@ export function ActivityLog() {
               sx={{
                 px: 1.1,
                 py: 0.4,
-                borderRadius: "999px",
+                borderRadius: 0,
                 cursor: "pointer",
                 fontSize: 11.5,
-                fontWeight: 600,
+                fontWeight: 700,
                 color: active ? pastelInk[f.color] : secondaryText,
-                bgcolor: active ? pastel[f.color] : "transparent",
-                border: `1px solid ${active ? `${pastelInk[f.color]}33` : line}`,
-                transition: "color .15s ease, border-color .15s ease",
-                "&:hover": { color: active ? pastelInk[f.color] : ink, borderColor: `${pastelInk[f.color]}33` },
+                bgcolor: active ? pastel[f.color] : "#FFF4E4",
+                border: `1.5px solid ${active ? `${pastelInk[f.color]}33` : line}`,
+                transition: "transform .15s ease, color .15s ease",
+                "&:hover": { transform: "translateY(-1px)", color: pastelInk[f.color] },
               }}
             >
               {f.label}
@@ -94,51 +94,54 @@ export function ActivityLog() {
             sx={{ mt: 3 }}
           />
         ) : (
-          <Stack spacing={0}>
+          <Stack spacing={1.1}>
             {shown.map((a, i) => {
               const d = doodleFor(a.verb);
-              const last = i === shown.length - 1;
               return (
                 <Box
                   key={a.id}
                   sx={{
                     display: "flex",
-                    gap: 1.25,
-                    pb: last ? 0 : 1.75,
+                    gap: 1.1,
                     animation: i === 0 ? "log-in .25s ease" : "none",
                   }}
                 >
-                  {/* timeline rail: avatar node + connector line */}
-                  <Box sx={{ position: "relative", flexShrink: 0, display: "flex", justifyContent: "center", width: 30 }}>
-                    <Avatar name={a.actor} color={colorFor(a.actor)} size={30} />
+                  <Avatar name={a.actor} color={colorFor(a.actor)} size={30} />
+                  {/* chat/diary bubble */}
+                  <Box
+                    sx={{
+                      position: "relative",
+                      flex: 1,
+                      minWidth: 0,
+                      bgcolor: "#FFFDF8",
+                      border: `1.5px solid ${line}`,
+                      borderRadius: 0,
+                      boxShadow: `2px 2px 0 ${line}`,
+                      px: 1.25,
+                      py: 1,
+                    }}
+                  >
                     <Box
-                      aria-hidden
                       sx={{
                         position: "absolute",
-                        top: 8,
-                        right: -3,
-                        width: 16,
-                        height: 16,
-                        borderRadius: "50%",
+                        top: -8,
+                        right: -8,
+                        width: 22,
+                        height: 22,
+                        borderRadius: 0,
                         bgcolor: pastel[d.color],
                         color: pastelInk[d.color],
-                        border: "2px solid #fff",
+                        border: `1.5px solid ${pastelInk[d.color]}33`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        "& svg": { fontSize: 10 },
                       }}
                     >
                       {d.icon}
                     </Box>
-                    {last ? null : (
-                      <Box aria-hidden sx={{ position: "absolute", top: 34, bottom: -2, width: "2px", bgcolor: line }} />
-                    )}
-                  </Box>
-                  <Box sx={{ minWidth: 0, flex: 1, pt: 0.25 }}>
-                    <Typography sx={{ fontSize: 13, lineHeight: 1.5, color: ink }}>
-                      <Box component="span" sx={{ fontWeight: 600 }}>{a.actor}</Box> {a.verb}{" "}
-                      <Box component="span" sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 600 }}>
+                    <Typography sx={{ fontSize: 13, lineHeight: 1.45, color: ink, pr: 2 }}>
+                      <Box component="span" sx={{ fontWeight: 700 }}>{a.actor}</Box> {a.verb}{" "}
+                      <Box component="span" sx={{ fontFamily: "var(--font-mono,monospace)", fontWeight: 700 }}>
                         {a.target}
                       </Box>
                     </Typography>

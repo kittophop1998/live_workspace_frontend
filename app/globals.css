@@ -187,8 +187,13 @@
 
 body {
   color: var(--foreground);
-  font-family: var(--font-prompt), Inter, var(--font-thai), "Segoe UI", system-ui, -apple-system, sans-serif;
-  background-color: #fafaf8;
+  font-family: var(--font-prompt), var(--font-thai), ui-rounded, "Hiragino Maru Gothic ProN", "Segoe UI", system-ui, sans-serif;
+  background-color: #f5f4f8;
+  background-image:
+    linear-gradient(rgba(71, 61, 110, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(71, 61, 110, 0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-attachment: fixed;
 }
 
 button,
@@ -203,13 +208,13 @@ select {
 }
 
 :focus-visible {
-  outline: 2px solid #4f8ef7;
+  outline: 2px solid #8b7cf6;
   outline-offset: 2px;
 }
 
 ::selection {
-  background: #eaf2fe;
-  color: #202124;
+  background: #eeeafe;
+  color: #2e2e2e;
 }
 
 /* Handwritten marker font utility (Yomogi) for labels & doodled captions. */
@@ -340,16 +345,15 @@ select {
   height: 11px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #d4d7dd;
+  background: #dcd4c2;
   border: 3px solid transparent;
   background-clip: padding-box;
-  border-radius: 999px;
+  border-radius: 0;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #bfc3cb;
+  background: #c9bfa6;
   border: 3px solid transparent;
   background-clip: padding-box;
-  border-radius: 999px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;

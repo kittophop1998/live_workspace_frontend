@@ -12,14 +12,9 @@ import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { useBookmarkStore } from "@/lib/bookmarks";
 import { openProposalCount, useProposalStore } from "@/lib/proposals";
-import {
-  ENDPOINT_STATUSES,
-  ENDPOINT_STATUS_META,
-  DEFAULT_ENDPOINT_STATUS,
-  useEndpointStatusStore,
-} from "@/lib/endpointStatus";
+import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, DEFAULT_ENDPOINT_STATUS, useEndpointStatusStore } from "@/lib/endpointStatus";
 import { Sticker, EmptyState } from "@/components/common";
-import { blue, blueSoft, ink, line, methodColor, paper, pastel, pastelInk, secondaryText, wash } from "@/components/theme";
+import { ink, line, methodColor, pastel, pastelInk, secondaryText } from "@/components/theme";
 import type { EndpointStatus, Resource, ResourceKind } from "@/lib/types";
 
 type StatusFilter = EndpointStatus | "all";
@@ -30,9 +25,9 @@ const GROUPS: { kind: ResourceKind; label: string; icon: React.ReactNode; color:
 ];
 
 const STATE_DOT: Record<Resource["state"], string> = {
-  draft: "#F59E0B",
-  ready: "#22C55E",
-  breaking: "#EF4444",
+  draft: "#E0A13C",
+  ready: "#4FB477",
+  breaking: "#E86A6A",
 };
 
 // Map endpoint workflow status onto a pastel crayon for the filter pills.
@@ -61,35 +56,14 @@ function BookmarkStar({ resourceId }: { resourceId: string }) {
           flexShrink: 0,
           p: 0.3,
           borderRadius: "8px",
-          color: bookmarked ? "#F59E0B" : "#C3C7CE",
+          color: bookmarked ? "#F0A93C" : "#D3C3A6",
           opacity: bookmarked ? 1 : 0,
-          transition: "opacity .15s ease, color .15s ease",
-          "&:hover": { color: "#F59E0B" },
+          transition: "opacity .15s ease, color .15s ease, transform .15s ease",
+          "&:hover": { color: "#F0A93C", transform: "rotate(-12deg) scale(1.15)" },
         }}
       >
         {bookmarked ? <StarIcon sx={{ fontSize: 17 }} /> : <StarBorderIcon sx={{ fontSize: 17 }} />}
       </Box>
-    </Tooltip>
-  );
-}
-
-// Small workflow-status dot shown on each endpoint row (Draft/In Progress/…).
-function StatusDot({ resourceId }: { resourceId: string }) {
-  const status = useEndpointStatusStore((s) => s.byResource[resourceId] ?? DEFAULT_ENDPOINT_STATUS);
-  const meta = ENDPOINT_STATUS_META[status];
-  return (
-    <Tooltip title={meta.label}>
-      <Box
-        aria-label={meta.label}
-        sx={{
-          flexShrink: 0,
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          bgcolor: meta.fg,
-          boxShadow: `0 0 0 3px ${meta.bg}`,
-        }}
-      />
     </Tooltip>
   );
 }
@@ -107,7 +81,7 @@ function StatusFilterChip({
   onClick: () => void;
 }) {
   const label = status ? ENDPOINT_STATUS_META[status].label : "All";
-  const crayon = status ? STATUS_PASTEL[status] : "blue";
+  const crayon = status ? STATUS_PASTEL[status] : "pink";
   return (
     <Box
       role="button"
@@ -118,28 +92,27 @@ function StatusFilterChip({
         alignItems: "center",
         gap: 0.5,
         cursor: "pointer",
-        px: 1,
+        px: 1.1,
         py: 0.4,
         borderRadius: "999px",
-        bgcolor: active ? pastel[crayon] : "transparent",
+        bgcolor: active ? pastel[crayon] : "#FFF4E4",
         color: active ? pastelInk[crayon] : secondaryText,
-        border: `1px solid ${active ? `${pastelInk[crayon]}33` : line}`,
+        border: `1.5px solid ${active ? `${pastelInk[crayon]}33` : line}`,
         fontSize: 11,
-        fontWeight: 600,
+        fontWeight: 700,
         whiteSpace: "nowrap",
         opacity: count || active ? 1 : 0.55,
-        transition: "background-color .15s ease, color .15s ease, border-color .15s ease",
-        "&:hover": { color: pastelInk[crayon], borderColor: `${pastelInk[crayon]}33` },
+        transition: "background-color .15s ease, color .15s ease, transform .15s ease",
+        "&:hover": { transform: "translateY(-1px) rotate(-1deg)", color: pastelInk[crayon] },
       }}
     >
       {label}
-      <Box component="span" sx={{ fontSize: 10.5, fontWeight: 700, opacity: 0.8 }}>{count}</Box>
+      <Box component="span" sx={{ fontSize: 10.5, fontWeight: 800, opacity: 0.8 }}>{count}</Box>
     </Box>
   );
 }
 
-// A little "n" proposal tag on endpoints with open (unpublished) proposals —
-// reserved slot that lights up for future Proposal Mode work.
+// A little "📝 n" tag on endpoints with open (unpublished) proposals.
 function ProposalBadge({ resourceId }: { resourceId: string }) {
   const count = useProposalStore((s) => openProposalCount(s.byId, resourceId));
   if (!count) return null;
@@ -157,13 +130,13 @@ function ProposalBadge({ resourceId }: { resourceId: string }) {
           borderRadius: "999px",
           bgcolor: pastel.purple,
           color: pastelInk.purple,
-          border: `1px solid ${pastelInk.purple}33`,
+          border: `1.5px solid ${pastelInk.purple}33`,
           fontSize: 10,
-          fontWeight: 700,
+          fontWeight: 800,
           lineHeight: 1.4,
         }}
       >
-        ⇅ {count}
+        📝 {count}
       </Box>
     </Tooltip>
   );
@@ -187,19 +160,20 @@ function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }
         gap: 1,
         px: 1.25,
         py: 1,
-        mb: 0.4,
-        borderRadius: "10px",
+        mb: 0.6,
+        borderRadius: 0,
         cursor: "pointer",
-        bgcolor: active ? blueSoft : "transparent",
-        border: `1px solid ${active ? `${blue}55` : "transparent"}`,
-        transition: "background-color .15s ease, border-color .15s ease",
+        bgcolor: active ? "#F2EFFF" : "transparent",
+        border: `1px solid ${active ? "#CFC7FA" : "transparent"}`,
+        boxShadow: active ? "2px 2px 0 #D9D3F7" : "none",
+        transition: "background-color .15s ease, border-color .15s ease, transform .15s ease",
         "&:hover": {
-          bgcolor: active ? blueSoft : pastel.cream,
+          bgcolor: active ? "#F2EFFF" : "#F5F4F8",
           "& .bookmark-star": { opacity: 1 },
         },
-        // accent marker down the selected page edge
+        // highlighter marker down the selected page edge
         "&::before": active
-          ? { content: '""', position: "absolute", left: -1, top: 8, bottom: 8, width: 3, borderRadius: 3, bgcolor: blue }
+          ? { content: '""', position: "absolute", left: -1, top: 6, bottom: 6, width: 3, bgcolor: "#7C6FE0" }
           : {},
       }}
     >
@@ -211,22 +185,22 @@ function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }
             textAlign: "center",
             fontFamily: "var(--font-mono,monospace)",
             fontSize: 9.5,
-            fontWeight: 700,
+            fontWeight: 800,
             letterSpacing: "0.02em",
             color: methodColor[r.method],
-            bgcolor: `${methodColor[r.method]}14`,
-            border: `1px solid ${methodColor[r.method]}33`,
-            borderRadius: "6px",
+            bgcolor: `${methodColor[r.method]}1A`,
+            border: `1.5px solid ${methodColor[r.method]}33`,
+            borderRadius: 0,
             py: 0.35,
           }}
         >
           {r.method}
         </Box>
       ) : (
-        <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: STATE_DOT[r.state], flexShrink: 0, ml: 0.5, mr: 0.5, border: "2px solid #fff", boxShadow: `0 0 0 1.5px ${line}` }} />
+        <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: STATE_DOT[r.state], flexShrink: 0, ml: 0.5, mr: 0.5, border: "1.5px solid #fff", boxShadow: "0 0 0 1.5px rgba(120,88,44,0.15)" }} />
       )}
       <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography sx={{ fontWeight: active ? 700 : 600, fontSize: 13, color: ink, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <Typography sx={{ fontWeight: active ? 700 : 600, fontSize: 13, color: ink, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {r.name}
         </Typography>
         {r.kind === "endpoint" && r.path ? (
@@ -235,7 +209,7 @@ function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }
           </Typography>
         ) : null}
       </Box>
-      {r.kind === "endpoint" ? <StatusDot resourceId={r.id} /> : null}
+      {active ? <Box aria-hidden sx={{ width: 6, height: 6, bgcolor: "#7C6FE0", boxShadow: "4px 0 0 #BEB6F5" }} /> : null}
       {r.kind === "endpoint" ? <ProposalBadge resourceId={r.id} /> : null}
       <BookmarkStar resourceId={r.id} />
     </Box>
@@ -266,10 +240,11 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `1px solid ${line}`, bgcolor: wash }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `1px solid ${line}`, bgcolor: "#FBFAF7" }}>
       <Box sx={{ px: 2, pt: 2.25, pb: 1.5 }}>
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-          <Typography sx={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: secondaryText }}>Explorer</Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>Explorer</Typography>
+          <Box sx={{ width: 5, height: 5, bgcolor: "#8B7CF6" }} />
         </Stack>
         <Box
           sx={{
@@ -278,12 +253,12 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
             alignItems: "center",
             gap: 0.75,
             px: 1.4,
-            height: 40,
-            borderRadius: "10px",
-            bgcolor: paper,
-            border: `1px solid ${line}`,
+            height: 42,
+            borderRadius: 0,
+            bgcolor: "#FFFDF8",
+            border: `1.5px solid ${line}`,
             transition: "border-color .15s ease, box-shadow .15s ease",
-            "&:focus-within": { borderColor: blue, boxShadow: `0 0 0 3px ${blueSoft}` },
+            "&:focus-within": { borderColor: "#8B7CF6", boxShadow: `2px 2px 0 #D9D3F7` },
           }}
         >
           <SearchIcon sx={{ fontSize: 18, color: secondaryText }} />
@@ -298,7 +273,7 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
               role="button"
               aria-label="Clear search"
               onClick={() => setNameQuery("")}
-              sx={{ display: "flex", cursor: "pointer", color: "#C3C7CE", "&:hover": { color: ink } }}
+              sx={{ display: "flex", cursor: "pointer", color: "#D3C3A6", "&:hover": { color: ink } }}
             >
               <CloseIcon sx={{ fontSize: 16 }} />
             </Box>
@@ -347,13 +322,13 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
                       justifyContent: "center",
                       width: 26,
                       height: 26,
-                      borderRadius: "8px",
+                      borderRadius: 0,
                       cursor: "pointer",
                       color: pastelInk[color],
                       bgcolor: pastel[color],
-                      border: `1px solid ${pastelInk[color]}22`,
-                      transition: "background-color .15s ease, filter .15s ease",
-                      "&:hover": { filter: "brightness(0.97)" },
+                      border: `1.5px solid ${pastelInk[color]}33`,
+                      transition: "transform .15s ease",
+                      "&:hover": { transform: "rotate(90deg) scale(1.05)" },
                     }}
                   >
                     <AddIcon sx={{ fontSize: 17 }} />

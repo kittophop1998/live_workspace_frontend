@@ -81,7 +81,7 @@ export function RoomGate() {
           position: "relative",
           width: "100%",
           maxWidth: 410,
-          bgcolor: "#FFFFFF",
+          bgcolor: "#FFFDF8",
           border: `1.5px solid ${line}`,
           borderRadius: "26px",
           boxShadow: softShadowLg,

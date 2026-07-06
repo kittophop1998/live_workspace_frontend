@@ -3,56 +3,56 @@
 import { createTheme } from "@mui/material";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Live Workspace design system — "professional collaborative API notebook".
-// Clean off-white paper, calm blue ink, soft cool borders, gentle pastel accents.
+// Live Workspace design system — "cozy collaborative API notebook".
+// Off-white paper, calm lavender ink, soft borders, gentle pastel accents.
 // Token NAMES are preserved so every component that imports them re-skins for
-// free; only the VALUES changed. `blue` is a legacy name that holds the PRIMARY
-// accent — now a professional blue (#4F8EF7).
+// free; only the VALUES changed. `blue` is a legacy name that now holds the
+// PRIMARY lavender accent (#8B7CF6).
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Core palette
-export const ink = "#202124"; // primary text / dark fills
-export const secondaryText = "#6B7280"; // muted captions / meta
+export const ink = "#2E2E2E"; // primary text / dark fills
+export const secondaryText = "#6D6D6D"; // muted captions / meta
 export const paper = "#FFFFFF"; // notebook page (cards, sidebars)
-export const wash = "#FAFAF8"; // desk / app background (soft off-white)
-export const line = "#E8EAED"; // soft border
-export const lineSoft = "#F1F3F4"; // faint ruling / divider
-export const blue = "#4F8EF7"; // PRIMARY accent (blue) — legacy name
-export const blueSoft = "#EAF2FE"; // tinted accent surface (blue wash)
+export const wash = "#F8F7F4"; // desk / app background (warm off-white)
+export const line = "#E9E2D0"; // soft border
+export const lineSoft = "#F0EAD9"; // faint ruling / divider
+export const blue = "#8B7CF6"; // PRIMARY accent (lavender) — legacy name
+export const blueSoft = "#EEEAFE"; // tinted accent surface (lavender wash)
 
 // Standard soft corner radius for cards & panels.
 export const radius = 12;
 
-// The full crayon box — muted pastel surfaces used for tabs, pills, badges.
+// The full crayon box — muted pastel surfaces used for tabs, pills, stickers.
 export const pastel = {
-  cream: "#F3F4F6", // neutral chip
-  pink: "#FEECEC", // danger-soft
-  blue: "#EAF2FE", // primary-soft
-  mint: "#E6F7EE", // success-soft
-  yellow: "#FEF3E2", // warning-soft
-  purple: "#EEEBFE", // accent
-  orange: "#FEEEDF",
+  cream: "#F4F2EC",
+  pink: "#FBE7E7", // danger-soft
+  blue: "#E7ECFB", // periwinkle
+  mint: "#E7F4E4", // success-soft
+  yellow: "#FBEFD6", // warning-soft
+  purple: "#EEEAFE", // primary-light
+  orange: "#FBEAD9",
 } as const;
 
 // Matching legible ink for text placed on each pastel surface.
 export const pastelInk = {
-  cream: "#6B7280",
-  pink: "#D14343", // danger
-  blue: "#2C6FD6", // primary
-  mint: "#1B9E58", // success
-  yellow: "#B77410", // warning
-  purple: "#6D51D6", // accent
-  orange: "#C56A1E",
+  cream: "#6D6D6D",
+  pink: "#B4524F", // danger
+  blue: "#4A5DA8", // periwinkle
+  mint: "#4E8A46", // success
+  yellow: "#9A7418", // warning
+  purple: "#6D5DD3", // primary
+  orange: "#B0703A",
 } as const;
 
 // Masking-tape tints for decorative corners — muted, cool.
-export const tape = ["rgba(79,142,247,0.22)", "rgba(34,197,94,0.22)", "rgba(245,158,11,0.24)", "rgba(239,68,68,0.20)"] as const;
+export const tape = ["rgba(139,124,246,0.26)", "rgba(140,203,132,0.28)", "rgba(244,197,106,0.30)", "rgba(231,141,141,0.26)"] as const;
 
 // Soft, cool, diffuse shadows — pages read as gently lifted off the desk.
 // Names kept for backwards-compat with existing imports.
-export const softShadowSm = "0 1px 2px rgba(16,24,40,0.04), 0 2px 5px rgba(16,24,40,0.05)";
-export const softShadow = "0 1px 3px rgba(16,24,40,0.05), 0 8px 24px rgba(16,24,40,0.07)";
-export const softShadowLg = "0 6px 14px rgba(16,24,40,0.07), 0 22px 48px rgba(16,24,40,0.10)";
+export const softShadowSm = "0 1px 2px rgba(46,46,46,0.05), 0 2px 5px rgba(46,46,46,0.06)";
+export const softShadow = "0 2px 4px rgba(46,46,46,0.05), 0 10px 26px rgba(46,46,46,0.08)";
+export const softShadowLg = "0 6px 14px rgba(46,46,46,0.07), 0 22px 48px rgba(46,46,46,0.11)";
 export const flatShadow = softShadow;
 export const flatShadowSm = softShadowSm;
 
@@ -64,19 +64,19 @@ export const stateColor = {
 } as const;
 
 export const changeColor = {
-  added: "#22C55E",
-  removed: "#EF4444",
-  modified: "#F59E0B",
-  stable: "#6B7280",
+  added: "#5FA958",
+  removed: "#D07A7A",
+  modified: "#C79A3D",
+  stable: "#6D6D6D",
 } as const;
 
-// Method crayons — professional but legible on white.
+// Method crayons — muted but legible on white.
 export const methodColor: Record<string, string> = {
-  GET: "#22A15A", // green
-  POST: "#4F8EF7", // blue
-  PUT: "#E08A16", // amber
-  PATCH: "#8B5CF6", // purple
-  DELETE: "#EF4444", // red
+  GET: "#5AA469", // leaf
+  POST: "#7C6FE0", // lavender
+  PUT: "#C79A3D", // honey
+  PATCH: "#A97FCB", // grape
+  DELETE: "#D07A7A", // coral
 };
 
 export const theme = createTheme({
@@ -84,23 +84,23 @@ export const theme = createTheme({
     mode: "light",
     primary: { main: blue, contrastText: "#FFFFFF" },
     secondary: { main: ink },
-    success: { main: "#22C55E" },
-    warning: { main: "#F59E0B" },
-    error: { main: "#EF4444" },
+    success: { main: "#5FA958" },
+    warning: { main: "#C79A3D" },
+    error: { main: "#D07A7A" },
     background: { default: wash, paper },
     text: { primary: ink, secondary: secondaryText },
     divider: line,
   },
   typography: {
     fontFamily:
-      'var(--font-prompt), Inter, var(--font-thai), "Segoe UI", system-ui, -apple-system, sans-serif',
-    h1: { fontSize: 23, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3 },
-    h2: { fontSize: 16.5, fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.4 },
-    h3: { fontSize: 11.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" },
-    body1: { fontSize: 14, lineHeight: 1.7 },
-    body2: { fontSize: 13, lineHeight: 1.65 },
+      'var(--font-prompt), var(--font-thai), "Zen Maru Gothic", ui-rounded, "Hiragino Maru Gothic ProN", "Segoe UI", system-ui, sans-serif',
+    h1: { fontSize: 23, fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.25 },
+    h2: { fontSize: 16.5, fontWeight: 700, letterSpacing: "0em", lineHeight: 1.35 },
+    h3: { fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" },
+    body1: { fontSize: 14, lineHeight: 1.65 },
+    body2: { fontSize: 13, lineHeight: 1.6 },
     caption: { fontSize: 11.5, fontWeight: 500 },
-    button: { textTransform: "none", fontWeight: 600 },
+    button: { textTransform: "none", fontWeight: 700 },
   },
   shape: { borderRadius: radius },
   components: {
@@ -119,25 +119,25 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 10,
-          fontWeight: 600,
-          paddingInline: 16,
+          fontWeight: 700,
+          paddingInline: 18,
           minHeight: 38,
-          transition: "background-color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease",
-          "&:active": { transform: "translateY(0.5px)" },
+          transition: "transform .16s cubic-bezier(.34,1.56,.64,1), box-shadow .16s ease, background-color .16s ease, border-color .16s ease",
+          "&:active": { transform: "translateY(1px) scale(0.98)" },
           "&.MuiButton-containedPrimary": {
             backgroundColor: blue,
             color: "#FFFFFF",
-            border: "1px solid #3D7FEE",
-            boxShadow: "0 1px 2px rgba(79,142,247,0.20)",
-            "&:hover": { backgroundColor: "#3D7FEE", boxShadow: "0 2px 8px rgba(79,142,247,0.26)" },
+            border: "1px solid #7A6AE0",
+            boxShadow: "0 3px 10px rgba(139,124,246,0.22)",
+            "&:hover": { backgroundColor: "#7E6EF0", transform: "translateY(-1px)", boxShadow: "0 5px 14px rgba(139,124,246,0.28)" },
           },
           "&.MuiButton-outlined": {
             backgroundColor: paper,
-            borderWidth: 1,
+            borderWidth: 1.5,
             borderColor: line,
             color: ink,
-            boxShadow: "none",
-            "&:hover": { backgroundColor: pastel.cream, borderColor: "#D6D9DE" },
+            boxShadow: softShadowSm,
+            "&:hover": { backgroundColor: pastel.cream, borderColor: "#DCD4C2", transform: "translateY(-1px)" },
           },
           "&.MuiButton-text": {
             color: secondaryText,
@@ -150,10 +150,10 @@ export const theme = createTheme({
       defaultProps: { disableRipple: true },
       styleOverrides: {
         root: {
-          borderRadius: 10,
+          borderRadius: 12,
           color: secondaryText,
-          transition: "background-color .15s ease, color .15s ease",
-          "&:hover": { backgroundColor: pastel.cream, color: ink },
+          transition: "background-color .15s ease, color .15s ease, transform .15s ease",
+          "&:hover": { backgroundColor: pastel.cream, color: ink, transform: "translateY(-1px)" },
         },
       },
     },
@@ -171,32 +171,32 @@ export const theme = createTheme({
     },
     MuiChip: {
       styleOverrides: {
-        root: { fontWeight: 600, border: "none", borderRadius: 999 },
-        outlined: { backgroundColor: pastel.cream, borderColor: line, borderWidth: 1 },
+        root: { fontWeight: 700, border: "none", borderRadius: 999 },
+        outlined: { backgroundColor: pastel.cream, borderColor: line, borderWidth: 1.5 },
       },
     },
     MuiTooltip: {
       styleOverrides: {
-        tooltip: { backgroundColor: ink, fontSize: 11.5, fontWeight: 600, borderRadius: 8, padding: "6px 10px" },
+        tooltip: { backgroundColor: ink, fontSize: 11.5, fontWeight: 600, borderRadius: 10, padding: "6px 11px" },
         arrow: { color: ink },
       },
     },
     MuiMenu: {
       styleOverrides: {
-        paper: { border: `1px solid ${line}`, borderRadius: 12, boxShadow: softShadowLg, marginTop: 6 },
+        paper: { border: `1.5px solid ${line}`, borderRadius: 16, boxShadow: softShadowLg, marginTop: 6 },
         list: { padding: 6 },
       },
     },
     MuiMenuItem: {
-      styleOverrides: { root: { borderRadius: 8, margin: "1px 0" } },
+      styleOverrides: { root: { borderRadius: 10, margin: "1px 0" } },
     },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
           backgroundColor: paper,
-          borderRadius: 10,
-          "& fieldset": { borderColor: line, borderWidth: 1 },
-          "&:hover fieldset": { borderColor: "#D6D9DE" },
+          borderRadius: 12,
+          "& fieldset": { borderColor: line, borderWidth: 1.5 },
+          "&:hover fieldset": { borderColor: "#DCD4C2" },
           "&.Mui-focused fieldset": { borderColor: blue, borderWidth: 1.5, boxShadow: `0 0 0 3px ${blueSoft}` },
         },
       },
@@ -205,11 +205,11 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           textTransform: "none",
-          fontWeight: 600,
+          fontWeight: 700,
           borderColor: line,
           borderRadius: 999,
           color: secondaryText,
-          "&.Mui-selected": { backgroundColor: blueSoft, color: pastelInk.blue, "&:hover": { backgroundColor: blueSoft } },
+          "&.Mui-selected": { backgroundColor: blueSoft, color: pastelInk.purple, "&:hover": { backgroundColor: blueSoft } },
         },
       },
     },

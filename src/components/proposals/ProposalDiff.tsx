@@ -3,7 +3,7 @@
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
 import { MonoTag, EmptyState } from "@/components/common";
-import { changeColor, ink, line, secondaryText } from "@/components/theme";
+import { changeColor, ink, secondaryText } from "@/components/theme";
 import type { DiffOp, FieldDiff } from "@/lib/proposalDiff";
 
 const SIGN: Record<DiffOp, string> = { add: "+", modify: "~", remove: "−" };
@@ -108,11 +108,11 @@ function DiffRow({
             cursor: "pointer",
             fontSize: 11.5,
             fontWeight: 700,
-            color: commentCount ? "#B77410" : secondaryText,
-            bgcolor: commentCount ? "#FEF3E2" : "transparent",
-            border: `1px solid ${commentCount ? "#B7741033" : line}`,
-            transition: "color .15s ease, border-color .15s ease",
-            "&:hover": { color: "#B77410" },
+            color: commentCount ? "#B26A2E" : secondaryText,
+            bgcolor: commentCount ? "#FFE2C6" : "#FFF6E9",
+            border: `1.5px solid ${commentCount ? "#B26A2E33" : "#EADBC2"}`,
+            transition: "transform .15s ease",
+            "&:hover": { transform: "translateY(-1px) rotate(-2deg)" },
           }}
         >
           <ChatBubbleOutlineIcon sx={{ fontSize: 13 }} />
