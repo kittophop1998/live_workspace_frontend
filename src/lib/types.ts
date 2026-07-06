@@ -117,8 +117,10 @@ export interface ResponseSchema {
 export type ExportFormat = "typescript" | "json";
 export type RightTab = "activity" | "comments";
 
-// Top-level app view — the workspace (schema collab) vs the E2E flow tester.
-export type WorkspaceView = "workspace" | "flows";
+// Top-level app view — the workspace (schema collab), the E2E flow tester, and
+// the additive API Graph / API Story views. Endpoint editing always lives in
+// "workspace"; graph/story navigate away and back without replacing it.
+export type WorkspaceView = "workspace" | "flows" | "graph" | "story";
 
 // ---- E2E Flow Testing (api-spec.md §2 Flow*) ------------------------------
 // Parsed from an uploaded Arazzo (OpenAPI Workflows) document by the backend,

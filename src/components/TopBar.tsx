@@ -94,10 +94,12 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
         </Box>
       </Box>
 
-      <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0.5, md: 2 }, p: 0.4, borderRadius: "10px", bgcolor: "#F5F3FA", flexShrink: 0 }}>
+      <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0.5, md: 2 }, p: 0.4, borderRadius: "10px", bgcolor: "#F5F3FA", flexShrink: 0, overflowX: "auto" }}>
         {([
-          { key: "workspace", label: "Workspace", short: "Workspace" },
+          { key: "workspace", label: "Notebook", short: "Notebook" },
           { key: "flows", label: "E2E Flow Testing", short: "Flows" },
+          { key: "graph", label: "API Graph", short: "Graph" },
+          { key: "story", label: "API Story", short: "Story" },
         ] as const).map((tab) => {
           const active = view === tab.key;
           return (
@@ -121,6 +123,23 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
             </Box>
           );
         })}
+      </Stack>
+
+      {/* Future-ready: reserved nav slots (not implemented yet). */}
+      <Stack direction="row" spacing={0.75} sx={{ display: { xs: "none", lg: "flex" }, alignItems: "center", ml: 1, flexShrink: 0 }}>
+        {["Proposal", "Decision Log", "Realtime"].map((label) => (
+          <Tooltip key={label} title={`${label} — coming soon`}>
+            <Box
+              aria-disabled
+              sx={{
+                px: 1.25, py: 0.5, borderRadius: "8px", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap",
+                color: "#B7B2C4", border: "1px dashed #E1DCEC", cursor: "not-allowed", userSelect: "none",
+              }}
+            >
+              {label}
+            </Box>
+          </Tooltip>
+        ))}
       </Stack>
 
       <Box sx={{ ml: "auto" }}>{view === "workspace" ? <ImportApiDialog /> : null}</Box>

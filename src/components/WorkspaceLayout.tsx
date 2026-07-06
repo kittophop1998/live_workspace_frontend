@@ -12,11 +12,15 @@ import { useBookmarkStore } from "@/lib/bookmarks";
 import { useEndpointStatusStore } from "@/lib/endpointStatus";
 import { useApiTesterStore } from "@/lib/apiTester";
 import { useProposalStore } from "@/lib/proposals";
+import { useApiGraphStore } from "@/lib/apiGraph";
+import { useApiStoryStore } from "@/lib/apiStory";
 import { TopBar } from "@/components/TopBar";
 import { LeftPanel } from "@/components/LeftPanel";
 import { CenterPanel } from "@/components/CenterPanel";
 import { RightPanel } from "@/components/RightPanel";
 import { FlowTestingPage } from "@/components/flows/FlowTestingPage";
+import { ApiGraphView } from "@/components/graph/ApiGraphView";
+import { ApiStoryView } from "@/components/story/ApiStoryView";
 import { MergeCelebration } from "@/components/proposals/MergeCelebration";
 import { ink, line, secondaryText } from "@/components/theme";
 
@@ -111,6 +115,9 @@ export function WorkspaceLayout() {
   const hydrateApiTester = useApiTesterStore((s) => s.hydrate);
   // Load locally-persisted Proposal Mode proposals once.
   const hydrateProposals = useProposalStore((s) => s.hydrate);
+  // Load locally-persisted API Graph relationships + API Story flows once.
+  const hydrateGraph = useApiGraphStore((s) => s.hydrate);
+  const hydrateStories = useApiStoryStore((s) => s.hydrate);
   useEffect(() => {
     hydrateResponseSchemas();
     hydrateSchemaTrees();
@@ -118,7 +125,9 @@ export function WorkspaceLayout() {
     hydrateEndpointStatus();
     hydrateApiTester();
     hydrateProposals();
-  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateEndpointStatus, hydrateApiTester, hydrateProposals]);
+    hydrateGraph();
+    hydrateStories();
+  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateEndpointStatus, hydrateApiTester, hydrateProposals, hydrateGraph, hydrateStories]);
 
   const leftW = leftCollapsed ? "0px" : "280px";
   const rightW = rightCollapsed ? "0px" : "340px";
@@ -129,6 +138,14 @@ export function WorkspaceLayout() {
       {view === "flows" ? (
         <Box sx={{ flex: 1, minHeight: 0 }}>
           <FlowTestingPage />
+        </Box>
+      ) : view === "graph" ? (
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          <ApiGraphView />
+        </Box>
+      ) : view === "story" ? (
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          <ApiStoryView />
         </Box>
       ) : (
         <>

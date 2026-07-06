@@ -14,6 +14,7 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ReplyAllOutlinedIcon from "@mui/icons-material/ReplyAllOutlined";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
+import HubOutlinedIcon from "@mui/icons-material/HubOutlined";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
@@ -28,6 +29,7 @@ import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
 import { ResponseTabs } from "@/components/schema/ResponseTabs";
 import { RequestTester } from "@/components/tester/RequestTester";
 import { ProposalPanel } from "@/components/proposals/ProposalPanel";
+import { EndpointConnections } from "@/components/EndpointConnections";
 import { MonoTag, Sticker, type PastelName, relativeTime, useNow } from "@/components/common";
 import { blue, blueSoft, ink, methodColor, pastel, secondaryText } from "@/components/theme";
 import { PixelTabs } from "@/components/pixel/PixelTabs";
@@ -276,12 +278,13 @@ function EditableName({ resource }: { resource: Resource }) {
   );
 }
 
-type CenterTab = "request" | "responses" | "try" | "docs" | "history" | "settings" | "proposals";
+type CenterTab = "request" | "responses" | "try" | "connections" | "docs" | "history" | "settings" | "proposals";
 
 const TABS: { value: CenterTab; label: string; color: PastelName; icon: React.ReactNode }[] = [
   { value: "request", label: "Request", color: "pink", icon: <DescriptionOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "responses", label: "Responses", color: "blue", icon: <ReplyAllOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "try", label: "Try it", color: "mint", icon: <ScienceOutlinedIcon sx={{ fontSize: 16 }} /> },
+  { value: "connections", label: "Connections", color: "purple", icon: <HubOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "docs", label: "Docs", color: "yellow", icon: <ArticleOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "history", label: "History", color: "orange", icon: <HistoryOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "settings", label: "Settings", color: "blue", icon: <SettingsOutlinedIcon sx={{ fontSize: 16 }} /> },
@@ -410,6 +413,10 @@ export function CenterPanel() {
           <Box sx={{ animation: "fade-in .2s ease" }}>
             <RequestTester key={`${resource.id}::tester`} resource={resource} />
           </Box>
+        ) : null}
+
+        {isEndpoint && activeTab === "connections" ? (
+          <EndpointConnections key={`${resource.id}::connections`} resource={resource} />
         ) : null}
 
         {isEndpoint && activeTab === "proposals" ? (
