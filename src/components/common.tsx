@@ -180,8 +180,8 @@ export function Sticker({
   );
 }
 
-// A notebook page: warm paper, hand-drawn border, soft shadow, a slight random
-// tilt so pages feel stacked & hand-placed. Optionally pins a strip of tape.
+// A restrained notebook page surface. Forms and text remain conventional;
+// the optional tape is reserved for legacy call sites.
 export function PaperCard({
   children,
   tilt = 0,
@@ -195,28 +195,17 @@ export function PaperCard({
   tapeTint?: string;
   sx?: SxProps<Theme>;
 }) {
+  void tilt;
   return (
     <Box
       sx={{
         position: "relative",
-        bgcolor: "#FFFDF8",
-        border: `1.5px solid ${line}`,
-        borderRadius: "22px",
+        bgcolor: "#FFFFFF",
+        border: `1px solid ${line}`,
+        borderRadius: "12px",
         boxShadow: softShadow,
         p: { xs: 2, sm: 3 },
-        transform: tilt ? `rotate(${tilt}deg)` : "none",
-        transition: "transform .2s ease, box-shadow .2s ease",
-        // faint page fold at the corner
-        "&::after": {
-          content: '""',
-          position: "absolute",
-          right: 0,
-          bottom: 0,
-          width: 26,
-          height: 26,
-          borderRadius: "0 0 22px 0",
-          background: "linear-gradient(135deg, transparent 50%, rgba(214,190,150,0.28) 50%)",
-        },
+        transition: "transform .15s ease, box-shadow .15s ease",
         ...sx,
       }}
     >

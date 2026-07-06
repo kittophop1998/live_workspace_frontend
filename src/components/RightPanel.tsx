@@ -8,6 +8,7 @@ import { ActivityLog } from "@/components/ActivityLog";
 import { CommentThread } from "@/components/CommentThread";
 import { BookmarkTab } from "@/components/common";
 import { line } from "@/components/theme";
+import { PixelMascot } from "@/components/PixelMascot";
 import type { RightTab } from "@/lib/types";
 
 export function RightPanel() {
@@ -17,22 +18,23 @@ export function RightPanel() {
   const commentCount = useWorkspaceStore((s) => s.comments.filter((c) => c.resourceId === selectedId).length);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderLeft: `2px dashed ${line}`, bgcolor: "#FFFAF0" }}>
-      <Stack direction="row" spacing={0.75} sx={{ px: 1.75, pt: 1.75, alignItems: "flex-end", borderBottom: `2px dashed ${line}` }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderLeft: `1px solid ${line}`, bgcolor: "#FBFAF7" }}>
+      <Stack direction="row" spacing={0.75} sx={{ px: 1.75, pt: 1.25, alignItems: "flex-end", borderBottom: `1px solid ${line}` }}>
         <BookmarkTab
-          label="Diary"
+          label="Activity"
           icon={<HistoryIcon sx={{ fontSize: 16 }} />}
           color="purple"
           active={tab === "activity"}
           onClick={() => setTab("activity" as RightTab)}
         />
         <BookmarkTab
-          label={`Notes${commentCount ? ` (${commentCount})` : ""}`}
+          label={`Comments${commentCount ? ` (${commentCount})` : ""}`}
           icon={<ForumOutlinedIcon sx={{ fontSize: 16 }} />}
           color="orange"
           active={tab === "comments"}
           onClick={() => setTab("comments" as RightTab)}
         />
+        <PixelMascot pose={tab === "activity" ? "thinking" : "reading"} size={35} cat={false} style={{ marginLeft: "auto" }} />
       </Stack>
       <Box sx={{ flex: 1, minHeight: 0 }}>
         {tab === "comments" ? <CommentThread /> : <ActivityLog />}

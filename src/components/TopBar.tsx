@@ -47,8 +47,8 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
       sx={{
         height: 58,
         flexShrink: 0,
-        borderBottom: `2px dashed ${line}`,
-        bgcolor: "#FFFDF8",
+        borderBottom: `1px solid ${line}`,
+        bgcolor: "rgba(255,255,255,.92)",
         display: "flex",
         alignItems: "center",
         px: { xs: 1.5, sm: 2.5 },
@@ -89,19 +89,18 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
         </Box>
         <Box sx={{ display: { xs: "none", sm: "block" }, lineHeight: 1.1 }}>
           <Typography className="font-hand" sx={{ fontSize: 16, fontWeight: 700, color: ink, lineHeight: 1.05 }}>
-            Live Workspace
+            Kingdom Workspace
           </Typography>
           <Typography sx={{ fontSize: 11, fontWeight: 500, color: secondaryText, lineHeight: 1.1 }}>
-            our little schema notebook ✎
+            Collaborative API notebook
           </Typography>
         </Box>
       </Box>
 
-      {/* Center nav — bookmark pills */}
-      <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0.5, md: 2 }, p: 0.5, borderRadius: "999px", bgcolor: "#FFF4E4", border: `1.5px solid ${line}`, flexShrink: 0 }}>
+      <Stack direction="row" spacing={0.5} sx={{ ml: { xs: 0.5, md: 2 }, p: 0.4, borderRadius: "10px", bgcolor: "#F5F3FA", flexShrink: 0 }}>
         {([
-          { key: "workspace", label: "Notebook", short: "Notebook" },
-          { key: "flows", label: "Flow Tests", short: "Flows" },
+          { key: "workspace", label: "Workspace", short: "Workspace" },
+          { key: "flows", label: "E2E Flow Testing", short: "Flows" },
         ] as const).map((tab) => {
           const active = view === tab.key;
           return (
@@ -111,11 +110,11 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
               aria-pressed={active}
               onClick={() => setView(tab.key)}
               sx={{
-                px: { xs: 1.25, sm: 1.75 }, py: 0.5, borderRadius: "999px", cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap",
+                px: { xs: 1.25, sm: 1.75 }, py: 0.55, borderRadius: "8px", cursor: "pointer", fontSize: 13, fontWeight: 650, whiteSpace: "nowrap",
                 color: active ? pastelInk.purple : secondaryText,
-                bgcolor: active ? pastel.purple : "transparent",
-                border: active ? `1.5px solid ${pastelInk.purple}33` : "1.5px solid transparent",
-                boxShadow: active ? "0 2px 0 rgba(108,85,192,0.18)" : "none",
+                bgcolor: active ? "#FFFFFF" : "transparent",
+                border: "1px solid transparent",
+                boxShadow: active ? "0 1px 3px rgba(46,46,46,.08)" : "none",
                 transition: "color .15s ease, background-color .15s ease, transform .15s ease",
                 "&:hover": { color: pastelInk.purple, transform: "translateY(-1px)" },
               }}

@@ -15,6 +15,7 @@ import { openProposalCount, useProposalStore } from "@/lib/proposals";
 import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, DEFAULT_ENDPOINT_STATUS, useEndpointStatusStore } from "@/lib/endpointStatus";
 import { Sticker, EmptyState } from "@/components/common";
 import { DoodleSparkle } from "@/components/doodles";
+import { PixelMascot } from "@/components/PixelMascot";
 import { ink, line, methodColor, pastel, pastelInk, secondaryText } from "@/components/theme";
 import type { EndpointStatus, Resource, ResourceKind } from "@/lib/types";
 
@@ -164,13 +165,12 @@ function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }
         mb: 0.6,
         borderRadius: "14px",
         cursor: "pointer",
-        bgcolor: active ? "#FFFDF8" : "transparent",
-        border: `1.5px solid ${active ? pastel.pink : "transparent"}`,
-        boxShadow: active ? "0 3px 12px rgba(120,88,44,0.12)" : "none",
-        transform: active ? "rotate(-0.6deg)" : "none",
+        bgcolor: active ? "#EEEAFE" : "transparent",
+        border: `1px solid ${active ? "#DDD6FC" : "transparent"}`,
+        boxShadow: active ? "0 3px 10px rgba(80,65,160,0.07)" : "none",
         transition: "background-color .15s ease, border-color .15s ease, transform .15s ease",
         "&:hover": {
-          bgcolor: active ? "#FFFDF8" : "#FFF6E9",
+          bgcolor: active ? "#EEEAFE" : "#F7F5F0",
           "& .bookmark-star": { opacity: 1 },
         },
         // highlighter marker down the selected page edge
@@ -211,6 +211,7 @@ function ResourceRow({ r, onNavigate }: { r: Resource; onNavigate?: () => void }
           </Typography>
         ) : null}
       </Box>
+      {active ? <PixelMascot pose="idle" size={29} cat={false} /> : null}
       {r.kind === "endpoint" ? <ProposalBadge resourceId={r.id} /> : null}
       <BookmarkStar resourceId={r.id} />
     </Box>
@@ -241,10 +242,10 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
   );
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `2px dashed ${line}`, bgcolor: "#FFFAF0" }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderRight: `1px solid ${line}`, bgcolor: "#FBFAF7" }}>
       <Box sx={{ px: 2, pt: 2.25, pb: 1.5 }}>
         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center" }}>
-          <Sticker color="pink">✎ My Pages</Sticker>
+          <Sticker color="purple">Explorer</Sticker>
           <DoodleSparkle size={15} className="animate-twinkle" />
         </Stack>
         <Box
@@ -266,7 +267,7 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
           <InputBase
             value={nameQuery}
             onChange={(e) => setNameQuery(e.target.value)}
-            placeholder="find a page…"
+            placeholder="Search endpoints…"
             sx={{ flex: 1, fontSize: 13 }}
           />
           {nameQuery ? (

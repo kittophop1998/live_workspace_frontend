@@ -17,7 +17,6 @@ import { LeftPanel } from "@/components/LeftPanel";
 import { CenterPanel } from "@/components/CenterPanel";
 import { RightPanel } from "@/components/RightPanel";
 import { FlowTestingPage } from "@/components/flows/FlowTestingPage";
-import { AiMascot } from "@/components/AiMascot";
 import { MergeCelebration } from "@/components/proposals/MergeCelebration";
 import { ink, line, secondaryText } from "@/components/theme";
 
@@ -179,7 +178,6 @@ export function WorkspaceLayout() {
             <RightPanel />
           </Drawer>
 
-          <AiMascot />
         </>
       )}
 

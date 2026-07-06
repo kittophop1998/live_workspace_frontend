@@ -54,6 +54,8 @@ logs**. Target feel: cozy, idle, strategic, lightweight, solo-dev-friendly.
 - Respect `prefers-reduced-motion` for animations.
 - **VERIFY BEFORE DONE**: run `npm run build` / `npm run lint`; never claim done
   without evidence.
+- Every visual element must have a purpose. If an illustration, decoration, or pixel element does not improve navigation, feedback, or delight, remove it. Minimalism always
+  wins over decoration.
 
 ## 7. Frontend architecture expectations
 ```

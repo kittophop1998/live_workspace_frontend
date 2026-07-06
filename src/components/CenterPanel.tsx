@@ -14,6 +14,10 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ReplyAllOutlinedIcon from "@mui/icons-material/ReplyAllOutlined";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
+import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
+import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import { useEffect, useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { useBookmarkStore } from "@/lib/bookmarks";
@@ -24,9 +28,13 @@ import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
 import { ResponseTabs } from "@/components/schema/ResponseTabs";
 import { RequestTester } from "@/components/tester/RequestTester";
 import { ProposalPanel } from "@/components/proposals/ProposalPanel";
-import { BookmarkTab, EmptyState, MonoTag, PaperCard, Sticker, type PastelName, relativeTime, useNow } from "@/components/common";
+import { MonoTag, Sticker, type PastelName, relativeTime, useNow } from "@/components/common";
 import { DoodleStar } from "@/components/doodles";
 import { blue, blueSoft, ink, methodColor, pastel, secondaryText } from "@/components/theme";
+import { PixelTabs } from "@/components/pixel/PixelTabs";
+import { PixelEmptyState } from "@/components/pixel/PixelEmptyState";
+import { PixelButton } from "@/components/pixel/PixelButton";
+import { PixelPanel } from "@/components/pixel/pixelBox";
 import type { HttpMethod, Resource } from "@/lib/types";
 
 const STATUS_META = ENDPOINT_STATUS_META;
@@ -269,12 +277,15 @@ function EditableName({ resource }: { resource: Resource }) {
   );
 }
 
-type CenterTab = "request" | "responses" | "try" | "proposals";
+type CenterTab = "request" | "responses" | "try" | "docs" | "history" | "settings" | "proposals";
 
 const TABS: { value: CenterTab; label: string; color: PastelName; icon: React.ReactNode }[] = [
   { value: "request", label: "Request", color: "pink", icon: <DescriptionOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "responses", label: "Responses", color: "blue", icon: <ReplyAllOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "try", label: "Try it", color: "mint", icon: <ScienceOutlinedIcon sx={{ fontSize: 16 }} /> },
+  { value: "docs", label: "Docs", color: "yellow", icon: <ArticleOutlinedIcon sx={{ fontSize: 16 }} /> },
+  { value: "history", label: "History", color: "orange", icon: <HistoryOutlinedIcon sx={{ fontSize: 16 }} /> },
+  { value: "settings", label: "Settings", color: "blue", icon: <SettingsOutlinedIcon sx={{ fontSize: 16 }} /> },
   { value: "proposals", label: "Proposals", color: "purple", icon: <RateReviewOutlinedIcon sx={{ fontSize: 16 }} /> },
 ];
 
@@ -294,13 +305,7 @@ export function CenterPanel() {
   if (!resource) {
     return (
       <Box sx={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", p: 4 }}>
-        <EmptyState
-          chibi="reader"
-          chibiSize={132}
-          color="pink"
-          title="Pick a page to start! 📖"
-          subtitle="Choose an endpoint or schema from the left, and we'll open its notebook page here."
-        />
+        <PixelEmptyState pose="reading" mascotSize={132} title="Open a page from the explorer" subtitle="Choose an endpoint or schema and its notebook page will appear here." />
       </Box>
     );
   }
@@ -328,11 +333,10 @@ export function CenterPanel() {
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", bgcolor: "transparent" }}>
-      {/* Chapter header — the manga title page */}
-      <Box sx={{ px: { xs: 2, sm: 4 }, pt: { xs: 2, sm: 3 }, pb: 0, bgcolor: "#FFFDF8", borderBottom: `2px dashed #EADBC2`, position: "relative" }}>
+      <Box sx={{ px: { xs: 2, sm: 4 }, pt: { xs: 2, sm: 2.5 }, pb: 0, bgcolor: "#FFFFFF", borderBottom: "1px solid #E9E2D0", position: "relative" }}>
         <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 1.5 }}>
           <Box sx={{ minWidth: 0 }}>
-            <Sticker color={kindColor} sx={{ mb: 1 }}>
+            <Sticker color={kindColor} sx={{ mb: 0.75 }}>
               {KIND_ICON[resource.kind]}
               {KIND_LABEL[resource.kind]}
             </Sticker>
@@ -355,36 +359,22 @@ export function CenterPanel() {
           <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
             <DoodleStar size={13} />
             <Typography sx={{ fontSize: 12, color: secondaryText }}>
-              last doodled {relativeTime(resource.updatedAt)} by {resource.updatedBy}
+              Updated {relativeTime(resource.updatedAt)} by {resource.updatedBy}
             </Typography>
           </Stack>
         </Stack>
 
-        {/* Bookmark tabs sticking out of the notebook — endpoints only */}
         {isEndpoint ? (
-          <Stack direction="row" spacing={0.75} sx={{ mt: 2, px: 0.5 }}>
-            {TABS.map((t) => (
-              <BookmarkTab
-                key={t.value}
-                label={
-                  t.value === "proposals" && openCount ? (
-                    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
-                      Proposals
-                      <Box component="span" sx={{ minWidth: 16, px: 0.5, py: 0.1, borderRadius: "999px", bgcolor: pastel.purple, color: "#6C55C0", fontSize: 10.5, fontWeight: 800, textAlign: "center", border: "1.5px solid #6C55C033" }}>
-                        {openCount}
-                      </Box>
-                    </Box>
-                  ) : (
-                    t.label
-                  )
-                }
-                icon={t.icon}
-                color={t.color}
-                active={activeTab === t.value}
-                onClick={() => setTab(t.value)}
-              />
-            ))}
-          </Stack>
+          <PixelTabs
+            value={activeTab}
+            onChange={setTab}
+            sx={{ mt: 1.5, overflowX: "auto" }}
+            tabs={TABS.map((t) => ({
+              value: t.value,
+              icon: t.icon,
+              label: t.value === "proposals" && openCount ? `Proposals (${openCount})` : t.label,
+            }))}
+          />
         ) : (
           <Box sx={{ height: 12 }} />
         )}
@@ -394,10 +384,13 @@ export function CenterPanel() {
       <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 2, sm: 4 }, py: { xs: 2.5, sm: 4 } }}>
         {activeTab === "request" ? (
           <Box sx={{ animation: "fade-in .2s ease" }}>
-            <PaperCard tilt={-0.4} taped tapeTint="rgba(255,177,193,0.55)">
-              <Box sx={{ mb: 2.5 }}>
-                <Typography variant="h2" className="font-hand" sx={{ fontSize: 20 }}>{bodyLabel}</Typography>
-                <Typography sx={{ fontSize: 13, color: secondaryText, mt: 0.5 }}>{bodyDescription}</Typography>
+            <PixelPanel>
+              <Box sx={{ mb: 2.5, display: "flex", alignItems: "flex-start", gap: 2 }}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h2" sx={{ fontSize: 18 }}>{bodyLabel}</Typography>
+                  <Typography sx={{ fontSize: 13, color: secondaryText, mt: 0.5 }}>{bodyDescription}</Typography>
+                </Box>
+                <PixelButton size="small" variant="outlined" startIcon={<AutoAwesomeOutlinedIcon />}>Generate with AI</PixelButton>
               </Box>
               <SchemaWorkbench
                 key={`${resource.id}::req`}
@@ -405,7 +398,7 @@ export function CenterPanel() {
                 seedFields={resource.fields}
                 typeName={isEndpoint ? `${resource.name}${endpointHasBody ? "Request" : "Query"}` : resource.name}
               />
-            </PaperCard>
+            </PixelPanel>
           </Box>
         ) : null}
 
@@ -423,6 +416,24 @@ export function CenterPanel() {
 
         {isEndpoint && activeTab === "proposals" ? (
           <ProposalPanel key={`${resource.id}::proposals`} resource={resource} />
+        ) : null}
+
+        {isEndpoint && activeTab === "docs" ? (
+          <PixelPanel>
+            <PixelEmptyState pose="reading" title="Documentation starts here." subtitle="Turn this endpoint into a clear guide for your team." action={<PixelButton startIcon={<AutoAwesomeOutlinedIcon />}>Generate Documentation</PixelButton>} />
+          </PixelPanel>
+        ) : null}
+
+        {isEndpoint && activeTab === "history" ? (
+          <PixelPanel>
+            <PixelEmptyState pose="reading" title="No saved versions yet." subtitle="Changes to this endpoint will become a readable timeline." />
+          </PixelPanel>
+        ) : null}
+
+        {isEndpoint && activeTab === "settings" ? (
+          <PixelPanel>
+            <PixelEmptyState pose="coding" title="Endpoint settings" subtitle="Advanced endpoint controls will live on this quiet page." />
+          </PixelPanel>
         ) : null}
       </Box>
     </Box>
