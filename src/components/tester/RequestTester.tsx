@@ -13,7 +13,7 @@ import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { useApiTesterStore, extractPathParams, type KeyValueRow, type RequestDraft } from "@/lib/apiTester";
 import { sendTest, type TestResult } from "@/services/testerService";
 import { seedFromFields, nodesToExample } from "@/lib/schemaConvert";
-import { useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
+import { EMPTY_NODES, useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
 import { ResponseViewer } from "@/components/tester/ResponseViewer";
 import { line, methodColor } from "@/components/theme";
 import { PixelPanel } from "@/components/pixel/pixelBox";
@@ -139,7 +139,7 @@ export function RequestTester({ resource }: { resource: Resource }) {
   const setBaseUrl = useApiTesterStore((s) => s.setBaseUrl);
   const savedDraft = useApiTesterStore((s) => s.drafts[resource.id]);
   const saveDraft = useApiTesterStore((s) => s.saveDraft);
-  const reqNodes = useSchemaTreeStore((s) => s.trees[`${resource.id}::req`] ?? []);
+  const reqNodes = useSchemaTreeStore((s) => s.trees[`${resource.id}::req`] ?? EMPTY_NODES);
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<RequestDraft>(() => {

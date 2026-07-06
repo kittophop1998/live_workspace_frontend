@@ -67,6 +67,12 @@ export interface SchemaNode {
 
 export const isContainer = (t: NodeType): boolean => t === "object" || t === "array";
 
+// Stable empty-tree reference. Zustand v5 selectors must return a cached value —
+// a fresh `[]` for an un-seeded scope makes useSyncExternalStore see a new
+// snapshot every render and loops forever (React #185). Always fall back to this
+// shared constant instead of an inline `?? []`.
+export const EMPTY_NODES: SchemaNode[] = Object.freeze([] as SchemaNode[]) as SchemaNode[];
+
 export function newId(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `node_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;

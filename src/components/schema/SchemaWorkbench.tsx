@@ -8,7 +8,7 @@ import CodeIcon from "@mui/icons-material/CodeOutlined";
 import DataObjectIcon from "@mui/icons-material/DataObjectOutlined";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import { useSchemaTreeStore } from "@/lib/schemaTree";
+import { EMPTY_NODES, useSchemaTreeStore } from "@/lib/schemaTree";
 import { jsonSchemaToNodes, nodesToExample, nodesToJsonSchema, nodesToTypeScript, seedFromFields } from "@/lib/schemaConvert";
 import { SchemaTreeEditor } from "@/components/schema/SchemaTreeEditor";
 import { JsonView } from "@/components/schema/JsonView";
@@ -62,7 +62,7 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
 }
 
 function JsonSchemaMode({ scope }: { scope: string }) {
-  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? []);
+  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
   const setNodes = useSchemaTreeStore((s) => s.setNodes);
   const text = useMemo(() => JSON.stringify(nodesToJsonSchema(nodes), null, 2), [nodes]);
 
@@ -130,7 +130,7 @@ function JsonSchemaMode({ scope }: { scope: string }) {
 }
 
 function ExampleMode({ scope }: { scope: string }) {
-  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? []);
+  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
   const text = useMemo(() => JSON.stringify(nodesToExample(nodes), null, 2), [nodes]);
   return (
     <Box>
@@ -145,7 +145,7 @@ function ExampleMode({ scope }: { scope: string }) {
 
 // Read-only TypeScript interface generated from the tree.
 function TypeScriptMode({ scope, typeName }: { scope: string; typeName: string }) {
-  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? []);
+  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
   const text = useMemo(() => nodesToTypeScript(nodes, typeName), [nodes, typeName]);
   return (
     <Box>
@@ -179,7 +179,7 @@ function TypeScriptMode({ scope, typeName }: { scope: string; typeName: string }
 
 export function SchemaWorkbench({ scope, seedFields, typeName = "Schema" }: { scope: string; seedFields: SchemaField[]; typeName?: string }) {
   const ensureSeed = useSchemaTreeStore((s) => s.ensureSeed);
-  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? []);
+  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
   const [mode, setMode] = useState<Mode>("visual");
   const [aiOpen, setAiOpen] = useState(false);
 

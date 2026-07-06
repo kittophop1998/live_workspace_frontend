@@ -5,7 +5,7 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
-import { findNode, isContainer, useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
+import { EMPTY_NODES, findNode, isContainer, useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
 import { SchemaNodeRow, type DropPos, type RowCallbacks } from "@/components/schema/SchemaNodeRow";
 import { FieldDetailPanel } from "@/components/schema/FieldDetailPanel";
 import { useWorkspaceStore } from "@/lib/store";
@@ -22,7 +22,7 @@ function collectContainerIds(nodes: SchemaNode[], acc: string[] = []): string[] 
 }
 
 export function SchemaTreeEditor({ scope }: { scope: string }) {
-  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? []);
+  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
   const addChild = useSchemaTreeStore((s) => s.addChild);
   const addArrayItem = useSchemaTreeStore((s) => s.addArrayItem);
   const duplicateNode = useSchemaTreeStore((s) => s.duplicateNode);
