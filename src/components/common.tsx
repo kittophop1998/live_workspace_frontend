@@ -341,18 +341,25 @@ export function SpeechBubble({
 // Never says "No data".
 export function EmptyState({
   chibi = "cat",
+  image,
+  imageAlt = "",
   title,
   subtitle,
   action,
   chibiSize = 96,
+  imageWidth = 220,
   color = "pink",
   sx,
 }: {
   chibi?: ChibiName;
+  /** Custom illustration (e.g. /images/no_response.png). Replaces the chibi when set. */
+  image?: string;
+  imageAlt?: string;
   title: string;
   subtitle?: string;
   action?: ReactNode;
   chibiSize?: number;
+  imageWidth?: number;
   color?: PastelName;
   sx?: SxProps<Theme>;
 }) {
@@ -370,10 +377,20 @@ export function EmptyState({
         ...sx,
       }}
     >
-      <Box sx={{ position: "relative" }} className="animate-float">
-        <Chibi size={chibiSize} />
-        <DoodleSparkle size={18} style={{ position: "absolute", top: -4, right: -8 }} className="animate-twinkle" />
-      </Box>
+      {image ? (
+        <Box
+          component="img"
+          src={image}
+          alt={imageAlt}
+          className="animate-float"
+          sx={{ width: "100%", maxWidth: imageWidth, height: "auto", userSelect: "none", pointerEvents: "none" }}
+        />
+      ) : (
+        <Box sx={{ position: "relative" }} className="animate-float">
+          <Chibi size={chibiSize} />
+          <DoodleSparkle size={18} style={{ position: "absolute", top: -4, right: -8 }} className="animate-twinkle" />
+        </Box>
+      )}
       <SpeechBubble color={color} tail="bottom-left" sx={{ mt: 0.5 }}>
         {title}
       </SpeechBubble>

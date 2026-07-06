@@ -161,7 +161,13 @@ function schemaToFields(schemaRaw: unknown, root: Json, seen: Set<string>): Impo
   const props = isObject(merged.properties) ? merged.properties : undefined;
   if (!props) {
     // Non-object response (array/primitive) — expose a single representative field.
-    return [{ key: "data", type: openApiType(merged, root, seen), required: true, value: sampleFromSchema(merged, root, new Set(seen), 0) }];
+    // Only a `json` field may carry a value; the backend importer rejects a value on
+    // any other type (422 "value is only valid for json fields"), which aborts the
+    // whole atomic import. So attach the sample only when the type is json.
+    const type = openApiType(merged, root, seen);
+    const field: ImportedField = { key: "data", type, required: true };
+    if (type === "json") field.value = sampleFromSchema(merged, root, new Set(seen), 0);
+    return [field];
   }
 
   const required = new Set(Array.isArray(merged.required) ? (merged.required as string[]) : []);

@@ -5,7 +5,7 @@ import { Box, Chip, Collapse, Stack, Typography } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlineOutlined";
 import { JsonView } from "@/components/schema/JsonView";
-import { MonoTag } from "@/components/common";
+import { EmptyState, MonoTag } from "@/components/common";
 import { line } from "@/components/theme";
 import type { TestResult } from "@/services/testerService";
 
@@ -36,7 +36,18 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
       </Typography>
     );
   }
-  if (!result) return null;
+  if (!result) {
+    return (
+      <EmptyState
+        image="/images/no_response.png"
+        imageAlt="No response yet"
+        imageWidth={180}
+        title="No response yet"
+        subtitle="Hit Send to run this request and see the response here."
+        sx={{ py: 3 }}
+      />
+    );
+  }
 
   if (result.error) {
     return (

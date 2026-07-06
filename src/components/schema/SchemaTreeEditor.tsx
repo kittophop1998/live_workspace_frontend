@@ -5,11 +5,11 @@ import { Box, Button, Stack, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
-import AccountTreeOutlinedIcon from "@mui/icons-material/AccountTreeOutlined";
 import { findNode, isContainer, useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
 import { SchemaNodeRow, type DropPos, type RowCallbacks } from "@/components/schema/SchemaNodeRow";
 import { FieldDetailPanel } from "@/components/schema/FieldDetailPanel";
 import { useWorkspaceStore } from "@/lib/store";
+import { EmptyState } from "@/components/common";
 import { line } from "@/components/theme";
 
 function collectContainerIds(nodes: SchemaNode[], acc: string[] = []): string[] {
@@ -158,10 +158,14 @@ export function SchemaTreeEditor({ scope }: { scope: string }) {
         }}
       >
         {nodes.length === 0 ? (
-          <Stack spacing={1} sx={{ alignItems: "center", py: 5, color: "#94A3B8" }}>
-            <AccountTreeOutlinedIcon sx={{ fontSize: 28 }} />
-            <Typography sx={{ fontSize: 13, fontWeight: 600 }}>No fields yet — add one or use Ask AI / paste JSON.</Typography>
-          </Stack>
+          <EmptyState
+            image="/images/no_response.png"
+            imageAlt="No fields yet"
+            imageWidth={180}
+            title="No fields yet"
+            subtitle="Add one, or use Ask AI / paste JSON."
+            sx={{ py: 4 }}
+          />
         ) : (
           nodes.map((n) => <SchemaNodeRow key={n.id} node={n} depth={0} cb={cb} />)
         )}
