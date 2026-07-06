@@ -391,9 +391,11 @@ export function EmptyState({
           <DoodleSparkle size={18} style={{ position: "absolute", top: -4, right: -8 }} className="animate-twinkle" />
         </Box>
       )}
-      <SpeechBubble color={color} tail="bottom-left" sx={{ mt: 0.5 }}>
-        {title}
-      </SpeechBubble>
+      {image ? null : (
+        <SpeechBubble color={color} tail="bottom-left" sx={{ mt: 0.5 }}>
+          {title}
+        </SpeechBubble>
+      )}
       {subtitle ? (
         <Typography sx={{ fontSize: 13, color: secondaryText, maxWidth: 280 }}>{subtitle}</Typography>
       ) : null}
