@@ -10,7 +10,16 @@
       "Read(//proc/2577/**)",
       "Read(//home/kittiphopso/Desktop/project/kingdom_manager/backend/**)",
       "Bash(go test *)",
-      "Bash(cd *)"
+      "Bash(cd *)",
+      "Bash(node *)",
+      "Bash(python3 seed.py)",
+      "Bash(tee seed-out.json)",
+      "Bash(docker rm *)",
+      "Bash(pkill -9 -f \"HTTP_ADDR=:8081\")",
+      "Bash(pkill -9 -f \"go run ./...\")",
+      "Bash(pkill -9 -f \"exe/backend\")",
+      "Bash(pkill -9 -f \"next dev\")",
+      "Bash(kill -9 555512 566778)"
     ]
   }
 }

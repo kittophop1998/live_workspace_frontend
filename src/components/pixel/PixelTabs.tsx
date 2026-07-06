@@ -69,6 +69,8 @@ export function PixelTabs<T extends string>({
               gap: 0.6,
               px: 1.25,
               py: 1,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
               border: `1px solid ${active ? line : "transparent"}`,
               borderBottom: "none",
               borderRadius: 0,

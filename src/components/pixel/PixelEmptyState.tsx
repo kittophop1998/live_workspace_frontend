@@ -1,16 +1,9 @@
 "use client";
 
-import { Box, type SxProps, type Theme } from "@mui/material";
+import { Box, Typography, type SxProps, type Theme } from "@mui/material";
 import type { ReactNode } from "react";
 import { PixelMascot, type MascotPose } from "@/components/PixelMascot";
 import { ink, secondaryText } from "@/components/theme";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/pixelact-ui/empty";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PixelEmptyState — never a boring empty white box. Pairs the pixel mascot with
@@ -34,8 +27,6 @@ export function PixelEmptyState({
 }) {
   return (
     <Box
-      component={Empty}
-      font="normal"
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -45,18 +36,19 @@ export function PixelEmptyState({
         gap: 1.25,
         px: 3,
         py: 5,
+        maxWidth: "100%",
         ...sx,
       }}
     >
-      <EmptyMedia variant="icon" className="bg-violet-50 text-violet-700">
-        <PixelMascot pose={pose} size={mascotSize} />
-      </EmptyMedia>
-      <EmptyHeader>
-        <Box component={EmptyTitle} sx={{ mt: 0.5, fontSize: 15, fontWeight: 700, color: ink }}>{title}</Box>
+      {/* The mascot reserves its own height (character grid is `size` tall), so the
+          title always sits cleanly below it — no fixed-size media box clipping. */}
+      <PixelMascot pose={pose} size={mascotSize} />
+      <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.75, maxWidth: 360 }}>
+        <Typography sx={{ mt: 0.5, fontSize: 15, fontWeight: 700, color: ink, lineHeight: 1.35 }}>{title}</Typography>
         {subtitle ? (
-          <Box component={EmptyDescription} sx={{ fontSize: 13, color: secondaryText, maxWidth: 320, lineHeight: 1.6 }}>{subtitle}</Box>
+          <Typography sx={{ fontSize: 13, color: secondaryText, lineHeight: 1.6 }}>{subtitle}</Typography>
         ) : null}
-      </EmptyHeader>
+      </Box>
       {action ? <Box sx={{ mt: 1 }}>{action}</Box> : null}
     </Box>
   );
