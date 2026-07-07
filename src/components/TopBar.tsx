@@ -98,7 +98,6 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
         {([
           { key: "workspace", label: "Notebook", short: "Notebook" },
           { key: "flows", label: "E2E Flow Testing", short: "Flows" },
-          { key: "graph", label: "API Graph", short: "Graph" },
           { key: "story", label: "API Story", short: "Story" },
         ] as const).map((tab) => {
           const active = view === tab.key;
