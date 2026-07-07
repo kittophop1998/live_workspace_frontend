@@ -53,10 +53,29 @@ export interface GraphEdge {
 
 export type NodePosition = { x: number; y: number };
 
+// Graph-scoped history — "John created a relationship", "Kate removed an edge".
+// Distinct from the workspace activity feed (which is about schema edits); this
+// only records graph mutations. `refs` are the resource ids involved so the
+// inspector can show a per-endpoint slice.
+export interface GraphActivity {
+  id: string;
+  actor: string;
+  action: string; // human phrase, e.g. 'linked · Business Flow'
+  detail: string; // e.g. 'POST /login → GET /me'
+  refs: string[]; // resource ids involved
+  at: string; // ISO
+}
+
+const ACTIVITY_CAP = 60;
+
 interface Persisted {
   edges: GraphEdge[];
   positions: Record<string, NodePosition>;
   collapsedGroups: Record<string, true>;
+  // Explicit feature-group membership overrides. Absent → group is derived from
+  // the path (see endpointGroup). The graph owns membership per the brief.
+  membership: Record<string, string>; // resourceId → groupId
+  activity: GraphActivity[];
 }
 
 function uid(): string {
@@ -68,7 +87,7 @@ function uid(): string {
 }
 
 function load(): Persisted {
-  const empty: Persisted = { edges: [], positions: {}, collapsedGroups: {} };
+  const empty: Persisted = { edges: [], positions: {}, collapsedGroups: {}, membership: {}, activity: [] };
   if (typeof window === "undefined") return empty;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -78,6 +97,8 @@ function load(): Persisted {
       edges: parsed.edges ?? [],
       positions: parsed.positions ?? {},
       collapsedGroups: parsed.collapsedGroups ?? {},
+      membership: parsed.membership ?? {},
+      activity: parsed.activity ?? [],
     };
   } catch {
     return empty;
@@ -95,50 +116,81 @@ function persist(state: Persisted): void {
 
 interface ApiGraphState extends Persisted {
   hydrate: () => void;
-  addEdge: (from: string, to: string, kind: RelationKind, note?: string) => void;
+  // `actor` (optional) is stamped onto the activity log; pass the current user.
+  addEdge: (from: string, to: string, kind: RelationKind, note?: string, actor?: string) => void;
   updateEdge: (id: string, patch: Partial<Pick<GraphEdge, "kind" | "note">>) => void;
-  removeEdge: (id: string) => void;
+  removeEdge: (id: string, actor?: string) => void;
   setPosition: (resourceId: string, pos: NodePosition) => void;
+  // Bulk position commit — one persist for a whole Auto-Arrange pass.
+  setPositions: (map: Record<string, NodePosition>) => void;
+  setGroup: (resourceId: string, groupId: string, actor?: string) => void;
   toggleGroup: (group: string) => void;
 }
 
-export const useApiGraphStore = create<ApiGraphState>((set) => {
+function activityEntry(actor: string | undefined, action: string, detail: string, refs: string[]): GraphActivity {
+  return { id: uid(), actor: actor?.trim() || "Someone", action, detail, refs, at: new Date().toISOString() };
+}
+
+export const useApiGraphStore = create<ApiGraphState>((set, get) => {
+  // Persist the full snapshot from the current store state + a patch.
+  const save = (patch: Partial<Persisted>): Partial<Persisted> => {
+    const s = get();
+    const next: Persisted = {
+      edges: patch.edges ?? s.edges,
+      positions: patch.positions ?? s.positions,
+      collapsedGroups: patch.collapsedGroups ?? s.collapsedGroups,
+      membership: patch.membership ?? s.membership,
+      activity: patch.activity ?? s.activity,
+    };
+    persist(next);
+    return patch;
+  };
+
   return {
     edges: [],
     positions: {},
     collapsedGroups: {},
+    membership: {},
+    activity: [],
 
     hydrate: () => set(load()),
 
-    addEdge: (from, to, kind, note) =>
+    addEdge: (from, to, kind, note, actor) =>
       set((s) => {
         if (from === to) return {};
         // Don't create a duplicate (same from/to/kind) — silently keep the first.
         if (s.edges.some((e) => e.from === from && e.to === to && e.kind === kind)) return {};
         const edges = [...s.edges, { id: uid(), from, to, kind, note }];
-        persist({ edges, positions: s.positions, collapsedGroups: s.collapsedGroups });
-        return { edges };
+        const entry = activityEntry(actor, `linked · ${RELATION_META[kind].label}`, `${from} → ${to}`, [from, to]);
+        const activity = [entry, ...s.activity].slice(0, ACTIVITY_CAP);
+        return save({ edges, activity });
       }),
 
     updateEdge: (id, patch) =>
-      set((s) => {
-        const edges = s.edges.map((e) => (e.id === id ? { ...e, ...patch } : e));
-        persist({ edges, positions: s.positions, collapsedGroups: s.collapsedGroups });
-        return { edges };
-      }),
+      set((s) => save({ edges: s.edges.map((e) => (e.id === id ? { ...e, ...patch } : e)) })),
 
-    removeEdge: (id) =>
+    removeEdge: (id, actor) =>
       set((s) => {
+        const gone = s.edges.find((e) => e.id === id);
         const edges = s.edges.filter((e) => e.id !== id);
-        persist({ edges, positions: s.positions, collapsedGroups: s.collapsedGroups });
-        return { edges };
+        if (!gone) return save({ edges });
+        const entry = activityEntry(actor, "removed a relationship", `${gone.from} ⇢ ${gone.to}`, [gone.from, gone.to]);
+        const activity = [entry, ...s.activity].slice(0, ACTIVITY_CAP);
+        return save({ edges, activity });
       }),
 
     setPosition: (resourceId, pos) =>
+      set((s) => save({ positions: { ...s.positions, [resourceId]: pos } })),
+
+    setPositions: (map) =>
+      set((s) => save({ positions: { ...s.positions, ...map } })),
+
+    setGroup: (resourceId, groupId, actor) =>
       set((s) => {
-        const positions = { ...s.positions, [resourceId]: pos };
-        persist({ edges: s.edges, positions, collapsedGroups: s.collapsedGroups });
-        return { positions };
+        const membership = { ...s.membership, [resourceId]: groupId };
+        const entry = activityEntry(actor, "moved endpoint", `${resourceId} → ${groupId}`, [resourceId]);
+        const activity = [entry, ...s.activity].slice(0, ACTIVITY_CAP);
+        return save({ membership, activity });
       }),
 
     toggleGroup: (group) =>
@@ -146,8 +198,7 @@ export const useApiGraphStore = create<ApiGraphState>((set) => {
         const collapsedGroups = { ...s.collapsedGroups };
         if (collapsedGroups[group]) delete collapsedGroups[group];
         else collapsedGroups[group] = true;
-        persist({ edges: s.edges, positions: s.positions, collapsedGroups });
-        return { collapsedGroups };
+        return save({ collapsedGroups });
       }),
   };
 });
@@ -173,4 +224,36 @@ export function endpointGroup(path: string | undefined): string {
 // "Related Endpoints" panel and the graph inspector.
 export function edgesForResource(edges: GraphEdge[], resourceId: string): GraphEdge[] {
   return edges.filter((e) => e.from === resourceId || e.to === resourceId);
+}
+
+// Resolve an endpoint's feature group: explicit membership override wins,
+// otherwise fall back to the path-derived group. One primary group per endpoint.
+export function groupIdFor(
+  membership: Record<string, string>,
+  resource: { id: string; path?: string },
+): string {
+  return membership[resource.id] ?? endpointGroup(resource.path);
+}
+
+// Human label for a group id (path segment) — "auth" → "Auth", "user-profile"
+// → "User Profile". Kept dumb; teams can rename via membership to any id.
+export function prettifyGroup(groupId: string): string {
+  return groupId
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ") || groupId;
+}
+
+// Stable palette for feature groups — same set the graph & rail share.
+export const GROUP_COLORS = ["#8B7CF6", "#4A5DA8", "#4E8A46", "#B0703A", "#B4524F", "#3E8E9E", "#9A7418", "#C0568F"];
+
+export function groupColor(groupId: string, orderedIds: string[]): string {
+  const i = orderedIds.indexOf(groupId);
+  return GROUP_COLORS[(i < 0 ? 0 : i) % GROUP_COLORS.length];
+}
+
+// Graph activity slice that involves a given resource.
+export function activityForResource(activity: GraphActivity[], resourceId: string): GraphActivity[] {
+  return activity.filter((a) => a.refs.includes(resourceId));
 }
