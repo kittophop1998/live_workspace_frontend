@@ -25,7 +25,9 @@
       "Bash(curl -s http://localhost:3001)",
       "Bash(pkill -f \"next dev\")",
       "Bash(pkill -f \"go-build\\\\|exe/main\\\\|kingdom_manager/backend\")",
-      "Bash(pkill -f \"npm run dev\")"
+      "Bash(pkill -f \"npm run dev\")",
+      "Bash(go build *)",
+      "Bash(go vet *)"
     ]
   }
 }

@@ -51,7 +51,7 @@ function draftFromResource(resource: Resource, reqNodes: SchemaNode[]): RequestD
     path,
     pathParams: extractPathParams(path).map((name) => row(name)),
     queryParams,
-    headers: [row("Content-Type", "application/json"), row("Authorization", "Bearer <token>")],
+    headers: [row("Content-Type", "application/json"), row("Authorization", "Bearer <token>"), row("Accept-Encoding", "gzip, deflate")],
     body,
     bearerToken: "",
   };
