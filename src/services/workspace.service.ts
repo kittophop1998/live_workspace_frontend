@@ -8,6 +8,7 @@ import type {
   Collaborator,
   Comment,
   DataType,
+  EndpointStatus,
   FieldState,
   HttpMethod,
   JsonValue,
@@ -43,6 +44,7 @@ interface WireResource {
   method?: string | null;
   path?: string | null;
   state: string;
+  status?: string | null; // endpoints only: workflow status (api-spec §2)
   fields: WireField[];
   responses?: WireResponseSchema[] | null;
   updated_at: string;
@@ -109,6 +111,9 @@ export const nResource = (r: WireResource): Resource => ({
   method: (r.method ?? undefined) as HttpMethod | undefined,
   path: r.path ?? undefined,
   state: r.state as FieldState,
+  // Endpoints only. Legacy rows without a stored status read back as "draft"
+  // (api-spec §2); non-endpoints have no workflow status.
+  status: r.kind === "endpoint" ? ((r.status as EndpointStatus | null) ?? "draft") : undefined,
   fields: (r.fields ?? []).map(nField),
   // Keep `undefined` when the backend omits the field (pre-migration) so the
   // local cache is preserved; `[]` means the backend sent an empty set.
@@ -195,6 +200,7 @@ export interface UpdateResourceInput {
   name?: string;
   method?: HttpMethod;
   path?: string;
+  status?: EndpointStatus; // endpoints only (api-spec §3 PATCH /resources/{id})
 }
 export interface AddFieldInput {
   key: string;

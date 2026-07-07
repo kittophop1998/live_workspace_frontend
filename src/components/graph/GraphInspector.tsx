@@ -23,11 +23,7 @@ import {
 } from "@/lib/apiGraph";
 import { RELATION_ICON } from "@/components/graph/relationIcons";
 import { storiesForResource, useApiStoryStore } from "@/lib/apiStory";
-import {
-  DEFAULT_ENDPOINT_STATUS,
-  ENDPOINT_STATUS_META,
-  useEndpointStatusStore,
-} from "@/lib/endpointStatus";
+import { DEFAULT_ENDPOINT_STATUS, ENDPOINT_STATUS_META } from "@/lib/endpointStatus";
 import { ink, line, methodColor, pastel, secondaryText } from "@/components/theme";
 import type { Resource } from "@/lib/types";
 
@@ -62,7 +58,7 @@ export function GraphInspector({
   const activity = useApiGraphStore((s) => s.activity);
   const removeEdge = useApiGraphStore((s) => s.removeEdge);
   const stories = useApiStoryStore((s) => s.stories);
-  const status = useEndpointStatusStore((s) => s.byResource[resource.id] ?? DEFAULT_ENDPOINT_STATUS);
+  const status = resource.status ?? DEFAULT_ENDPOINT_STATUS;
 
   const related = useMemo(() => edgesForResource(edges, resource.id), [edges, resource.id]);
   const usedIn = useMemo(() => storiesForResource(stories, resource.id), [stories, resource.id]);

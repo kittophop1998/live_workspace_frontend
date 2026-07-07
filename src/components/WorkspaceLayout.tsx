@@ -9,7 +9,6 @@ import { useWorkspaceStore } from "@/lib/store";
 import { useResponseSchemaStore } from "@/lib/responseSchemas";
 import { useSchemaTreeStore } from "@/lib/schemaTree";
 import { useBookmarkStore } from "@/lib/bookmarks";
-import { useEndpointStatusStore } from "@/lib/endpointStatus";
 import { useApiTesterStore } from "@/lib/apiTester";
 import { useProposalStore } from "@/lib/proposals";
 import { useApiGraphStore } from "@/lib/apiGraph";
@@ -109,8 +108,6 @@ export function WorkspaceLayout() {
   const hydrateSchemaTrees = useSchemaTreeStore((s) => s.hydrate);
   // Load locally-persisted bookmarks once.
   const hydrateBookmarks = useBookmarkStore((s) => s.hydrate);
-  // Load locally-persisted per-endpoint workflow status once.
-  const hydrateEndpointStatus = useEndpointStatusStore((s) => s.hydrate);
   // Load locally-persisted API tester drafts + base URL once.
   const hydrateApiTester = useApiTesterStore((s) => s.hydrate);
   // Load locally-persisted Proposal Mode proposals once.
@@ -122,12 +119,11 @@ export function WorkspaceLayout() {
     hydrateResponseSchemas();
     hydrateSchemaTrees();
     hydrateBookmarks();
-    hydrateEndpointStatus();
     hydrateApiTester();
     hydrateProposals();
     hydrateGraph();
     hydrateStories();
-  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateEndpointStatus, hydrateApiTester, hydrateProposals, hydrateGraph, hydrateStories]);
+  }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateApiTester, hydrateProposals, hydrateGraph, hydrateStories]);
 
   const leftW = leftCollapsed ? "0px" : "280px";
   const rightW = rightCollapsed ? "0px" : "340px";

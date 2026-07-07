@@ -3,8 +3,10 @@
 
 export type FieldState = "draft" | "ready" | "breaking";
 
-// Per-endpoint workflow/progress status (frontend-local, api-spec.md §2). Distinct
-// from FieldState — this tracks how far an endpoint is in the build pipeline.
+// Per-endpoint workflow/progress status (server-persisted as `Resource.status`,
+// api-spec.md §2 — endpoints only, settable via PATCH /resources/{id}, synced over
+// WS). Distinct from FieldState — this tracks how far an endpoint is in the build
+// pipeline.
 export type EndpointStatus = "draft" | "inprogress" | "testing" | "done";
 
 // Diff status drives the border / line-weight treatment in the blueprint.
@@ -51,7 +53,8 @@ export interface Resource {
   kind: ResourceKind;
   method?: HttpMethod; // endpoints only
   path?: string; // endpoints only
-  state: FieldState; // overall resource status
+  state: FieldState; // overall resource status (server rollup from fields)
+  status?: EndpointStatus; // endpoints only: workflow status (server-authored, api-spec §2)
   fields: SchemaField[];
   // Per-status response schemas (endpoints). `undefined` = the backend hasn't
   // sent them (pre-migration → fall back to localStorage in responseSchemas.ts);

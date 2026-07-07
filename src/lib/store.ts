@@ -12,6 +12,7 @@ import type {
   Collaborator,
   Comment,
   DataType,
+  EndpointStatus,
   ExportFormat,
   FieldState,
   HttpMethod,
@@ -93,7 +94,7 @@ interface StoreState {
   clearResources: () => Promise<void>;
   importEndpoints: (operations: ImportedOperation[]) => Promise<void>;
   renameResource: (resourceId: string, name: string) => void;
-  updateEndpoint: (resourceId: string, patch: { method?: HttpMethod; path?: string }) => void;
+  updateEndpoint: (resourceId: string, patch: { method?: HttpMethod; path?: string; status?: EndpointStatus }) => void;
   deleteResource: (resourceId: string) => void;
   addComment: (resourceId: string, fieldId: string | undefined, body: string) => void;
   // Apply a merged proposal's diff to the published endpoint via the real field

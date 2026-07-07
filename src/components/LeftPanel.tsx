@@ -12,7 +12,7 @@ import { useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { useBookmarkStore } from "@/lib/bookmarks";
 import { openProposalCount, useProposalStore } from "@/lib/proposals";
-import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, DEFAULT_ENDPOINT_STATUS, useEndpointStatusStore } from "@/lib/endpointStatus";
+import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, DEFAULT_ENDPOINT_STATUS } from "@/lib/endpointStatus";
 import { Sticker, EmptyState } from "@/components/common";
 import { ink, line, methodColor, pastel, pastelInk, secondaryText } from "@/components/theme";
 import type { EndpointStatus, Resource, ResourceKind } from "@/lib/types";
@@ -220,11 +220,11 @@ export function LeftPanel({ onNavigate }: { onNavigate?: () => void } = {}) {
   const resources = useWorkspaceStore((s) => s.resources);
   const addResource = useWorkspaceStore((s) => s.addResource);
   const bookmarkIds = useBookmarkStore((s) => s.ids);
-  const statusByResource = useEndpointStatusStore((s) => s.byResource);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [nameQuery, setNameQuery] = useState("");
 
-  const statusOf = (r: Resource): EndpointStatus => statusByResource[r.id] ?? DEFAULT_ENDPOINT_STATUS;
+  // Server-authored workflow status (api-spec §2), synced to all teammates.
+  const statusOf = (r: Resource): EndpointStatus => r.status ?? DEFAULT_ENDPOINT_STATUS;
 
   const matchesStatus = (r: Resource) =>
     statusFilter === "all" || (r.kind === "endpoint" && statusOf(r) === statusFilter);

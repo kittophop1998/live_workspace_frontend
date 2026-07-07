@@ -22,7 +22,7 @@ import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import { useEffect, useState } from "react";
 import { useWorkspaceStore } from "@/lib/store";
 import { useBookmarkStore } from "@/lib/bookmarks";
-import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META, useEndpointStatusStore } from "@/lib/endpointStatus";
+import { ENDPOINT_STATUSES, ENDPOINT_STATUS_META } from "@/lib/endpointStatus";
 import { openProposalCount, useProposalStore } from "@/lib/proposals";
 import { ImportSpecDialog } from "@/components/ImportSpecDialog";
 import { SchemaWorkbench } from "@/components/schema/SchemaWorkbench";
@@ -40,10 +40,11 @@ import type { HttpMethod, Resource } from "@/lib/types";
 
 const STATUS_META = ENDPOINT_STATUS_META;
 
-// Endpoint workflow status pill with a dropdown — frontend-local (endpointStatus.ts).
+// Endpoint workflow status pill with a dropdown — server-authored `Resource.status`
+// (api-spec §2/§3), so a change syncs to teammates over the WebSocket.
 function EndpointStatusPicker({ resourceId }: { resourceId: string }) {
-  const status = useEndpointStatusStore((s) => s.byResource[resourceId] ?? "draft");
-  const setStatus = useEndpointStatusStore((s) => s.setStatus);
+  const status = useWorkspaceStore((s) => s.resources.find((r) => r.id === resourceId)?.status ?? "draft");
+  const updateEndpoint = useWorkspaceStore((s) => s.updateEndpoint);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const meta = STATUS_META[status];
 
@@ -84,7 +85,7 @@ function EndpointStatusPicker({ resourceId }: { resourceId: string }) {
             key={s}
             selected={s === status}
             onClick={() => {
-              setStatus(resourceId, s);
+              if (s !== status) updateEndpoint(resourceId, { status: s });
               setAnchorEl(null);
             }}
             sx={{ fontSize: 13, fontWeight: 600, color: STATUS_META[s].fg }}
