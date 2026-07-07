@@ -5,8 +5,10 @@
 // to the existing endpoint editor; stories never duplicate endpoint data.
 
 import { useMemo, useState } from "react";
-import { Box, IconButton, InputBase, Menu, MenuItem, Stack, TextField, Tooltip, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, IconButton, InputBase, Menu, MenuItem, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import CheckIcon from "@mui/icons-material/Check";
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import ApiIcon from "@mui/icons-material/Api";
 import NotesIcon from "@mui/icons-material/NotesOutlined";
 import TitleIcon from "@mui/icons-material/Title";
@@ -28,6 +30,7 @@ export function ApiStoryView() {
   const selectedId = useApiStoryStore((s) => s.selectedId);
   const select = useApiStoryStore((s) => s.select);
   const createStory = useApiStoryStore((s) => s.createStory);
+  const dirty = useApiStoryStore((s) => s.dirty);
 
   const selected = useMemo(() => stories.find((s) => s.id === selectedId) ?? stories[0], [stories, selectedId]);
 
@@ -54,7 +57,10 @@ export function ApiStoryView() {
                 onClick={() => select(s.id)}
                 sx={{ px: 1.25, py: 1, borderRadius: "10px", cursor: "pointer", bgcolor: s.id === selected?.id ? pastel.purple : "transparent", "&:hover": { bgcolor: s.id === selected?.id ? pastel.purple : pastel.cream } }}
               >
-                <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</Typography>
+                <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: ink, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</Typography>
+                  {dirty[s.id] ? <Tooltip title="Unsaved changes"><Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#E0A100", flexShrink: 0 }} /></Tooltip> : null}
+                </Stack>
                 <Typography sx={{ fontSize: 11, color: secondaryText }}>{s.steps.filter((st) => st.type === "endpoint").length} endpoints · {s.steps.length} steps</Typography>
               </Box>
             ))
@@ -93,6 +99,9 @@ function StoryDetail({ story }: { story: Story }) {
   const renameStory = useApiStoryStore((s) => s.renameStory);
   const deleteStory = useApiStoryStore((s) => s.deleteStory);
   const duplicateStory = useApiStoryStore((s) => s.duplicateStory);
+  const saveStory = useApiStoryStore((s) => s.saveStory);
+  const isDirty = useApiStoryStore((s) => Boolean(s.dirty[story.id]));
+  const isSaving = useApiStoryStore((s) => Boolean(s.saving[story.id]));
   const addStep = useApiStoryStore((s) => s.addStep);
   const updateStep = useApiStoryStore((s) => s.updateStep);
   const removeStep = useApiStoryStore((s) => s.removeStep);
@@ -121,6 +130,16 @@ function StoryDetail({ story }: { story: Story }) {
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
           sx={{ flex: 1, fontSize: 24, fontWeight: 800, color: ink, "& input": { p: 0 } }}
         />
+        <Button
+          onClick={() => saveStory(story.id)}
+          disabled={!isDirty || isSaving}
+          variant="contained"
+          size="small"
+          startIcon={isSaving ? <CircularProgress size={14} color="inherit" /> : isDirty ? <SaveOutlinedIcon sx={{ fontSize: 17 }} /> : <CheckIcon sx={{ fontSize: 17 }} />}
+          sx={{ bgcolor: "#8B7CF6", textTransform: "none", fontWeight: 800, fontSize: 13, borderRadius: "10px", boxShadow: "none", "&:hover": { bgcolor: "#6D5DD3", boxShadow: "none" }, "&.Mui-disabled": { bgcolor: isDirty ? undefined : "#EDEAFB", color: "#9A8FD0" } }}
+        >
+          {isSaving ? "Saving…" : isDirty ? "Save" : "Saved"}
+        </Button>
         <Tooltip title="Duplicate flow">
           <IconButton onClick={() => duplicateStory(story.id)}><ContentCopyIcon sx={{ fontSize: 18 }} /></IconButton>
         </Tooltip>
