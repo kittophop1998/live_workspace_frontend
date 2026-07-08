@@ -5,12 +5,13 @@
 import { streamUrl } from "@/lib/api";
 import {
   nActivity,
+  nChatMessage,
   nComment,
   nPresence,
   nResource,
   nSnapshot,
 } from "@/services/workspace.service";
-import type { ActivityEvent, Comment, Presence, Resource, WorkspaceSnapshot } from "@/lib/types";
+import type { ActivityEvent, ChatMessage, Comment, Presence, Resource, WorkspaceSnapshot } from "@/lib/types";
 
 export const HEARTBEAT_MS = 3000;
 export const PRESENCE_TTL_MS = 8000;
@@ -29,6 +30,7 @@ export interface RealtimeHandlers {
   onCommentUpsert: (rev: number, comment: Comment) => void;
   onCommentDelete: (rev: number, commentId: string) => void;
   onActivity: (event: ActivityEvent) => void;
+  onChatMessage: (message: ChatMessage) => void;
   onPresence: (presence: Presence) => void;
   onPresenceLeave: (clientId: string) => void;
   onStatus?: (connected: boolean) => void;
@@ -97,6 +99,9 @@ export function connectRealtime(opts: RealtimeOptions): RealtimeConnection {
         // Backend nests the event under `activity` (api-spec §4); tolerate a flat
         // payload too so a malformed frame can't white-screen the app.
         handlers.onActivity(nActivity((payload.activity ?? payload) as never));
+        break;
+      case "chat.created":
+        handlers.onChatMessage(nChatMessage(payload.message as never));
         break;
       case "presence.update":
         handlers.onPresence(nPresence(payload as never));

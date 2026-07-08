@@ -10,6 +10,7 @@ import type { ImportedOperation } from "@/lib/specImport";
 import type { FieldDiff } from "@/lib/proposalDiff";
 import type {
   ActivityEvent,
+  ChatMessage,
   Collaborator,
   Comment,
   DataType,
@@ -29,6 +30,7 @@ import type {
 
 const FIELD_STATE_CYCLE: FieldState[] = ["draft", "ready", "breaking"];
 const ACTIVITY_CAP = 200;
+const CHAT_CAP = 500;
 
 interface StoreState {
   // Synced document (server-owned)
@@ -36,6 +38,8 @@ interface StoreState {
   resources: Resource[];
   comments: Comment[];
   activity: ActivityEvent[];
+  // Project-wide team chat — append-only, deduped by id (no rev merging).
+  chat: ChatMessage[];
 
   // UI / session
   view: WorkspaceView;
@@ -68,6 +72,8 @@ interface StoreState {
   upsertComment: (rev: number, comment: Comment, fromWs?: boolean) => void;
   removeComment: (rev: number, commentId: string, fromWs?: boolean) => void;
   pushActivity: (event: ActivityEvent) => void;
+  setChat: (messages: ChatMessage[]) => void;
+  pushChatMessage: (message: ChatMessage) => void;
   upsertPresence: (p: Presence) => void;
   dropPresence: (clientId: string) => void;
   prunePresences: () => void;
@@ -98,6 +104,7 @@ interface StoreState {
   updateEndpoint: (resourceId: string, patch: { method?: HttpMethod; path?: string; status?: EndpointStatus }) => void;
   deleteResource: (resourceId: string) => void;
   addComment: (resourceId: string, fieldId: string | undefined, body: string) => void;
+  sendChatMessage: (body: string) => void;
   // Apply a merged proposal's diff to the published endpoint via the real field
   // APIs (client-only Proposal Mode — see lib/proposals.ts). Returns success.
   mergeProposalChanges: (resourceId: string, diffs: FieldDiff[]) => Promise<boolean>;
@@ -131,6 +138,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
     resources: [],
     comments: [],
     activity: [],
+    chat: [],
 
     view: "workspace",
     selectedId: "",
@@ -163,6 +171,8 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
           activity: snap.activity,
           collaborators: snap.collaborators,
           selectedId,
+          // REST /workspace omits chat — keep what we already have.
+          ...(snap.chat ? { chat: snap.chat } : {}),
         };
       }),
 
@@ -191,6 +201,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         resources: [],
         comments: [],
         activity: [],
+        chat: [],
         collaborators: [],
         presences: {},
         selectedId: "",
@@ -270,6 +281,14 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       set((s) => {
         if (s.activity.some((a) => a.id === event.id)) return {};
         return { activity: [event, ...s.activity].slice(0, ACTIVITY_CAP) };
+      }),
+
+    setChat: (messages) => set({ chat: messages.slice(-CHAT_CAP) }),
+
+    pushChatMessage: (message) =>
+      set((s) => {
+        if (s.chat.some((m) => m.id === message.id)) return {};
+        return { chat: [...s.chat, message].slice(-CHAT_CAP) };
       }),
 
     upsertPresence: (p) => set((s) => ({ presences: { ...s.presences, [p.clientId]: p } })),
@@ -500,6 +519,17 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       try {
         const { rev, comment } = await workspaceApi.addComment(resourceId, fieldId, body);
         get().upsertComment(rev, comment);
+      } catch (err) {
+        fail(err);
+      }
+    },
+
+    // The WS `chat.created` echo is deduped by id in pushChatMessage, so
+    // applying the REST response here never double-inserts.
+    sendChatMessage: async (body) => {
+      try {
+        const message = await workspaceApi.sendChat(body);
+        get().pushChatMessage(message);
       } catch (err) {
         fail(err);
       }

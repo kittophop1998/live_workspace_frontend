@@ -5,6 +5,7 @@
 import { apiClient, unwrap } from "@/lib/api";
 import type {
   ActivityEvent,
+  ChatMessage,
   Collaborator,
   Comment,
   DataType,
@@ -74,6 +75,14 @@ interface WireComment {
   body: string;
   at: string;
 }
+interface WireChatMessage {
+  id: string;
+  author_id: string;
+  author: string;
+  role: string;
+  body: string;
+  at: string;
+}
 interface WireActivity {
   id: string;
   actor: string;
@@ -99,6 +108,7 @@ interface WireSnapshot {
   comments: WireComment[];
   activity: WireActivity[];
   collaborators: WireCollaborator[];
+  chat?: WireChatMessage[] | null; // WS snapshot only (api-spec §2)
 }
 
 // ---- Normalizers (wire → domain) -----------------------------------------
@@ -198,6 +208,15 @@ export const nComment = (c: WireComment): Comment => ({
   at: c.at,
 });
 
+export const nChatMessage = (m: WireChatMessage): ChatMessage => ({
+  id: m.id,
+  authorId: m.author_id,
+  author: m.author,
+  role: m.role as TeamRole,
+  body: m.body,
+  at: m.at,
+});
+
 export const nActivity = (a: WireActivity): ActivityEvent => ({
   id: a.id,
   actor: a.actor,
@@ -226,6 +245,8 @@ export const nSnapshot = (s: WireSnapshot): WorkspaceSnapshot => ({
   comments: (s.comments ?? []).map(nComment),
   activity: (s.activity ?? []).map(nActivity),
   collaborators: (s.collaborators ?? []).map(nCollaborator),
+  // Keep undefined when absent (REST /workspace) so the store preserves chat.
+  chat: s.chat ? s.chat.map(nChatMessage) : undefined,
 });
 
 // ---- Mutation result shapes ----------------------------------------------
@@ -414,5 +435,17 @@ export const workspaceApi = {
     });
     const data = unwrap<{ rev: number; comment: WireComment }>(res.data);
     return { rev: data.rev, comment: nComment(data.comment) };
+  },
+
+  // Project-wide team chat (api-spec §3 /chat). Append-only; no rev involved.
+  async getChat(): Promise<ChatMessage[]> {
+    const res = await apiClient.get("/chat");
+    return (unwrap<WireChatMessage[]>(res.data) ?? []).map(nChatMessage);
+  },
+
+  async sendChat(body: string): Promise<ChatMessage> {
+    const res = await apiClient.post("/chat", { body });
+    const data = unwrap<{ message: WireChatMessage }>(res.data);
+    return nChatMessage(data.message);
   },
 };

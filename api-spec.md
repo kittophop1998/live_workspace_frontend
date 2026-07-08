@@ -216,6 +216,21 @@ Inline discussion, optionally anchored to a single field.
 }
 ```
 
+### ChatMessage
+Project-wide team chat, not anchored to any resource. Append-only and stored
+outside the rev'd workspace aggregate — sending a message does **not** bump
+`rev` and never hits a revision conflict.
+```json
+{
+  "id": "msg_1a2b3c",
+  "author_id": "col_ava",
+  "author": "Ava Chen",
+  "role": "backend",            // author's role at send time
+  "body": "Deploying the staging API in 5 minutes 🚀",
+  "at": "2026-06-30T08:01:00Z"
+}
+```
+
 ### ActivityEvent
 Append-only audit feed. Emitted by the server on every mutation.
 ```json
@@ -240,6 +255,7 @@ plus the roster).
   "comments": [ "...Comment" ],
   "activity": [ "...ActivityEvent" ],
   "collaborators": [ "...Collaborator" ],
+  "chat": [ "...ChatMessage" ],   // WS snapshot only — last 200 messages, oldest first
   "server_time": "2026-06-30T08:00:00Z"
 }
 ```
@@ -420,6 +436,12 @@ Both responses contain `access_token`, `room_code`, `collaborator`, and `session
 | POST | `/resources/{id}/comments` | Add a comment (optionally anchored to a field) |
 | DELETE | `/comments/{id}` | Delete a comment (author/admin) |
 
+### Team chat
+| method | path | purpose |
+|--------|------|---------|
+| GET | `/chat` | Last 200 chat messages, oldest first |
+| POST | `/chat` | Send a message (`{ "body" }`, max 2000 chars) → `201 { "message": ChatMessage }`; broadcasts `chat.created` |
+
 ### Activity
 | method | path | purpose |
 |--------|------|---------|
@@ -497,6 +519,7 @@ All payloads reuse the §2 models. Clients merge by `rev` (ignore `rev <= local`
 | `resource.updated` (from `PUT /resources/{id}/responses`) | `{ "rev", "resource": Resource }` — reuses the `resource.updated` frame; the resource carries the new `responses` array |
 | `comment.created` / `comment.deleted` | `{ "rev", "comment": Comment }` / `{ "rev", "comment_id" }` |
 | `activity.created` | `{ "activity": ActivityEvent }` |
+| `chat.created` | `{ "message": ChatMessage }` (no `rev` — chat is outside the rev'd aggregate) |
 | `presence.update` | `Presence` (a peer's heartbeat) |
 | `presence.leave` | `{ "client_id" }` |
 

@@ -109,6 +109,18 @@ export interface Comment {
   at: string; // ISO
 }
 
+// Project-wide team chat message (api-spec §3 /chat, §4 `chat.created`).
+// Chat is append-only and lives outside the rev'd workspace aggregate — no rev
+// merging; clients dedupe by id.
+export interface ChatMessage {
+  id: string;
+  authorId: string;
+  author: string;
+  role: TeamRole;
+  body: string;
+  at: string; // ISO
+}
+
 export interface Collaborator {
   id: string;
   name: string;
@@ -130,6 +142,9 @@ export interface WorkspaceSnapshot {
   comments: Comment[];
   activity: ActivityEvent[];
   collaborators: Collaborator[];
+  // Only the WS snapshot frame carries chat; REST /workspace omits it and the
+  // store keeps its current chat state when this is undefined.
+  chat?: ChatMessage[];
 }
 
 // Response schemas per endpoint, keyed by HTTP status. Persisted on the backend
@@ -142,7 +157,7 @@ export interface ResponseSchema {
 }
 
 export type ExportFormat = "typescript" | "json";
-export type RightTab = "activity" | "comments";
+export type RightTab = "activity" | "comments" | "chat";
 
 // Top-level app view — the workspace (schema collab), the E2E flow tester, and
 // the additive API Story view. Endpoint editing always lives in

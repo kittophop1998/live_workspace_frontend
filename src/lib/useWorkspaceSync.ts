@@ -15,16 +15,18 @@ export function useWorkspaceSync(): void {
     const clientId = newClientId();
     let cancelled = false;
 
-    // 1. Initial hydrate (snapshot + my identity).
+    // 1. Initial hydrate (snapshot + my identity + team chat history).
     (async () => {
       try {
-        const [snapshot, me] = await Promise.all([
+        const [snapshot, me, chat] = await Promise.all([
           workspaceApi.getSnapshot(),
           workspaceApi.getMe(),
+          workspaceApi.getChat(),
         ]);
         if (cancelled) return;
         store.applySnapshot(snapshot);
         store.setMe(me);
+        store.setChat(chat);
         store.setApiError(null);
       } catch (err) {
         if (!cancelled) store.setApiError(apiErrorMessage(err));
@@ -47,6 +49,7 @@ export function useWorkspaceSync(): void {
           useWorkspaceStore.getState().upsertComment(rev, comment, true),
         onCommentDelete: (rev, id) => useWorkspaceStore.getState().removeComment(rev, id, true),
         onActivity: (event) => useWorkspaceStore.getState().pushActivity(event),
+        onChatMessage: (message) => useWorkspaceStore.getState().pushChatMessage(message),
         onPresence: (presence) => useWorkspaceStore.getState().upsertPresence(presence),
         onPresenceLeave: (id) => useWorkspaceStore.getState().dropPresence(id),
       },
