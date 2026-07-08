@@ -154,7 +154,6 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
   }, [proposal, onBack]);
   if (!proposal) return null;
 
-  const actor = me?.name ?? "Someone";
   const editable = proposal.status !== "merged" && proposal.status !== "rejected";
   const diffs = diffProposal(proposal, resource);
 
@@ -172,7 +171,7 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
   };
 
   const changeStatus = (status: ProposalStatus) => {
-    proposalActions.setStatus(proposalId, status, actor);
+    void proposalActions.setStatus(proposalId, status);
     if (status === "reviewing") mascotSay("writing", "Sent for review — fingers crossed! ✍️");
     if (status === "approved") mascotSay("confetti", "Looks good! Time to merge. 🎊");
     if (status === "rejected") mascotSay("surprised", "This proposal needs a few more changes.");
@@ -187,14 +186,14 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
       mascotSay("panic", "Merge hit a snag — check the endpoint.");
       return;
     }
-    proposalActions.setStatus(proposalId, "merged", actor);
+    await proposalActions.setStatus(proposalId, "merged");
     fireCelebration(proposal.title);
     mascotSay("jump", "Everyone can use the new API now! 🚀", 5000);
   };
 
   const submitComment = () => {
     if (!draft.trim() || !me) return;
-    proposalActions.addComment(proposalId, activeFieldKey ?? undefined, draft, me);
+    void proposalActions.addComment(proposalId, activeFieldKey ?? undefined, draft);
     setDraft("");
   };
 
@@ -251,7 +250,7 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
           <Box sx={{ flex: 1 }} />
           <Tooltip title="Delete proposal">
             <IconButton
-              onClick={() => { if (window.confirm("Delete this proposal? This cannot be undone.")) proposalActions.remove(proposalId); }}
+              onClick={() => { if (window.confirm("Delete this proposal? This cannot be undone.")) void proposalActions.remove(proposalId); }}
               aria-label="Delete proposal"
               sx={{ "&:hover": { color: "#E86A6A" } }}
             >
@@ -273,7 +272,7 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
           <Typography variant="h2" className="font-hand" sx={{ fontSize: 19, flex: 1 }}>Draft fields ✏️</Typography>
           {editable ? (
             <Button size="small" variant="outlined" startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-              onClick={() => proposalActions.addField(proposalId, { key: freshKey(), type: "string", required: false }, actor)}>
+              onClick={() => void proposalActions.addField(proposalId, { key: freshKey(), type: "string", required: false })}>
               Add field
             </Button>
           ) : null}
@@ -286,8 +285,8 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
               key={f.id}
               field={f}
               editable={editable}
-              onPatch={(patch) => proposalActions.updateField(proposalId, f.id, patch, actor)}
-              onRemove={() => proposalActions.removeField(proposalId, f.id, actor)}
+              onPatch={(patch) => void proposalActions.updateField(proposalId, f.id, patch)}
+              onRemove={() => void proposalActions.removeField(proposalId, f.id)}
             />
           ))
         )}
@@ -309,7 +308,7 @@ export function ProposalReview({ proposalId, onBack }: { proposalId: string; onB
                   {c.fieldKey ? <MonoTag sx={{ fontSize: 10 }}>{c.fieldKey}</MonoTag> : null}
                   <Box sx={{ flex: 1 }} />
                   <Tooltip title={c.resolved ? "Reopen" : "Resolve"}>
-                    <IconButton size="small" onClick={() => proposalActions.resolveComment(proposalId, c.id)} aria-label="Toggle resolved" sx={{ color: c.resolved ? "#2E8B62" : secondaryText }}>
+                    <IconButton size="small" onClick={() => void proposalActions.resolveComment(proposalId, c.id)} aria-label="Toggle resolved" sx={{ color: c.resolved ? "#2E8B62" : secondaryText }}>
                       <CheckCircleOutlineIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                   </Tooltip>

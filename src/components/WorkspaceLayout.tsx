@@ -109,7 +109,7 @@ export function WorkspaceLayout() {
   const hydrateBookmarks = useBookmarkStore((s) => s.hydrate);
   // Load locally-persisted API tester drafts + base URL once.
   const hydrateApiTester = useApiTesterStore((s) => s.hydrate);
-  // Load locally-persisted Proposal Mode proposals once.
+  // Load this room's Proposal Mode proposals from the backend once.
   const hydrateProposals = useProposalStore((s) => s.hydrate);
   // Load locally-persisted API Story flows once.
   const hydrateStories = useApiStoryStore((s) => s.hydrate);

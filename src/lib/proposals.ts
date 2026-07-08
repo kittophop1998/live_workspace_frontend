@@ -2,20 +2,27 @@
 
 // Proposal Mode — a Pull-Request-like flow for an endpoint's request-body schema.
 //
-// There is no proposals slot in the backend model (api-spec.md §2) and the brief
-// forbids API changes, so — exactly like bookmarks.ts / endpointStatus.ts /
-// responseSchemas.ts — proposals live entirely client-side in localStorage. A
-// proposal holds an independent *draft copy* of the resource's fields; the
-// published endpoint is untouched until the proposal is merged, at which point
-// the diff is applied through the real field APIs (see store.mergeProposalChanges).
-//
-// Persistence is per-browser (in-progress proposals are not synced to teammates);
-// the merge result IS synced because it goes through the backend field endpoints.
+// Proposals are persisted server-side (backend/api-spec.md — Proposal, own
+// `proposals` collection) via proposal.service.ts, so they sync across
+// teammates instead of living per-browser. `byId` is a client-side cache:
+// hydrated once via `hydrate()` and re-synced with the server's response after
+// every mutation — never mutated ahead of the network round trip, matching
+// useWorkspaceStore's async/await/upsert convention in store.ts. Merging a
+// proposal applies its field diff through the real field APIs (see
+// store.mergeProposalChanges), then flips status to "merged" here.
 
 import { create } from "zustand";
-import type { Collaborator, Resource, SchemaField, TeamRole } from "@/lib/types";
+import { proposalService } from "@/services/proposal.service";
+import { apiErrorMessage } from "@/lib/api";
+import { useWorkspaceStore } from "@/lib/store";
+import type { Resource, SchemaField, TeamRole } from "@/lib/types";
 
-const STORAGE_KEY = "live-workspace:proposals";
+// Surface a failed proposal action through the workspace store's apiError —
+// same sink apiStory.ts uses, so the AiMascot "panic" bubble already reacts
+// to it without a second error channel.
+function reportError(err: unknown): void {
+  useWorkspaceStore.getState().setApiError(apiErrorMessage(err));
+}
 
 export type ProposalStatus = "draft" | "reviewing" | "approved" | "rejected" | "merged";
 
@@ -69,163 +76,123 @@ export interface Proposal {
 
 type ById = Record<string, Proposal>;
 
-function uid(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-}
-
-function load(): ById {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as ById) : {};
-  } catch {
-    return {};
-  }
-}
-
-function persist(byId: ById): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(byId));
-  } catch {
-    /* quota / serialization — non-fatal for a local convenience cache */
-  }
-}
-
-function entry(kind: TimelineKind, actor: string, detail: string): TimelineEntry {
-  return { id: uid(), kind, actor, detail, at: new Date().toISOString() };
-}
-
 // Clone a published field into the proposal draft, resetting its diff flag.
 function cloneField(f: SchemaField): SchemaField {
   return { ...f, change: "stable", value: f.value };
 }
 
-const STATUS_VERB: Record<ProposalStatus, string> = {
-  draft: "moved to draft",
-  reviewing: "requested review",
-  approved: "approved this proposal",
-  rejected: "rejected this proposal",
-  merged: "merged this proposal",
-};
-
 interface ProposalState {
   byId: ById;
-  hydrate: () => void;
-  create: (resource: Resource, input: { title: string; description: string }, me: Collaborator) => Proposal;
-  update: (id: string, patch: Partial<Pick<Proposal, "title" | "description">>) => void;
-  remove: (id: string) => void;
-  setStatus: (id: string, status: ProposalStatus, actor: string) => void;
+  hydrate: () => Promise<void>;
+  create: (resource: Resource, input: { title: string; description: string }) => Promise<Proposal>;
+  update: (id: string, patch: Partial<Pick<Proposal, "title" | "description">>) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  setStatus: (id: string, status: ProposalStatus) => Promise<void>;
 
-  // Field draft edits (append a timeline entry).
-  addField: (id: string, field: Omit<SchemaField, "id" | "change" | "state">, actor: string) => void;
-  updateField: (id: string, fieldId: string, patch: Partial<SchemaField>, actor: string) => void;
-  removeField: (id: string, fieldId: string, actor: string) => void;
+  // Field draft edits (server appends a timeline entry).
+  addField: (id: string, field: Omit<SchemaField, "id" | "change" | "state">) => Promise<void>;
+  updateField: (id: string, fieldId: string, patch: Partial<SchemaField>) => Promise<void>;
+  removeField: (id: string, fieldId: string) => Promise<void>;
 
-  addComment: (id: string, fieldKey: string | undefined, body: string, me: Collaborator) => void;
-  resolveComment: (id: string, commentId: string) => void;
+  addComment: (id: string, fieldKey: string | undefined, body: string) => Promise<void>;
+  resolveComment: (id: string, commentId: string) => Promise<void>;
 }
 
 export const useProposalStore = create<ProposalState>((set) => {
-  const mutate = (id: string, fn: (p: Proposal) => Proposal) =>
-    set((s) => {
-      const p = s.byId[id];
-      if (!p) return {};
-      const byId = { ...s.byId, [id]: { ...fn(p), updatedAt: new Date().toISOString() } };
-      persist(byId);
-      return { byId };
-    });
+  const upsert = (proposal: Proposal) => set((s) => ({ byId: { ...s.byId, [proposal.id]: proposal } }));
 
   return {
     byId: {},
-    hydrate: () => set({ byId: load() }),
 
-    create: (resource, input, me) => {
-      const now = new Date().toISOString();
-      const proposal: Proposal = {
-        id: uid(),
-        resourceId: resource.id,
+    hydrate: async () => {
+      try {
+        const list = await proposalService.list();
+        set({ byId: Object.fromEntries(list.map((p) => [p.id, p])) });
+      } catch (err) {
+        reportError(err);
+      }
+    },
+
+    // Not caught here (unlike the other actions) — NewProposalDialog awaits
+    // this directly and needs the rejection to drive its own busy/error state.
+    create: async (resource, input) => {
+      const proposal = await proposalService.create(resource.id, {
         title: input.title.trim() || "Untitled proposal",
         description: input.description.trim(),
-        author: me.name,
-        authorRole: me.role,
-        status: "draft",
-        createdAt: now,
-        updatedAt: now,
         fields: resource.fields.map(cloneField),
-        comments: [],
-        timeline: [entry("created", me.name, "created this proposal")],
-      };
-      set((s) => {
-        const byId = { ...s.byId, [proposal.id]: proposal };
-        persist(byId);
-        return { byId };
       });
+      upsert(proposal);
       return proposal;
     },
 
-    update: (id, patch) => mutate(id, (p) => ({ ...p, ...patch })),
-    remove: (id) =>
-      set((s) => {
-        const byId = { ...s.byId };
-        delete byId[id];
-        persist(byId);
-        return { byId };
-      }),
+    update: async (id, patch) => {
+      try {
+        upsert(await proposalService.update(id, patch));
+      } catch (err) {
+        reportError(err);
+      }
+    },
 
-    setStatus: (id, status, actor) =>
-      mutate(id, (p) => ({
-        ...p,
-        status,
-        timeline: [...p.timeline, entry("status", actor, STATUS_VERB[status])],
-      })),
+    remove: async (id) => {
+      try {
+        await proposalService.remove(id);
+        set((s) => {
+          const byId = { ...s.byId };
+          delete byId[id];
+          return { byId };
+        });
+      } catch (err) {
+        reportError(err);
+      }
+    },
 
-    addField: (id, field, actor) =>
-      mutate(id, (p) => ({
-        ...p,
-        fields: [...p.fields, { ...field, id: uid(), state: "draft", change: "added" }],
-        timeline: [...p.timeline, entry("field", actor, `added "${field.key}"`)],
-      })),
+    setStatus: async (id, status) => {
+      try {
+        upsert(await proposalService.setStatus(id, status));
+      } catch (err) {
+        reportError(err);
+      }
+    },
 
-    updateField: (id, fieldId, patch, actor) =>
-      mutate(id, (p) => {
-        const field = p.fields.find((f) => f.id === fieldId);
-        return {
-          ...p,
-          fields: p.fields.map((f) => (f.id === fieldId ? { ...f, ...patch } : f)),
-          timeline: [...p.timeline, entry("field", actor, `edited "${patch.key ?? field?.key ?? "field"}"`)],
-        };
-      }),
+    addField: async (id, field) => {
+      try {
+        upsert(await proposalService.addField(id, field));
+      } catch (err) {
+        reportError(err);
+      }
+    },
 
-    removeField: (id, fieldId, actor) =>
-      mutate(id, (p) => {
-        const field = p.fields.find((f) => f.id === fieldId);
-        return {
-          ...p,
-          fields: p.fields.filter((f) => f.id !== fieldId),
-          timeline: [...p.timeline, entry("field", actor, `removed "${field?.key ?? "field"}"`)],
-        };
-      }),
+    updateField: async (id, fieldId, patch) => {
+      try {
+        upsert(await proposalService.updateField(id, fieldId, patch));
+      } catch (err) {
+        reportError(err);
+      }
+    },
 
-    addComment: (id, fieldKey, body, me) =>
-      mutate(id, (p) => ({
-        ...p,
-        comments: [
-          ...p.comments,
-          { id: uid(), fieldKey, author: me.name, role: me.role, body: body.trim(), at: new Date().toISOString() },
-        ],
-        timeline: [...p.timeline, entry("comment", me.name, fieldKey ? `commented on "${fieldKey}"` : "commented")],
-      })),
+    removeField: async (id, fieldId) => {
+      try {
+        upsert(await proposalService.removeField(id, fieldId));
+      } catch (err) {
+        reportError(err);
+      }
+    },
 
-    resolveComment: (id, commentId) =>
-      mutate(id, (p) => ({
-        ...p,
-        comments: p.comments.map((c) => (c.id === commentId ? { ...c, resolved: !c.resolved } : c)),
-      })),
+    addComment: async (id, fieldKey, body) => {
+      try {
+        upsert(await proposalService.addComment(id, fieldKey, body));
+      } catch (err) {
+        reportError(err);
+      }
+    },
+
+    resolveComment: async (id, commentId) => {
+      try {
+        upsert(await proposalService.resolveComment(id, commentId));
+      } catch (err) {
+        reportError(err);
+      }
+    },
   };
 });
 

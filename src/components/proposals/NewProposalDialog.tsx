@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Dialog, IconButton, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Dialog, IconButton, Stack, TextField, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useWorkspaceStore } from "@/lib/store";
 import { useProposalStore } from "@/lib/proposals";
+import { apiErrorMessage } from "@/lib/api";
 import { mascotSay } from "@/lib/mascot";
 import { Sticker } from "@/components/common";
 import { ChibiRobot, DoodleSparkle } from "@/components/doodles";
@@ -27,15 +28,27 @@ export function NewProposalDialog({
   const create = useProposalStore((s) => s.create);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const submit = () => {
-    if (!me || !title.trim()) return;
-    const p = create(resource, { title, description }, me);
-    mascotSay("celebrate", "Nice! Your proposal is ready for review. 🎉");
-    setTitle("");
-    setDescription("");
-    onCreated(p.id);
-    onClose();
+  const canSubmit = !busy && !!me && title.trim().length > 0;
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const p = await create(resource, { title, description });
+      mascotSay("celebrate", "Nice! Your proposal is ready for review. 🎉");
+      setTitle("");
+      setDescription("");
+      onCreated(p.id);
+      onClose();
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -71,7 +84,7 @@ export function NewProposalDialog({
               placeholder="Add phone number to profile"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && submit()}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && void submit()}
             />
           </Box>
           <Box>
@@ -89,10 +102,16 @@ export function NewProposalDialog({
           </Box>
         </Stack>
 
+        {error ? (
+          <Alert severity="error" sx={{ mt: 2, border: `1.5px solid ${line}`, borderRadius: "12px", py: 0 }}>
+            {error}
+          </Alert>
+        ) : null}
+
         <Stack direction="row" spacing={1} sx={{ mt: 3, justifyContent: "flex-end" }}>
           <Button variant="text" onClick={onClose}>Cancel</Button>
-          <Button variant="contained" onClick={submit} disabled={!title.trim() || !me}>
-            Create Proposal
+          <Button variant="contained" onClick={() => void submit()} disabled={!canSubmit}>
+            {busy ? "Creating…" : "Create Proposal"}
           </Button>
         </Stack>
       </Box>

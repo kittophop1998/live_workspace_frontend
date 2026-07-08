@@ -30,7 +30,7 @@ interface WireFieldValidation {
   pattern?: string | null;
   format?: string | null;
 }
-interface WireField {
+export interface WireField {
   id: string;
   key: string;
   type: string;
@@ -155,7 +155,7 @@ export const nResource = (r: WireResource): Resource => ({
 
 // ---- Denormalizers (domain → wire) — for the responses/request-fields PUT
 // bodies -----------------------------------------------------------------
-const dField = (f: SchemaField): WireField => ({
+export const dField = (f: SchemaField): WireField => ({
   id: f.id,
   key: f.key,
   type: f.type,
