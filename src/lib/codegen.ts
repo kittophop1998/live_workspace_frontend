@@ -6,6 +6,7 @@ import type { DataType, JsonValue, Resource, SchemaField } from "@/lib/types";
 const TS_TYPE: Record<DataType, string> = {
   string: "string",
   number: "number",
+  integer: "number",
   boolean: "boolean",
   uuid: "string",
   timestamp: "string",
@@ -13,6 +14,9 @@ const TS_TYPE: Record<DataType, string> = {
   "string[]": "string[]",
   "number[]": "number[]",
   enum: "string",
+  object: "Record<string, unknown>",
+  array: "unknown[]",
+  null: "null",
 };
 
 // PascalCase identifier safe for an interface name.
@@ -64,9 +68,16 @@ export function inferField(v: JsonValue): { type: DataType; value?: JsonValue } 
   return { type: "string" }; // null → nullable string
 }
 
-// TS type for a field — a json field with a defined shape gets an inline literal.
-const fieldTsType = (f: SchemaField): string =>
-  f.type === "json" && f.value !== undefined ? tsTypeFromJson(f.value) : TS_TYPE[f.type];
+// TS type for a field — a json field with a defined shape, or a nested
+// object/array field, gets an inline literal built from its children/items.
+const fieldTsType = (f: SchemaField): string => {
+  if (f.type === "json" && f.value !== undefined) return tsTypeFromJson(f.value);
+  if (f.type === "object" && f.children?.length) {
+    return `{ ${f.children.map((c) => `${c.key}${c.required ? "" : "?"}: ${fieldTsType(c)}`).join("; ")} }`;
+  }
+  if (f.type === "array" && f.items) return `${fieldTsType(f.items)}[]`;
+  return TS_TYPE[f.type];
+};
 
 export function toTypeScript(resource: Resource): string {
   const name = pascalCase(resource.name);
@@ -87,6 +98,7 @@ function sampleValue(f: SchemaField): unknown {
     case "string":
       return `sample_${f.key}`;
     case "number":
+    case "integer":
       return 0;
     case "boolean":
       return false;
@@ -99,7 +111,15 @@ function sampleValue(f: SchemaField): unknown {
     case "number[]":
       return [0];
     case "enum":
-      return f.description?.split("|")[0]?.trim() ?? "value";
+      return f.enumValues?.[0] ?? f.description?.split("|")[0]?.trim() ?? "value";
+    case "object":
+      return f.children?.length
+        ? Object.fromEntries(f.children.map((c) => [c.key, sampleValue(c)]))
+        : (f.value ?? {});
+    case "array":
+      return f.items ? [sampleValue(f.items)] : [];
+    case "null":
+      return null;
   }
 }
 

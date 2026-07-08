@@ -221,6 +221,9 @@ interface SchemaTreeState {
   // Seed a scope from backend fields the first time it is opened (no overwrite).
   ensureSeed: (scope: string, seed: () => SchemaNode[]) => void;
   setNodes: (scope: string, nodes: SchemaNode[]) => void;
+  // Force-overwrite multiple scopes at once (e.g. re-adopting server state
+  // after a save/WS echo) without a backend call — see lib/schemaTreeSync.ts.
+  adoptScopes: (scopes: Record<string, SchemaNode[]>) => void;
   addChild: (scope: string, parentId: string | null, partial?: Partial<SchemaNode>) => string;
   addArrayItem: (scope: string, arrayId: string) => string;
   updateNode: (scope: string, id: string, patch: Partial<SchemaNode>) => void;
@@ -257,6 +260,13 @@ export const useSchemaTreeStore = create<SchemaTreeState>((set, get) => {
       }),
 
     setNodes: (scope, nodes) => mutate(scope, () => nodes),
+
+    adoptScopes: (scopes) =>
+      set((s) => {
+        const trees = { ...s.trees, ...scopes };
+        persist(trees);
+        return { trees };
+      }),
 
     addChild: (scope, parentId, partial) => {
       const node = makeNode(partial);

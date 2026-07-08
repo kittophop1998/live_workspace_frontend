@@ -46,7 +46,10 @@ export function jsonValueToNodes(obj: Record<string, JsonValue>): SchemaNode[] {
 
 // ---- backend flat fields → tree (initial seed) ----------------------------
 
-const DATA_TYPE_TO_NODE: Record<DataType, NodeType> = {
+// Only legacy tokens are ever looked up here (see fieldToNode below) —
+// string/number/integer/boolean/uuid/timestamp/object/array/null round-trip
+// natively, and "enum" only falls through when it lacks real `enumValues`.
+const DATA_TYPE_TO_NODE: Partial<Record<DataType, NodeType>> = {
   string: "string",
   number: "number",
   boolean: "boolean",
@@ -58,36 +61,107 @@ const DATA_TYPE_TO_NODE: Record<DataType, NodeType> = {
   enum: "enum",
 };
 
-export function seedFromFields(fields: SchemaField[]): SchemaNode[] {
-  return fields
-    .filter((f) => f.change !== "removed")
-    .map((f) => {
-      const type = DATA_TYPE_TO_NODE[f.type];
-      const node = makeNode({
-        key: f.key,
-        type,
-        required: f.required,
-        state: f.state,
-        change: f.change,
-        description: f.description,
-      });
-      if (f.type === "json" && f.value && typeof f.value === "object") {
-        if (Array.isArray(f.value)) {
-          node.type = "array";
-          delete node.children;
-          if (f.value.length) node.items = jsonValueToNode("items", f.value[0]);
-        } else {
-          node.children = jsonValueToNodes(f.value as Record<string, JsonValue>);
-        }
-      } else if (f.type === "string[]") {
-        node.items = makeNode({ key: "items", type: "string" });
-      } else if (f.type === "number[]") {
-        node.items = makeNode({ key: "items", type: "number" });
-      } else if (f.type === "enum") {
-        node.enumValues = f.description?.split("|").map((s) => s.trim()).filter(Boolean) ?? [];
-      }
-      return node;
+// Types that are already NodeType-shaped 1:1 (the backend now accepts these
+// tokens directly, see backend fieldTypes) — a field carrying one of these
+// round-trips natively via children/items rather than the json/string[]/
+// number[] heuristics below, which only ever apply to pre-migration data.
+const DIRECT_NODE_TYPES = new Set<string>([
+  "string", "number", "integer", "boolean", "uuid", "timestamp", "object", "array", "null",
+]);
+
+function fieldToNode(f: SchemaField): SchemaNode {
+  if (DIRECT_NODE_TYPES.has(f.type)) {
+    const node = makeNode({
+      key: f.key,
+      type: f.type as NodeType,
+      required: f.required,
+      nullable: f.nullable || undefined,
+      state: f.state,
+      change: f.change,
+      description: f.description,
+      example: f.example,
+      default: f.default,
+      validation: f.validation,
     });
+    if (f.type === "object") node.children = (f.children ?? []).map(fieldToNode);
+    if (f.type === "array" && f.items) node.items = fieldToNode(f.items);
+    return node;
+  }
+  // "enum" predates this change but only carries real `enumValues` once saved
+  // through the new endpoint — legacy enum fields have none and fall through
+  // to the description-parsed heuristic below.
+  if (f.type === "enum" && f.enumValues?.length) {
+    return makeNode({
+      key: f.key,
+      type: "enum",
+      required: f.required,
+      nullable: f.nullable || undefined,
+      state: f.state,
+      change: f.change,
+      description: f.description,
+      example: f.example,
+      default: f.default,
+      validation: f.validation,
+      enumValues: f.enumValues,
+    });
+  }
+  // Legacy flat encoding (json / string[] / number[] / description-parsed
+  // enum) — infer the nested shape the same way this always has.
+  const type = DATA_TYPE_TO_NODE[f.type] ?? "string";
+  const node = makeNode({
+    key: f.key,
+    type,
+    required: f.required,
+    state: f.state,
+    change: f.change,
+    description: f.description,
+  });
+  if (f.type === "json" && f.value && typeof f.value === "object") {
+    if (Array.isArray(f.value)) {
+      node.type = "array";
+      delete node.children;
+      if (f.value.length) node.items = jsonValueToNode("items", f.value[0]);
+    } else {
+      node.children = jsonValueToNodes(f.value as Record<string, JsonValue>);
+    }
+  } else if (f.type === "string[]") {
+    node.items = makeNode({ key: "items", type: "string" });
+  } else if (f.type === "number[]") {
+    node.items = makeNode({ key: "items", type: "number" });
+  } else if (f.type === "enum") {
+    node.enumValues = f.description?.split("|").map((s) => s.trim()).filter(Boolean) ?? [];
+  }
+  return node;
+}
+
+export function seedFromFields(fields: SchemaField[]): SchemaNode[] {
+  return fields.filter((f) => f.change !== "removed").map(fieldToNode);
+}
+
+// ---- tree → backend SchemaField[] (write-through save) --------------------
+
+export function nodeToSchemaField(node: SchemaNode): SchemaField {
+  const field: SchemaField = {
+    id: node.id,
+    key: node.key,
+    type: node.type as DataType,
+    required: node.required,
+    nullable: node.nullable,
+    state: node.state,
+    change: node.change,
+    description: node.description,
+    example: node.example,
+    default: node.default,
+    validation: node.validation,
+  };
+  if (node.type === "enum") field.enumValues = node.enumValues;
+  if (node.type === "object") field.children = (node.children ?? []).map(nodeToSchemaField);
+  if (node.type === "array" && node.items) field.items = nodeToSchemaField(node.items);
+  return field;
+}
+
+export function nodesToSchemaFields(nodes: SchemaNode[]): SchemaField[] {
+  return nodes.map(nodeToSchemaField);
 }
 
 // ---- tree → JSON Schema ---------------------------------------------------

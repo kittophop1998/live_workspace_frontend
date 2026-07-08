@@ -5,6 +5,7 @@ import { apiErrorMessage, clearSession, setRoomCode, setToken } from "@/lib/api"
 import { dResponseSchema, workspaceApi, type RoomSession } from "@/services/workspace.service";
 import { inferField } from "@/lib/codegen";
 import { buildResponseSchemas, useResponseSchemaStore } from "@/lib/responseSchemas";
+import { seedSchemaTreesFromResources } from "@/lib/schemaTreeSync";
 import type { ImportedOperation } from "@/lib/specImport";
 import type { FieldDiff } from "@/lib/proposalDiff";
 import type {
@@ -150,6 +151,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       set((s) => {
         // Seed the response-schema cache from server-owned Resource.responses.
         useResponseSchemaStore.getState().seedFromResources(snap.resources);
+        seedSchemaTreesFromResources(snap.resources);
         const selectedId =
           s.selectedId && snap.resources.some((r) => r.id === s.selectedId)
             ? s.selectedId
@@ -202,6 +204,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         if (fromWs && rev <= s.rev) return {};
         // Keep the response-schema cache in step with server data (REST + WS echo).
         useResponseSchemaStore.getState().seedFromResources([resource]);
+        seedSchemaTreesFromResources([resource]);
         const exists = s.resources.some((r) => r.id === resource.id);
         return {
           rev: Math.max(s.rev, rev),
@@ -239,6 +242,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         if (fromWs && rev <= s.rev) return {};
         if (resources.length === 0) return {};
         useResponseSchemaStore.getState().seedFromResources(resources);
+        seedSchemaTreesFromResources(resources);
         const incoming = new Set(resources.map((r) => r.id));
         const kept = s.resources.filter((r) => !incoming.has(r.id));
         return { rev: Math.max(s.rev, rev), resources: [...resources, ...kept] };

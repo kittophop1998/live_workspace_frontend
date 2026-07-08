@@ -22,15 +22,30 @@ import type {
 } from "@/lib/types";
 
 // ---- Wire shapes (snake_case) --------------------------------------------
+interface WireFieldValidation {
+  min_length?: number | null;
+  max_length?: number | null;
+  minimum?: number | null;
+  maximum?: number | null;
+  pattern?: string | null;
+  format?: string | null;
+}
 interface WireField {
   id: string;
   key: string;
   type: string;
   required: boolean;
+  nullable?: boolean;
   state: string;
   change: string;
   description?: string | null;
   value?: JsonValue | null;
+  example?: JsonValue | null;
+  default?: JsonValue | null;
+  enum_values?: string[] | null;
+  validation?: WireFieldValidation | null;
+  children?: WireField[] | null;
+  items?: WireField | null;
 }
 interface WireResponseSchema {
   status: number;
@@ -92,10 +107,26 @@ export const nField = (f: WireField): SchemaField => ({
   key: f.key,
   type: f.type as DataType,
   required: f.required,
+  nullable: f.nullable ?? undefined,
   state: f.state as FieldState,
   change: f.change as SchemaField["change"],
   description: f.description ?? undefined,
   value: f.value ?? undefined,
+  example: f.example ?? undefined,
+  default: f.default ?? undefined,
+  enumValues: f.enum_values ?? undefined,
+  validation: f.validation
+    ? {
+        minLength: f.validation.min_length ?? undefined,
+        maxLength: f.validation.max_length ?? undefined,
+        minimum: f.validation.minimum ?? undefined,
+        maximum: f.validation.maximum ?? undefined,
+        pattern: f.validation.pattern ?? undefined,
+        format: f.validation.format ?? undefined,
+      }
+    : undefined,
+  children: f.children ? f.children.map(nField) : undefined,
+  items: f.items ? nField(f.items) : undefined,
 });
 
 export const nResponseSchema = (r: WireResponseSchema): ResponseSchema => ({
@@ -122,16 +153,33 @@ export const nResource = (r: WireResource): Resource => ({
   updatedBy: r.updated_by,
 });
 
-// ---- Denormalizers (domain → wire) — for the responses PUT body -----------
+// ---- Denormalizers (domain → wire) — for the responses/request-fields PUT
+// bodies -----------------------------------------------------------------
 const dField = (f: SchemaField): WireField => ({
   id: f.id,
   key: f.key,
   type: f.type,
   required: f.required,
+  nullable: f.nullable ?? undefined,
   state: f.state,
   change: f.change,
   description: f.description ?? null,
   value: f.value ?? null,
+  example: f.example ?? null,
+  default: f.default ?? null,
+  enum_values: f.enumValues ?? null,
+  validation: f.validation
+    ? {
+        min_length: f.validation.minLength ?? null,
+        max_length: f.validation.maxLength ?? null,
+        minimum: f.validation.minimum ?? null,
+        maximum: f.validation.maximum ?? null,
+        pattern: f.validation.pattern ?? null,
+        format: f.validation.format ?? null,
+      }
+    : undefined,
+  children: f.children ? f.children.map(dField) : undefined,
+  items: f.items ? dField(f.items) : undefined,
 });
 
 export const dResponseSchema = (s: ResponseSchema): WireResponseSchema => ({
@@ -339,6 +387,17 @@ export const workspaceApi = {
   async setResponses(resourceId: string, schemas: ResponseSchema[]): Promise<ResourceMutation> {
     const res = await apiClient.put(`/resources/${resourceId}/responses`, {
       responses: schemas.map(dResponseSchema),
+    });
+    const data = unwrap<{ rev: number; resource: WireResource }>(res.data);
+    return { rev: data.rev, resource: nResource(data.resource) };
+  },
+
+  // Replace the resource's whole request-body field tree (nested objects/
+  // arrays included). Backs the Visual Builder's write-through save
+  // (src/lib/schemaTreeSync.ts) — mirrors setResponses below.
+  async setRequestFields(resourceId: string, fields: SchemaField[]): Promise<ResourceMutation> {
+    const res = await apiClient.put(`/resources/${resourceId}/request-fields`, {
+      fields: fields.map(dField),
     });
     const data = unwrap<{ rev: number; resource: WireResource }>(res.data);
     return { rev: data.rev, resource: nResource(data.resource) };

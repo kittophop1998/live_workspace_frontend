@@ -8,7 +8,6 @@ import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import { EMPTY_NODES, findNode, isContainer, useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
 import { SchemaNodeRow, type DropPos, type RowCallbacks } from "@/components/schema/SchemaNodeRow";
 import { FieldDetailPanel } from "@/components/schema/FieldDetailPanel";
-import { useWorkspaceStore } from "@/lib/store";
 import { EmptyState } from "@/components/common";
 import { line } from "@/components/theme";
 
@@ -28,13 +27,6 @@ export function SchemaTreeEditor({ scope }: { scope: string }) {
   const duplicateNode = useSchemaTreeStore((s) => s.duplicateNode);
   const deleteNode = useSchemaTreeStore((s) => s.deleteNode);
   const moveNode = useSchemaTreeStore((s) => s.moveNode);
-  const removeField = useWorkspaceStore((s) => s.removeField);
-
-  // The request-body tree seeds 1:1 from the resource's backend fields
-  // (schemaConvert.seedFromFields). Deleting a top-level field from the
-  // client-only tree alone lets it re-seed on a fresh machine, so mirror the
-  // delete onto the backend field it maps to (by key) so removal persists.
-  const reqResourceId = scope.endsWith("::req") ? scope.slice(0, -"::req".length) : null;
 
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set(collectContainerIds(nodes)));
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -78,16 +70,7 @@ export function SchemaTreeEditor({ scope }: { scope: string }) {
       if (newId) setSelectedId(newId);
     },
     onDelete: (id) => {
-      // Only top-level nodes map to a backend field; nested nodes stay local.
-      const topLevel = nodes.find((n) => n.id === id);
       deleteNode(scope, id);
-      if (reqResourceId && topLevel) {
-        const field = useWorkspaceStore
-          .getState()
-          .resources.find((r) => r.id === reqResourceId)
-          ?.fields.find((f) => f.key === topLevel.key && f.change !== "removed");
-        if (field) removeField(reqResourceId, field.id);
-      }
       if (selectedId === id) {
         setSelectedId(null);
         setDetailOpen(false);

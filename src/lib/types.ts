@@ -24,24 +24,48 @@ export type JsonValue =
 export type DataType =
   | "string"
   | "number"
+  | "integer"
   | "boolean"
   | "uuid"
   | "timestamp"
   | "json"
   | "string[]"
   | "number[]"
-  | "enum";
+  | "enum"
+  | "object"
+  | "array"
+  | "null";
 
+export interface FieldValidation {
+  minLength?: number;
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
+  format?: string;
+}
+
+// Recursive: request/response body field. `children` holds nested properties
+// for an "object" field, `items` holds the element schema for an "array"
+// field — mirrors the Visual Builder's SchemaNode (lib/schemaTree.ts) so the
+// tree can be saved/loaded 1:1 instead of living only in localStorage.
 export interface SchemaField {
   id: string;
   key: string;
   type: DataType;
   required: boolean;
+  nullable?: boolean;
   state: FieldState;
   change: FieldChange;
   description?: string;
-  // Only for `type: "json"` — the nested JSON shape/sample, edited as raw JSON.
+  // Legacy: only for `type: "json"` — the nested JSON shape/sample.
   value?: JsonValue;
+  example?: JsonValue;
+  default?: JsonValue;
+  enumValues?: string[];
+  validation?: FieldValidation;
+  children?: SchemaField[];
+  items?: SchemaField;
 }
 
 export type ResourceKind = "endpoint" | "database" | "model";

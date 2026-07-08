@@ -8,6 +8,7 @@ import { useWorkspaceSync } from "@/lib/useWorkspaceSync";
 import { useWorkspaceStore } from "@/lib/store";
 import { useResponseSchemaStore } from "@/lib/responseSchemas";
 import { useSchemaTreeStore } from "@/lib/schemaTree";
+import { initSchemaTreeSync } from "@/lib/schemaTreeSync";
 import { useBookmarkStore } from "@/lib/bookmarks";
 import { useApiTesterStore } from "@/lib/apiTester";
 import { useProposalStore } from "@/lib/proposals";
@@ -119,6 +120,9 @@ export function WorkspaceLayout() {
     hydrateApiTester();
     hydrateProposals();
     hydrateStories();
+    // Must run after hydrateSchemaTrees so the initial localStorage merge
+    // isn't mistaken for a fresh local edit that needs saving.
+    initSchemaTreeSync();
   }, [hydrateResponseSchemas, hydrateSchemaTrees, hydrateBookmarks, hydrateApiTester, hydrateProposals, hydrateStories]);
 
   const leftW = leftCollapsed ? "0px" : "280px";
