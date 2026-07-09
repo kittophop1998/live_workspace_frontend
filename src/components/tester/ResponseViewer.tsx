@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Collapse, Stack, Typography } from "@mui/material";
+import { Box, Collapse, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutlineOutlined";
+import ContentCopyIcon from "@mui/icons-material/ContentCopyOutlined";
+import CheckIcon from "@mui/icons-material/Check";
 import { JsonView } from "@/components/schema/JsonView";
 import { MonoTag } from "@/components/common";
 import { line } from "@/components/theme";
@@ -30,6 +32,17 @@ function prettyBody(body: string): { code: string; json: boolean } {
 
 export function ResponseViewer({ result, loading }: { result: TestResult | null; loading: boolean }) {
   const [showHeaders, setShowHeaders] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyBody = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable (e.g. insecure context) — ignore */
+    }
+  };
 
   if (loading) {
     return (
@@ -107,9 +120,18 @@ export function ResponseViewer({ result, loading }: { result: TestResult | null;
       ) : null}
 
       <Box sx={{ mt: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: "#4B5563" }}>
-          Response body {json ? "" : "(raw)"}
-        </Typography>
+        <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: "#4B5563" }}>
+            Response body {json ? "" : "(raw)"}
+          </Typography>
+          {result.body ? (
+            <Tooltip title={copied ? "Copied!" : "Copy body"}>
+              <IconButton size="small" onClick={() => copyBody(code)} sx={{ p: 0.4, color: copied ? "#16A34A" : "#6B7280" }}>
+                {copied ? <CheckIcon sx={{ fontSize: 14 }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
+              </IconButton>
+            </Tooltip>
+          ) : null}
+        </Stack>
         <Box sx={{ mt: 0.5 }}>
           {result.body ? <JsonView code={code} maxHeight={340} /> : (
             <Typography variant="body2" sx={{ color: "#94A3B8", fontStyle: "italic" }}>(empty body)</Typography>
