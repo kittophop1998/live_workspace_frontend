@@ -55,7 +55,6 @@ function DetailForm({ scope, node, onClose }: { scope: string; node: SchemaNode;
 
   const [key, setKey] = useState(node.key);
   const [description, setDescription] = useState(node.description ?? "");
-  const [example, setExample] = useState(jsonish(node.example));
   const [defaultVal, setDefaultVal] = useState(jsonish(node.default));
   const [enumVal, setEnumVal] = useState((node.enumValues ?? []).join(", "));
   const v = node.validation ?? {};
@@ -166,16 +165,13 @@ function DetailForm({ scope, node, onClose }: { scope: string; node: SchemaNode;
           </Box>
         ) : null}
 
-        <Stack direction="row" spacing={2}>
-          <Box sx={{ flex: 1 }}>
-            <SectionLabel>Example</SectionLabel>
-            <TextField fullWidth size="small" placeholder="sample value" value={example} onChange={(e) => setExample(e.target.value)} onBlur={() => patch({ example: parseJsonish(example) })} sx={inputSx} />
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <SectionLabel>Default</SectionLabel>
-            <TextField fullWidth size="small" placeholder="default" value={defaultVal} onChange={(e) => setDefaultVal(e.target.value)} onBlur={() => patch({ default: parseJsonish(defaultVal) })} sx={inputSx} />
-          </Box>
-        </Stack>
+        <Box>
+          <SectionLabel>Default</SectionLabel>
+          <TextField fullWidth size="small" placeholder="default" value={defaultVal} onChange={(e) => setDefaultVal(e.target.value)} onBlur={() => patch({ default: parseJsonish(defaultVal) })} sx={inputSx} />
+          <Typography sx={{ fontSize: 11.5, color: "#94A3B8", mt: 0.75 }}>
+            Example values are edited in the Example JSON tab.
+          </Typography>
+        </Box>
 
         <Divider />
 

@@ -44,6 +44,54 @@ export function jsonValueToNodes(obj: Record<string, JsonValue>): SchemaNode[] {
   });
 }
 
+// ---- example JSON → tree (editable Example tab) ----------------------------
+
+// Rebuild the tree from a pasted example payload. Fields whose key matches an
+// existing node keep their metadata (description, validation, enum, required,
+// state…) and only get their example value / shape updated; keys absent from
+// the pasted JSON are dropped so the Example tab shows exactly what was pasted.
+function mergeExampleNode(existing: SchemaNode | undefined, key: string, value: JsonValue): SchemaNode {
+  if (!existing) {
+    const fresh = jsonValueToNode(key, value);
+    fresh.required = true;
+    return fresh;
+  }
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    const prev = existing.type === "object" ? existing.children ?? [] : [];
+    const next: SchemaNode = { ...existing, type: "object", children: mergeExampleIntoNodes(prev, value as Record<string, JsonValue>) };
+    delete next.items;
+    delete next.example; // the children carry the example values now
+    return next;
+  }
+  if (Array.isArray(value)) {
+    const prevItems = existing.type === "array" ? existing.items : undefined;
+    const next: SchemaNode = { ...existing, type: "array" };
+    delete next.children;
+    delete next.example;
+    if (value.length) next.items = mergeExampleNode(prevItems, "items", value[0]);
+    else if (prevItems) next.items = prevItems;
+    // A single-element array regenerates faithfully from `items`; keep the
+    // pasted array verbatim otherwise so no elements are lost.
+    if (value.length !== 1) next.example = value;
+    return next;
+  }
+  // scalar (or null) — keep the node's declared type unless it was a container
+  const next: SchemaNode = { ...existing, example: value };
+  delete next.children;
+  delete next.items;
+  if (value === null) next.nullable = true;
+  if (existing.type === "object" || existing.type === "array") {
+    next.type = value === null ? "null" : jsonValueToNode(key, value).type;
+  }
+  return next;
+}
+
+export function mergeExampleIntoNodes(nodes: SchemaNode[], example: Record<string, JsonValue>): SchemaNode[] {
+  return Object.entries(example).map(([k, v]) =>
+    mergeExampleNode(nodes.find((n) => n.key === k), k, v),
+  );
+}
+
 // ---- backend flat fields → tree (initial seed) ----------------------------
 
 // Only legacy tokens are ever looked up here (see fieldToNode below) —

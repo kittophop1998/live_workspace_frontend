@@ -9,12 +9,12 @@ import DataObjectIcon from "@mui/icons-material/DataObjectOutlined";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { EMPTY_NODES, useSchemaTreeStore } from "@/lib/schemaTree";
-import { jsonSchemaToNodes, nodesToExample, nodesToJsonSchema, nodesToTypeScript, seedFromFields } from "@/lib/schemaConvert";
+import { jsonSchemaToNodes, mergeExampleIntoNodes, nodesToExample, nodesToJsonSchema, nodesToTypeScript, seedFromFields } from "@/lib/schemaConvert";
 import { SchemaTreeEditor } from "@/components/schema/SchemaTreeEditor";
 import { JsonView } from "@/components/schema/JsonView";
 import { AskAiPanel } from "@/components/schema/AskAiPanel";
 import { line } from "@/components/theme";
-import type { SchemaField } from "@/lib/types";
+import type { JsonValue, SchemaField } from "@/lib/types";
 
 type Mode = "visual" | "schema" | "example" | "typescript";
 
@@ -131,14 +131,75 @@ function JsonSchemaMode({ scope }: { scope: string }) {
 
 function ExampleMode({ scope }: { scope: string }) {
   const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
+  const setNodes = useSchemaTreeStore((s) => s.setNodes);
   const text = useMemo(() => JSON.stringify(nodesToExample(nodes), null, 2), [nodes]);
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(text);
+  const [err, setErr] = useState<string | null>(null);
+
+  const startEdit = () => {
+    setDraft(text);
+    setErr(null);
+    setEditing(true);
+  };
+  const format = () => {
+    try {
+      setDraft(JSON.stringify(JSON.parse(draft), null, 2));
+      setErr(null);
+    } catch {
+      setErr("Invalid JSON — cannot format");
+    }
+  };
+  const apply = () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(draft);
+    } catch {
+      setErr("Invalid JSON");
+      return;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setErr("Top level must be a JSON object");
+      return;
+    }
+    setNodes(scope, mergeExampleIntoNodes(nodes, parsed as Record<string, JsonValue>));
+    setEditing(false);
+    setErr(null);
+  };
+
   return (
     <Box>
       <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center" }}>
-        <Typography sx={{ fontSize: 12, color: "#94A3B8", flex: 1 }}>Generated from the schema · read-only</Typography>
-        <Button size="small" variant="outlined" onClick={() => navigator.clipboard?.writeText(text)}>Copy</Button>
+        <Typography sx={{ fontSize: 12, color: "#94A3B8", flex: 1 }}>
+          {editing ? "Editing — Apply sets field examples & rebuilds the tree" : "Synced with the Visual Builder · paste a real payload via Edit"}
+        </Typography>
+        {editing ? (
+          <>
+            {err ? <Typography sx={{ fontSize: 12, color: "#DC2626", fontWeight: 700 }}>{err}</Typography> : null}
+            <Button size="small" variant="outlined" onClick={format}>Format</Button>
+            <Button size="small" variant="outlined" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button size="small" variant="contained" onClick={apply}>Apply</Button>
+          </>
+        ) : (
+          <>
+            <Button size="small" variant="outlined" onClick={() => navigator.clipboard?.writeText(text)}>Copy</Button>
+            <Button size="small" variant="outlined" startIcon={<EditOutlinedIcon />} onClick={startEdit}>Edit</Button>
+          </>
+        )}
       </Stack>
-      <JsonView code={text} />
+      {editing ? (
+        <TextField
+          fullWidth
+          multiline
+          minRows={16}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          sx={{ "& textarea": { fontFamily: "var(--font-mono,monospace)", fontSize: 12.5, lineHeight: 1.7 } }}
+        />
+      ) : (
+        <JsonView code={text} />
+      )}
     </Box>
   );
 }
