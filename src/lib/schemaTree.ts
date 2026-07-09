@@ -249,7 +249,12 @@ export const useSchemaTreeStore = create<SchemaTreeState>((set, get) => {
 
     // Merge persisted trees over current so any scope seeded before hydration
     // (child effects run before the parent's hydrate effect) is not clobbered.
-    hydrate: () => set((s) => ({ trees: { ...s.trees, ...load() }, hydrated: true })),
+    // Once-only: a re-run (StrictMode double-invokes the mount effect) would
+    // re-create every tree reference AFTER initSchemaTreeSync subscribed, and
+    // the sync would push all localStorage trees to the backend concurrently
+    // on every page load.
+    hydrate: () =>
+      set((s) => (s.hydrated ? {} : { trees: { ...s.trees, ...load() }, hydrated: true })),
 
     ensureSeed: (scope, seed) =>
       set((s) => {
