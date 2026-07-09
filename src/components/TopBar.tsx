@@ -11,6 +11,7 @@ import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar } from "@/components/common";
 import { ImportApiDialog } from "@/components/ImportApiDialog";
+import { ExportSpecButton } from "@/components/ExportSpecButton";
 import { ink, line, pastel, pastelInk, secondaryText } from "@/components/theme";
 
 export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; onOpenRight?: () => void } = {}) {
@@ -141,7 +142,14 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
         ))}
       </Stack>
 
-      <Box sx={{ ml: "auto" }}>{view === "workspace" ? <ImportApiDialog /> : null}</Box>
+      <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 1 }}>
+        {view === "workspace" ? (
+          <>
+            <ExportSpecButton />
+            <ImportApiDialog />
+          </>
+        ) : null}
+      </Box>
 
       {/* Shareable workspace code */}
       {roomCode && (
