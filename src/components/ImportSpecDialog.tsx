@@ -96,11 +96,13 @@ export function ImportSpecDialog({ resourceId }: { resourceId: string }) {
     if (op.name) renameResource(resourceId, op.name);
 
     // Request body — the Visual Builder + "Try it" read the schema TREE, so overwrite
-    // it directly (source of truth). `importTypedFields` keeps backend fields/codegen
-    // roughly in sync but only ever adds new keys, so it alone can't reflect the spec.
+    // it directly (source of truth). `importTypedFields` replaces the backend fields to
+    // match (deletes the endpoint's old fields first), so codegen/export reflect the
+    // spec too. Call it unconditionally: an operation with no body must still clear
+    // whatever request fields the endpoint had before.
     const requestFields = op.requestFields.map((f) => toField(f, "added"));
     setTreeNodes(`${resourceId}::req`, seedFromFields(requestFields));
-    if (op.requestFields.length) importTypedFields(resourceId, op.requestFields);
+    importTypedFields(resourceId, op.requestFields);
 
     // Responses — write the per-status store, and reset each status' tree so a
     // re-import of an already-seeded status reflects the new spec too.

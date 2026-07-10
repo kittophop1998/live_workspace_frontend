@@ -358,15 +358,21 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       }
     },
 
-    // Like importJsonFields but with explicit types — used by the spec importer to
-    // seed an endpoint's request body. Existing keys are skipped (no overwrite/409).
+    // Replace an endpoint's request-body fields with the spec's — used by the spec
+    // importer (Import Specification). The endpoint's existing fields are deleted
+    // first, so re-importing a spec onto an endpoint is a clean replace of JUST that
+    // endpoint (no stale keys left behind) rather than a merge with what was there.
     importTypedFields: async (resourceId, fields) => {
-      const resource = get().resources.find((r) => r.id === resourceId);
-      const existing = new Set((resource?.fields ?? []).map((f) => f.key));
-      for (const f of fields) {
-        if (existing.has(f.key)) continue;
-        existing.add(f.key);
-        try {
+      try {
+        const resource = get().resources.find((r) => r.id === resourceId);
+        for (const stale of resource?.fields ?? []) {
+          const { rev, resource: pruned } = await workspaceApi.deleteField(resourceId, stale.id);
+          get().upsertResource(rev, pruned);
+        }
+        const added = new Set<string>();
+        for (const f of fields) {
+          if (added.has(f.key)) continue; // guard against duplicate keys in the spec
+          added.add(f.key);
           const { rev, resource: updated } = await workspaceApi.addField(resourceId, {
             key: f.key,
             type: f.type,
@@ -379,10 +385,9 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
               ? { ...updated, fields: updated.fields.map((x) => (x.key === f.key ? { ...x, value: f.value } : x)) }
               : updated;
           get().upsertResource(rev, merged);
-        } catch (err) {
-          fail(err);
-          return;
         }
+      } catch (err) {
+        fail(err);
       }
     },
 
