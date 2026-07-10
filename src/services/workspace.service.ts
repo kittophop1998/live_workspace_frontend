@@ -18,6 +18,8 @@ import type {
   ResourceKind,
   ResponseSchema,
   SchemaField,
+  TaskLog,
+  TaskLogKind,
   TeamRole,
   WorkspaceSnapshot,
 } from "@/lib/types";
@@ -83,6 +85,16 @@ interface WireChatMessage {
   body: string;
   at: string;
 }
+interface WireTaskLog {
+  id: string;
+  author_id: string;
+  author: string;
+  role: string;
+  kind: string;
+  body: string;
+  resource_id?: string | null;
+  at: string;
+}
 interface WireActivity {
   id: string;
   actor: string;
@@ -109,6 +121,7 @@ interface WireSnapshot {
   activity: WireActivity[];
   collaborators: WireCollaborator[];
   chat?: WireChatMessage[] | null; // WS snapshot only (api-spec §2)
+  task_logs?: WireTaskLog[] | null; // WS snapshot only (api-spec §2)
 }
 
 // ---- Normalizers (wire → domain) -----------------------------------------
@@ -217,6 +230,17 @@ export const nChatMessage = (m: WireChatMessage): ChatMessage => ({
   at: m.at,
 });
 
+export const nTaskLog = (t: WireTaskLog): TaskLog => ({
+  id: t.id,
+  authorId: t.author_id,
+  author: t.author,
+  role: t.role as TeamRole,
+  kind: t.kind as TaskLogKind,
+  body: t.body,
+  resourceId: t.resource_id ?? undefined,
+  at: t.at,
+});
+
 export const nActivity = (a: WireActivity): ActivityEvent => ({
   id: a.id,
   actor: a.actor,
@@ -247,6 +271,7 @@ export const nSnapshot = (s: WireSnapshot): WorkspaceSnapshot => ({
   collaborators: (s.collaborators ?? []).map(nCollaborator),
   // Keep undefined when absent (REST /workspace) so the store preserves chat.
   chat: s.chat ? s.chat.map(nChatMessage) : undefined,
+  taskLogs: s.task_logs ? s.task_logs.map(nTaskLog) : undefined,
 });
 
 // ---- Mutation result shapes ----------------------------------------------
@@ -447,5 +472,21 @@ export const workspaceApi = {
     const res = await apiClient.post("/chat", { body });
     const data = unwrap<{ message: WireChatMessage }>(res.data);
     return nChatMessage(data.message);
+  },
+
+  // Backend work-update log (api-spec §3 /task-logs). Append-only; no rev involved.
+  async getTaskLogs(): Promise<TaskLog[]> {
+    const res = await apiClient.get("/task-logs");
+    return (unwrap<WireTaskLog[]>(res.data) ?? []).map(nTaskLog);
+  },
+
+  async postTaskLog(input: { kind: TaskLogKind; body: string; resourceId?: string }): Promise<TaskLog> {
+    const res = await apiClient.post("/task-logs", {
+      kind: input.kind,
+      body: input.body,
+      resource_id: input.resourceId ?? "",
+    });
+    const data = unwrap<{ task_log: WireTaskLog }>(res.data);
+    return nTaskLog(data.task_log);
   },
 };

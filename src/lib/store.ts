@@ -24,6 +24,8 @@ import type {
   ResourceKind,
   RightTab,
   SchemaField,
+  TaskLog,
+  TaskLogKind,
   WorkspaceSnapshot,
   WorkspaceView,
 } from "@/lib/types";
@@ -31,6 +33,7 @@ import type {
 const FIELD_STATE_CYCLE: FieldState[] = ["draft", "ready", "breaking"];
 const ACTIVITY_CAP = 200;
 const CHAT_CAP = 500;
+const TASKLOG_CAP = 500;
 
 interface StoreState {
   // Synced document (server-owned)
@@ -40,6 +43,8 @@ interface StoreState {
   activity: ActivityEvent[];
   // Project-wide team chat — append-only, deduped by id (no rev merging).
   chat: ChatMessage[];
+  // Backend work-update log — append-only, deduped by id (no rev merging).
+  taskLogs: TaskLog[];
 
   // UI / session
   view: WorkspaceView;
@@ -74,6 +79,8 @@ interface StoreState {
   pushActivity: (event: ActivityEvent) => void;
   setChat: (messages: ChatMessage[]) => void;
   pushChatMessage: (message: ChatMessage) => void;
+  setTaskLogs: (entries: TaskLog[]) => void;
+  pushTaskLog: (entry: TaskLog) => void;
   upsertPresence: (p: Presence) => void;
   dropPresence: (clientId: string) => void;
   prunePresences: () => void;
@@ -105,6 +112,7 @@ interface StoreState {
   deleteResource: (resourceId: string) => void;
   addComment: (resourceId: string, fieldId: string | undefined, body: string) => void;
   sendChatMessage: (body: string) => void;
+  addTaskLog: (input: { kind: TaskLogKind; body: string; resourceId?: string }) => void;
   // Apply a merged proposal's diff to the published endpoint via the real field
   // APIs (client-only Proposal Mode — see lib/proposals.ts). Returns success.
   mergeProposalChanges: (resourceId: string, diffs: FieldDiff[]) => Promise<boolean>;
@@ -139,6 +147,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
     comments: [],
     activity: [],
     chat: [],
+    taskLogs: [],
 
     view: "workspace",
     selectedId: "",
@@ -173,6 +182,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
           selectedId,
           // REST /workspace omits chat — keep what we already have.
           ...(snap.chat ? { chat: snap.chat } : {}),
+          ...(snap.taskLogs ? { taskLogs: snap.taskLogs } : {}),
         };
       }),
 
@@ -202,6 +212,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         comments: [],
         activity: [],
         chat: [],
+        taskLogs: [],
         collaborators: [],
         presences: {},
         selectedId: "",
@@ -289,6 +300,14 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       set((s) => {
         if (s.chat.some((m) => m.id === message.id)) return {};
         return { chat: [...s.chat, message].slice(-CHAT_CAP) };
+      }),
+
+    setTaskLogs: (entries) => set({ taskLogs: entries.slice(-TASKLOG_CAP) }),
+
+    pushTaskLog: (entry) =>
+      set((s) => {
+        if (s.taskLogs.some((t) => t.id === entry.id)) return {};
+        return { taskLogs: [...s.taskLogs, entry].slice(-TASKLOG_CAP) };
       }),
 
     upsertPresence: (p) => set((s) => ({ presences: { ...s.presences, [p.clientId]: p } })),
@@ -535,6 +554,17 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       try {
         const message = await workspaceApi.sendChat(body);
         get().pushChatMessage(message);
+      } catch (err) {
+        fail(err);
+      }
+    },
+
+    // The WS `task_log.created` echo is deduped by id in pushTaskLog, so applying
+    // the REST response here never double-inserts.
+    addTaskLog: async (input) => {
+      try {
+        const entry = await workspaceApi.postTaskLog(input);
+        get().pushTaskLog(entry);
       } catch (err) {
         fail(err);
       }

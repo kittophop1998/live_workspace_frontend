@@ -10,8 +10,9 @@ import {
   nPresence,
   nResource,
   nSnapshot,
+  nTaskLog,
 } from "@/services/workspace.service";
-import type { ActivityEvent, ChatMessage, Comment, Presence, Resource, WorkspaceSnapshot } from "@/lib/types";
+import type { ActivityEvent, ChatMessage, Comment, Presence, Resource, TaskLog, WorkspaceSnapshot } from "@/lib/types";
 
 export const HEARTBEAT_MS = 3000;
 export const PRESENCE_TTL_MS = 8000;
@@ -31,6 +32,7 @@ export interface RealtimeHandlers {
   onCommentDelete: (rev: number, commentId: string) => void;
   onActivity: (event: ActivityEvent) => void;
   onChatMessage: (message: ChatMessage) => void;
+  onTaskLog: (entry: TaskLog) => void;
   onPresence: (presence: Presence) => void;
   onPresenceLeave: (clientId: string) => void;
   onStatus?: (connected: boolean) => void;
@@ -102,6 +104,9 @@ export function connectRealtime(opts: RealtimeOptions): RealtimeConnection {
         break;
       case "chat.created":
         handlers.onChatMessage(nChatMessage(payload.message as never));
+        break;
+      case "task_log.created":
+        handlers.onTaskLog(nTaskLog(payload.task_log as never));
         break;
       case "presence.update":
         handlers.onPresence(nPresence(payload as never));

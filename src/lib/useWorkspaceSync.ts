@@ -15,18 +15,20 @@ export function useWorkspaceSync(): void {
     const clientId = newClientId();
     let cancelled = false;
 
-    // 1. Initial hydrate (snapshot + my identity + team chat history).
+    // 1. Initial hydrate (snapshot + my identity + team chat + task-log history).
     (async () => {
       try {
-        const [snapshot, me, chat] = await Promise.all([
+        const [snapshot, me, chat, taskLogs] = await Promise.all([
           workspaceApi.getSnapshot(),
           workspaceApi.getMe(),
           workspaceApi.getChat(),
+          workspaceApi.getTaskLogs(),
         ]);
         if (cancelled) return;
         store.applySnapshot(snapshot);
         store.setMe(me);
         store.setChat(chat);
+        store.setTaskLogs(taskLogs);
         store.setApiError(null);
       } catch (err) {
         if (!cancelled) store.setApiError(apiErrorMessage(err));
@@ -50,6 +52,7 @@ export function useWorkspaceSync(): void {
         onCommentDelete: (rev, id) => useWorkspaceStore.getState().removeComment(rev, id, true),
         onActivity: (event) => useWorkspaceStore.getState().pushActivity(event),
         onChatMessage: (message) => useWorkspaceStore.getState().pushChatMessage(message),
+        onTaskLog: (entry) => useWorkspaceStore.getState().pushTaskLog(entry),
         onPresence: (presence) => useWorkspaceStore.getState().upsertPresence(presence),
         onPresenceLeave: (id) => useWorkspaceStore.getState().dropPresence(id),
       },

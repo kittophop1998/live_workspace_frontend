@@ -121,6 +121,23 @@ export interface ChatMessage {
   at: string; // ISO
 }
 
+// Backend work-update log entry (api-spec §3 /task-logs, §4 `task_log.created`).
+// A human-written note of what the backend shipped ("added / changed / fixed X"),
+// distinct from the auto-generated ActivityEvent. Append-only, outside the rev'd
+// aggregate — clients dedupe by id.
+export type TaskLogKind = "added" | "changed" | "fixed" | "removed" | "note";
+
+export interface TaskLog {
+  id: string;
+  authorId: string;
+  author: string;
+  role: TeamRole;
+  kind: TaskLogKind;
+  body: string;
+  resourceId?: string; // optional link to a resource; "" = workspace-wide note
+  at: string; // ISO
+}
+
 export interface Collaborator {
   id: string;
   name: string;
@@ -145,6 +162,9 @@ export interface WorkspaceSnapshot {
   // Only the WS snapshot frame carries chat; REST /workspace omits it and the
   // store keeps its current chat state when this is undefined.
   chat?: ChatMessage[];
+  // Like chat, only the WS snapshot frame carries task logs; undefined = keep
+  // the store's current task-log state.
+  taskLogs?: TaskLog[];
 }
 
 // Response schemas per endpoint, keyed by HTTP status. Persisted on the backend
@@ -157,7 +177,7 @@ export interface ResponseSchema {
 }
 
 export type ExportFormat = "typescript" | "json";
-export type RightTab = "activity" | "comments" | "chat";
+export type RightTab = "activity" | "comments" | "chat" | "updates";
 
 // Top-level app view — the workspace (schema collab), the E2E flow tester, and
 // the additive API Story view. Endpoint editing always lives in
