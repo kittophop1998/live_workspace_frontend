@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Stack } from "@mui/material";
+import { Box } from "@mui/material";
 import HistoryIcon from "@mui/icons-material/History";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
@@ -23,7 +23,21 @@ export function RightPanel() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", borderLeft: `1px solid ${line}`, bgcolor: "#FBFAF7" }}>
-      <Stack direction="row" spacing={0.75} sx={{ px: 1.75, pt: 1.25, alignItems: "flex-end", borderBottom: `1px solid ${line}` }}>
+      {/* Tabs wrap to a second row when the panel is too narrow to hold all four
+          on one line (desktop 340px column / mobile drawer) — so no tab is ever
+          clipped past the edge and left unclickable. */}
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          columnGap: 0.75,
+          rowGap: 0.75,
+          px: 1.75,
+          pt: 1.25,
+          alignItems: "flex-end",
+          borderBottom: `1px solid ${line}`,
+        }}
+      >
         <BookmarkTab
           label="Activity"
           icon={<HistoryIcon sx={{ fontSize: 16 }} />}
@@ -52,8 +66,7 @@ export function RightPanel() {
           active={tab === "updates"}
           onClick={() => setTab("updates" as RightTab)}
         />
-        <Box sx={{ ml: "auto", mb: 1, width: 7, height: 7, bgcolor: "#8B7CF6", boxShadow: "4px 0 0 #D9D3F7" }} />
-      </Stack>
+      </Box>
       <Box sx={{ flex: 1, minHeight: 0 }}>
         {tab === "comments" ? (
           <CommentThread />
