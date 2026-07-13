@@ -8,10 +8,12 @@ import CheckIcon from "@mui/icons-material/Check";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
+import FeedbackOutlinedIcon from "@mui/icons-material/FeedbackOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar } from "@/components/common";
 import { ImportApiDialog } from "@/components/ImportApiDialog";
 import { ExportSpecButton } from "@/components/ExportSpecButton";
+import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 import { ink, line, pastel, pastelInk, secondaryText } from "@/components/theme";
 
 export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; onOpenRight?: () => void } = {}) {
@@ -23,6 +25,7 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
   const view = useWorkspaceStore((s) => s.view);
   const setView = useWorkspaceStore((s) => s.setView);
   const [copied, setCopied] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const copyCode = () => {
     if (!roomCode) return;
@@ -149,7 +152,13 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
             <ImportApiDialog />
           </>
         ) : null}
+        <Tooltip title="Report an issue or suggest an improvement">
+          <IconButton onClick={() => setFeedbackOpen(true)} sx={{ width: 36, height: 36 }} aria-label="Report an issue">
+            <FeedbackOutlinedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
       </Box>
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
       {/* Shareable workspace code */}
       {roomCode && (
