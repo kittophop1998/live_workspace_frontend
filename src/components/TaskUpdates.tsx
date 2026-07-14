@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, Chip, InputBase, MenuItem, Select, Stack, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import ThumbUpAltRoundedIcon from "@mui/icons-material/ThumbUpAltRounded";
+import ThumbUpOffAltRoundedIcon from "@mui/icons-material/ThumbUpOffAltRounded";
 import { useWorkspaceStore } from "@/lib/store";
 import { Avatar, EmptyState, relativeTime, useNow } from "@/components/common";
 import { blue, blueSoft, ink, line, pastel, pastelInk, secondaryText } from "@/components/theme";
@@ -33,6 +35,7 @@ export function TaskUpdates() {
   const selectedId = useWorkspaceStore((s) => s.selectedId);
   const me = useWorkspaceStore((s) => s.me);
   const addTaskLog = useWorkspaceStore((s) => s.addTaskLog);
+  const toggleTaskLogLike = useWorkspaceStore((s) => s.toggleTaskLogLike);
 
   const [draft, setDraft] = useState("");
   const [kind, setKind] = useState<TaskLogKind>("added");
@@ -85,6 +88,7 @@ export function TaskUpdates() {
             {taskLogs.map((t) => {
               const ks = kindStyle[t.kind] ?? kindStyle.note;
               const linked = resourceName(t.resourceId);
+              const liked = !!me && t.likes.includes(me.id);
               return (
                 <Box
                   key={t.id}
@@ -110,13 +114,43 @@ export function TaskUpdates() {
                   <Typography sx={{ fontSize: 13, lineHeight: 1.55, color: ink, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                     {t.body}
                   </Typography>
-                  {t.resourceId && (
-                    <Chip
-                      size="small"
-                      label={linked ?? "(deleted resource)"}
-                      sx={{ mt: 0.75, height: 18, fontSize: 10, fontWeight: 600, bgcolor: blueSoft, color: pastelInk.purple, fontStyle: linked ? "normal" : "italic" }}
-                    />
-                  )}
+                  <Stack direction="row" spacing={0.75} sx={{ mt: 0.75, alignItems: "center" }}>
+                    {t.resourceId && (
+                      <Chip
+                        size="small"
+                        label={linked ?? "(deleted resource)"}
+                        sx={{ height: 18, fontSize: 10, fontWeight: 600, bgcolor: blueSoft, color: pastelInk.purple, fontStyle: linked ? "normal" : "italic" }}
+                      />
+                    )}
+                    <Box
+                      role="button"
+                      aria-pressed={liked}
+                      onClick={() => toggleTaskLogLike(t.id)}
+                      sx={{
+                        ml: "auto",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.4,
+                        cursor: "pointer",
+                        px: 0.75,
+                        py: 0.25,
+                        borderRadius: "9px",
+                        color: liked ? blue : "#B8C1CD",
+                        bgcolor: liked ? blueSoft : "transparent",
+                        transition: "all .12s ease",
+                        "&:hover": { color: blue, bgcolor: blueSoft },
+                      }}
+                    >
+                      {liked ? (
+                        <ThumbUpAltRoundedIcon sx={{ fontSize: 14 }} />
+                      ) : (
+                        <ThumbUpOffAltRoundedIcon sx={{ fontSize: 14 }} />
+                      )}
+                      {t.likes.length > 0 && (
+                        <Typography sx={{ fontSize: 10.5, fontWeight: 700 }}>{t.likes.length}</Typography>
+                      )}
+                    </Box>
+                  </Stack>
                 </Box>
               );
             })}

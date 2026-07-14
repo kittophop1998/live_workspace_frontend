@@ -33,6 +33,7 @@ export interface RealtimeHandlers {
   onActivity: (event: ActivityEvent) => void;
   onChatMessage: (message: ChatMessage) => void;
   onTaskLog: (entry: TaskLog) => void;
+  onTaskLogUpdated: (entry: TaskLog) => void;
   onPresence: (presence: Presence) => void;
   onPresenceLeave: (clientId: string) => void;
   onStatus?: (connected: boolean) => void;
@@ -107,6 +108,9 @@ export function connectRealtime(opts: RealtimeOptions): RealtimeConnection {
         break;
       case "task_log.created":
         handlers.onTaskLog(nTaskLog(payload.task_log as never));
+        break;
+      case "task_log.updated":
+        handlers.onTaskLogUpdated(nTaskLog(payload.task_log as never));
         break;
       case "presence.update":
         handlers.onPresence(nPresence(payload as never));
