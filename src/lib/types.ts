@@ -136,6 +136,7 @@ export interface TaskLog {
   body: string;
   resourceId?: string; // optional link to a resource; "" = workspace-wide note
   at: string; // ISO
+  likes: string[]; // collaborator ids who liked this entry
 }
 
 export interface Collaborator {

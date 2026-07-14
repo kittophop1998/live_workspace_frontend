@@ -94,6 +94,7 @@ interface WireTaskLog {
   body: string;
   resource_id?: string | null;
   at: string;
+  likes?: string[] | null;
 }
 interface WireActivity {
   id: string;
@@ -239,6 +240,7 @@ export const nTaskLog = (t: WireTaskLog): TaskLog => ({
   body: t.body,
   resourceId: t.resource_id ?? undefined,
   at: t.at,
+  likes: t.likes ?? [],
 });
 
 export const nActivity = (a: WireActivity): ActivityEvent => ({
@@ -486,6 +488,12 @@ export const workspaceApi = {
       body: input.body,
       resource_id: input.resourceId ?? "",
     });
+    const data = unwrap<{ task_log: WireTaskLog }>(res.data);
+    return nTaskLog(data.task_log);
+  },
+
+  async toggleTaskLogLike(id: string): Promise<TaskLog> {
+    const res = await apiClient.post(`/task-logs/${id}/like`);
     const data = unwrap<{ task_log: WireTaskLog }>(res.data);
     return nTaskLog(data.task_log);
   },

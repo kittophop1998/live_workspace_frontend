@@ -81,6 +81,7 @@ interface StoreState {
   pushChatMessage: (message: ChatMessage) => void;
   setTaskLogs: (entries: TaskLog[]) => void;
   pushTaskLog: (entry: TaskLog) => void;
+  updateTaskLog: (entry: TaskLog) => void;
   upsertPresence: (p: Presence) => void;
   dropPresence: (clientId: string) => void;
   prunePresences: () => void;
@@ -113,6 +114,7 @@ interface StoreState {
   addComment: (resourceId: string, fieldId: string | undefined, body: string) => void;
   sendChatMessage: (body: string) => void;
   addTaskLog: (input: { kind: TaskLogKind; body: string; resourceId?: string }) => void;
+  toggleTaskLogLike: (entryId: string) => void;
   // Apply a merged proposal's diff to the published endpoint via the real field
   // APIs (client-only Proposal Mode — see lib/proposals.ts). Returns success.
   mergeProposalChanges: (resourceId: string, diffs: FieldDiff[]) => Promise<boolean>;
@@ -309,6 +311,9 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
         if (s.taskLogs.some((t) => t.id === entry.id)) return {};
         return { taskLogs: [...s.taskLogs, entry].slice(-TASKLOG_CAP) };
       }),
+
+    updateTaskLog: (entry) =>
+      set((s) => ({ taskLogs: s.taskLogs.map((t) => (t.id === entry.id ? entry : t)) })),
 
     upsertPresence: (p) => set((s) => ({ presences: { ...s.presences, [p.clientId]: p } })),
     dropPresence: (clientId) =>
@@ -565,6 +570,17 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
       try {
         const entry = await workspaceApi.postTaskLog(input);
         get().pushTaskLog(entry);
+      } catch (err) {
+        fail(err);
+      }
+    },
+
+    // Same dedupe story as addTaskLog: the WS `task_log.updated` echo lands on
+    // updateTaskLog too, which is a plain replace-by-id so the echo is a no-op.
+    toggleTaskLogLike: async (entryId) => {
+      try {
+        const entry = await workspaceApi.toggleTaskLogLike(entryId);
+        get().updateTaskLog(entry);
       } catch (err) {
         fail(err);
       }

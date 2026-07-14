@@ -53,6 +53,7 @@ export function useWorkspaceSync(): void {
         onActivity: (event) => useWorkspaceStore.getState().pushActivity(event),
         onChatMessage: (message) => useWorkspaceStore.getState().pushChatMessage(message),
         onTaskLog: (entry) => useWorkspaceStore.getState().pushTaskLog(entry),
+        onTaskLogUpdated: (entry) => useWorkspaceStore.getState().updateTaskLog(entry),
         onPresence: (presence) => useWorkspaceStore.getState().upsertPresence(presence),
         onPresenceLeave: (id) => useWorkspaceStore.getState().dropPresence(id),
       },

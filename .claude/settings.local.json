@@ -27,7 +27,8 @@
       "Bash(pkill -f \"go-build\\\\|exe/main\\\\|kingdom_manager/backend\")",
       "Bash(pkill -f \"npm run dev\")",
       "Bash(go build *)",
-      "Bash(go vet *)"
+      "Bash(go vet *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
