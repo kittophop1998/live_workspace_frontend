@@ -3,24 +3,24 @@
 import { useEffect, useMemo, useState } from "react";
 import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import AccountTreeIcon from "@mui/icons-material/AccountTreeOutlined";
-import SchemaIcon from "@mui/icons-material/SchemaOutlined";
 import CodeIcon from "@mui/icons-material/CodeOutlined";
+import ContentCopyIcon from "@mui/icons-material/ContentCopyOutlined";
+import CheckIcon from "@mui/icons-material/CheckOutlined";
 import DataObjectIcon from "@mui/icons-material/DataObjectOutlined";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { EMPTY_NODES, useSchemaTreeStore } from "@/lib/schemaTree";
-import { jsonSchemaToNodes, mergeExampleIntoNodes, nodesToExample, nodesToJsonSchema, nodesToTypeScript, seedFromFields } from "@/lib/schemaConvert";
+import { mergeExampleIntoNodes, nodesToExample, nodesToTypeScript, seedFromFields } from "@/lib/schemaConvert";
 import { SchemaTreeEditor } from "@/components/schema/SchemaTreeEditor";
 import { JsonView } from "@/components/schema/JsonView";
 import { AskAiPanel } from "@/components/schema/AskAiPanel";
 import { line } from "@/components/theme";
 import type { JsonValue, SchemaField } from "@/lib/types";
 
-type Mode = "visual" | "schema" | "example" | "typescript";
+type Mode = "visual" | "example" | "typescript";
 
 const MODES: { id: Mode; label: string; icon: React.ReactNode }[] = [
   { id: "visual", label: "Visual Builder", icon: <AccountTreeIcon sx={{ fontSize: 16 }} /> },
-  { id: "schema", label: "JSON Schema", icon: <SchemaIcon sx={{ fontSize: 16 }} /> },
   { id: "example", label: "Example JSON", icon: <CodeIcon sx={{ fontSize: 16 }} /> },
   { id: "typescript", label: "Example TypeScript", icon: <DataObjectIcon sx={{ fontSize: 16 }} /> },
 ];
@@ -57,74 +57,6 @@ function ModeTabs({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void 
           </Box>
         );
       })}
-    </Box>
-  );
-}
-
-function JsonSchemaMode({ scope }: { scope: string }) {
-  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
-  const setNodes = useSchemaTreeStore((s) => s.setNodes);
-  const text = useMemo(() => JSON.stringify(nodesToJsonSchema(nodes), null, 2), [nodes]);
-
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(text);
-  const [err, setErr] = useState<string | null>(null);
-
-  const startEdit = () => {
-    setDraft(text);
-    setErr(null);
-    setEditing(true);
-  };
-  const format = () => {
-    try {
-      setDraft(JSON.stringify(JSON.parse(draft), null, 2));
-      setErr(null);
-    } catch {
-      setErr("Invalid JSON — cannot format");
-    }
-  };
-  const apply = () => {
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(draft);
-    } catch {
-      setErr("Invalid JSON");
-      return;
-    }
-    setNodes(scope, jsonSchemaToNodes(parsed));
-    setEditing(false);
-    setErr(null);
-  };
-
-  return (
-    <Box>
-      <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: "center" }}>
-        <Typography sx={{ fontSize: 12, color: "#94A3B8", flex: 1 }}>
-          {editing ? "Editing — Apply rebuilds the Visual Builder tree" : "Read-only · synced with the Visual Builder"}
-        </Typography>
-        {editing ? (
-          <>
-            {err ? <Typography sx={{ fontSize: 12, color: "#DC2626", fontWeight: 700 }}>{err}</Typography> : null}
-            <Button size="small" variant="outlined" onClick={format}>Format</Button>
-            <Button size="small" variant="outlined" onClick={() => setEditing(false)}>Cancel</Button>
-            <Button size="small" variant="contained" onClick={apply}>Apply</Button>
-          </>
-        ) : (
-          <Button size="small" variant="outlined" startIcon={<EditOutlinedIcon />} onClick={startEdit}>Edit</Button>
-        )}
-      </Stack>
-      {editing ? (
-        <TextField
-          fullWidth
-          multiline
-          minRows={16}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          sx={{ "& textarea": { fontFamily: "var(--font-mono,monospace)", fontSize: 12.5, lineHeight: 1.7 } }}
-        />
-      ) : (
-        <JsonView code={text} />
-      )}
     </Box>
   );
 }
@@ -238,6 +170,30 @@ function TypeScriptMode({ scope, typeName }: { scope: string; typeName: string }
   );
 }
 
+// One-click copy of the example JSON payload, available from any mode.
+function CopyJsonButton({ scope }: { scope: string }) {
+  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
+  const [copied, setCopied] = useState(false);
+
+  const copy = () => {
+    navigator.clipboard?.writeText(JSON.stringify(nodesToExample(nodes), null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
+  };
+
+  return (
+    <Button
+      variant="outlined"
+      size="small"
+      onClick={copy}
+      startIcon={copied ? <CheckIcon sx={{ fontSize: 16, color: "#16A34A" }} /> : <ContentCopyIcon sx={{ fontSize: 16 }} />}
+      sx={{ color: copied ? "#16A34A" : undefined, borderColor: copied ? "#BBF7D0" : undefined }}
+    >
+      {copied ? "Copied!" : "Copy JSON"}
+    </Button>
+  );
+}
+
 export function SchemaWorkbench({ scope, seedFields, typeName = "Schema" }: { scope: string; seedFields: SchemaField[]; typeName?: string }) {
   const ensureSeed = useSchemaTreeStore((s) => s.ensureSeed);
   const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
@@ -263,6 +219,7 @@ export function SchemaWorkbench({ scope, seedFields, typeName = "Schema" }: { sc
       <Stack direction="row" sx={{ mb: 2, gap: 1, alignItems: "center", flexWrap: "wrap" }}>
         <ModeTabs mode={mode} onChange={setMode} />
         <Box sx={{ flex: 1 }} />
+        <CopyJsonButton scope={scope} />
         <Button
           variant="outlined"
           size="small"
@@ -275,7 +232,6 @@ export function SchemaWorkbench({ scope, seedFields, typeName = "Schema" }: { sc
       </Stack>
 
       {mode === "visual" ? <SchemaTreeEditor scope={scope} /> : null}
-      {mode === "schema" ? <JsonSchemaMode scope={scope} /> : null}
       {mode === "example" ? <ExampleMode scope={scope} /> : null}
       {mode === "typescript" ? <TypeScriptMode scope={scope} typeName={typeName} /> : null}
 
