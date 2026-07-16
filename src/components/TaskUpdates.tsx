@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Box, Button, Chip, InputBase, MenuItem, Select, Stack, Typography } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import ThumbUpAltRoundedIcon from "@mui/icons-material/ThumbUpAltRounded";
@@ -19,8 +19,9 @@ import type { TaskLogKind } from "@/lib/types";
 const KINDS: TaskLogKind[] = ["added", "changed", "fixed", "removed", "note"];
 
 // Reuse the notebook pastels so the log sits in the same visual language as the
-// rest of the right panel.
-const kindStyle: Record<TaskLogKind, { bg: string; fg: string; label: string }> = {
+// rest of the right panel. Shared with the announcement overlay so a kind reads
+// the same in the feed and on the popup.
+export const kindStyle: Record<TaskLogKind, { bg: string; fg: string; label: string }> = {
   added: { bg: pastel.mint, fg: pastelInk.mint, label: "Added" },
   changed: { bg: pastel.yellow, fg: pastelInk.yellow, label: "Changed" },
   fixed: { bg: pastel.blue, fg: pastelInk.blue, label: "Fixed" },
@@ -42,7 +43,6 @@ export function TaskUpdates() {
   // Link target: `null` = follow whatever is open in the explorer; a string (incl.
   // "" for an explicit "none") = the user's manual override.
   const [resourceOverride, setResourceOverride] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
   useNow();
 
   const resourceId = resourceOverride ?? selectedId ?? "";
@@ -53,9 +53,8 @@ export function TaskUpdates() {
     return (id?: string) => (id ? map.get(id) : undefined);
   }, [resources]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [taskLogs.length]);
+  // Newest first — `at` is the entry's create timestamp.
+  const sortedLogs = useMemo(() => [...taskLogs].sort((a, b) => b.at.localeCompare(a.at)), [taskLogs]);
 
   const submit = () => {
     const body = draft.trim();
@@ -85,7 +84,7 @@ export function TaskUpdates() {
           />
         ) : (
           <Stack spacing={1.25}>
-            {taskLogs.map((t) => {
+            {sortedLogs.map((t) => {
               const ks = kindStyle[t.kind] ?? kindStyle.note;
               const linked = resourceName(t.resourceId);
               const liked = !!me && t.likes.includes(me.id);
@@ -154,7 +153,6 @@ export function TaskUpdates() {
                 </Box>
               );
             })}
-            <div ref={bottomRef} />
           </Stack>
         )}
       </Box>

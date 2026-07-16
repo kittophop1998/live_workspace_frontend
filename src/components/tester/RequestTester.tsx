@@ -2,23 +2,24 @@
 
 import { useMemo, useState } from "react";
 import {
-  Box, Button, Collapse, IconButton, InputBase, MenuItem, Select, Stack, TextField, Tooltip, Typography,
+  Box, Button, IconButton, InputBase, MenuItem, Select, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from "@mui/icons-material/Close";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import ContentCopyIcon from "@mui/icons-material/ContentCopyOutlined";
+import CheckIcon from "@mui/icons-material/Check";
 import { useApiTesterStore, extractPathParams, type KeyValueRow, type RequestDraft } from "@/lib/apiTester";
 import { sendTest, type TestResult } from "@/services/testerService";
 import { seedFromFields, nodesToExample } from "@/lib/schemaConvert";
 import { EMPTY_NODES, useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
 import { ResponseViewer } from "@/components/tester/ResponseViewer";
-import { line, methodColor } from "@/components/theme";
+import { line, methodColor, secondaryText } from "@/components/theme";
 import { PixelPanel } from "@/components/pixel/pixelBox";
 import { PixelButton } from "@/components/pixel/PixelButton";
 import { MethodBadge } from "@/components/pixel/PixelBadge";
+import { PixelTabs, type PixelTabItem } from "@/components/pixel/PixelTabs";
 import { Input as PixelactInput } from "@/components/ui/pixelact-ui/input";
 import type { HttpMethod, Resource } from "@/lib/types";
 
@@ -62,6 +63,98 @@ function draftFromResource(resource: Resource, reqNodes: SchemaNode[]): RequestD
 function reconcilePathParams(path: string, existing: KeyValueRow[]): KeyValueRow[] {
   const names = extractPathParams(path);
   return names.map((name) => existing.find((p) => p.key === name) ?? row(name));
+}
+
+// Enabled headers merged with the bearer token — shared by the live send() call
+// and the generated code snippets, so both stay in sync.
+function resolveHeaders(draft: RequestDraft): Record<string, string> {
+  const headers: Record<string, string> = {};
+  for (const h of draft.headers) if (h.enabled && h.key) headers[h.key] = h.value;
+  const token = draft.bearerToken?.trim();
+  if (token && !Object.keys(headers).some((k) => k.toLowerCase() === "authorization")) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+function toCurl(method: HttpMethod, url: string, headers: Record<string, string>, body: string, hasBody: boolean): string {
+  const parts = [`curl -X ${method} ${JSON.stringify(url)}`];
+  for (const [k, v] of Object.entries(headers)) parts.push(`-H ${JSON.stringify(`${k}: ${v}`)}`);
+  if (hasBody && body.trim()) parts.push(`-d ${JSON.stringify(body)}`);
+  return parts.join(" \\\n  ");
+}
+
+function toFetch(method: HttpMethod, url: string, headers: Record<string, string>, body: string, hasBody: boolean): string {
+  const headerEntries = Object.entries(headers);
+  const headersBlock = headerEntries.length
+    ? `,\n  headers: {\n${headerEntries.map(([k, v]) => `    ${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(",\n")}\n  }`
+    : "";
+  const bodyBlock = hasBody && body.trim() ? `,\n  body: ${JSON.stringify(body)}` : "";
+  return `fetch(${JSON.stringify(url)}, {\n  method: ${JSON.stringify(method)}${headersBlock}${bodyBlock}\n})\n  .then((res) => res.json())\n  .then(console.log);`;
+}
+
+function toPython(method: HttpMethod, url: string, headers: Record<string, string>, body: string, hasBody: boolean): string {
+  const headersLine = Object.keys(headers).length ? `\n    headers=${JSON.stringify(headers)},` : "";
+  const bodyLine = hasBody && body.trim() ? `\n    data=${JSON.stringify(body)},` : "";
+  return `import requests\n\nresponse = requests.request(\n    ${JSON.stringify(method)},\n    ${JSON.stringify(url)},${headersLine}${bodyLine}\n)\nprint(response.status_code, response.text)`;
+}
+
+type SnippetLang = "curl" | "js" | "python";
+
+function CodeSnippets({
+  method, url, headers, body, hasBody,
+}: {
+  method: HttpMethod;
+  url: string;
+  headers: Record<string, string>;
+  body: string;
+  hasBody: boolean;
+}) {
+  const [lang, setLang] = useState<SnippetLang>("curl");
+  const [copied, setCopied] = useState(false);
+
+  const code = useMemo(() => {
+    if (lang === "js") return toFetch(method, url, headers, body, hasBody);
+    if (lang === "python") return toPython(method, url, headers, body, hasBody);
+    return toCurl(method, url, headers, body, hasBody);
+  }, [lang, method, url, headers, body, hasBody]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable (e.g. insecure context) — ignore */
+    }
+  };
+
+  return (
+    <Box>
+      <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+        <ToggleButtonGroup size="small" exclusive value={lang} onChange={(_, v: SnippetLang | null) => v && setLang(v)}>
+          <ToggleButton value="curl" sx={{ fontSize: 12 }}>cURL</ToggleButton>
+          <ToggleButton value="js" sx={{ fontSize: 12 }}>JavaScript</ToggleButton>
+          <ToggleButton value="python" sx={{ fontSize: 12 }}>Python</ToggleButton>
+        </ToggleButtonGroup>
+        <Tooltip title={copied ? "Copied!" : "Copy"}>
+          <IconButton size="small" onClick={copy} sx={{ p: 0.4, color: copied ? "#16A34A" : "#6B7280" }}>
+            {copied ? <CheckIcon sx={{ fontSize: 14 }} /> : <ContentCopyIcon sx={{ fontSize: 14 }} />}
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      <Box
+        component="pre"
+        sx={{
+          m: 0, p: 2, bgcolor: "#F8FAFC", border: `1px solid ${line}`, borderRadius: "12px",
+          fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, lineHeight: 1.7, color: "#111827",
+          overflow: "auto", maxHeight: 360, whiteSpace: "pre",
+        }}
+      >
+        {code}
+      </Box>
+    </Box>
+  );
 }
 
 function RowsEditor({
@@ -125,15 +218,17 @@ function RowsEditor({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Typography variant="caption" sx={{ display: "block", fontWeight: 600, color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.06em", mt: 1.5, mb: 0.5 }}>
+    <Typography variant="caption" sx={{ display: "block", fontWeight: 600, color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.06em", mb: 0.5 }}>
       {children}
     </Typography>
   );
 }
 
-// The "Try it" helper — an inline request runner attached to the selected API
-// spec endpoint. Prefilled from the spec, editable, sent through the backend
-// proxy. Draft persists per-resource; base URL is shared across the workspace.
+type ReqSection = "params" | "headers" | "body" | "code";
+
+// The "Try it" tab — a live request runner attached to the selected API spec
+// endpoint. Prefilled from the spec, editable, sent through the backend proxy.
+// Draft persists per-resource; base URL is shared across the workspace.
 export function RequestTester({ resource }: { resource: Resource }) {
   const baseUrl = useApiTesterStore((s) => s.baseUrl);
   const setBaseUrl = useApiTesterStore((s) => s.setBaseUrl);
@@ -141,13 +236,13 @@ export function RequestTester({ resource }: { resource: Resource }) {
   const saveDraft = useApiTesterStore((s) => s.saveDraft);
   const reqNodes = useSchemaTreeStore((s) => s.trees[`${resource.id}::req`] ?? EMPTY_NODES);
 
-  const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<RequestDraft>(() => {
     if (savedDraft) return { ...savedDraft, pathParams: reconcilePathParams(savedDraft.path, savedDraft.pathParams) };
     return draftFromResource(resource, reqNodes);
   });
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [section, setSection] = useState<ReqSection>("params");
 
   const update = (patch: Partial<RequestDraft>) => {
     setDraft((prev) => {
@@ -184,20 +279,12 @@ export function RequestTester({ resource }: { resource: Resource }) {
       setResult({ status: 0, durationMs: 0, headers: {}, body: "", size: 0, truncated: false, error: "Set a Base URL (e.g. http://localhost:8080) or use an absolute path." });
       return;
     }
-    const headers: Record<string, string> = {};
-    for (const h of draft.headers) if (h.enabled && h.key) headers[h.key] = h.value;
-    // Bearer token → Authorization header. An explicit Authorization row (if the
-    // user added one) wins over the token field.
-    const token = draft.bearerToken?.trim();
-    if (token && !Object.keys(headers).some((k) => k.toLowerCase() === "authorization")) {
-      headers.Authorization = `Bearer ${token}`;
-    }
     setLoading(true);
     try {
       const res = await sendTest({
         method: draft.method,
         url: previewUrl,
-        headers,
+        headers: resolveHeaders(draft),
         body: BODY_METHODS.has(draft.method) ? draft.body : undefined,
       });
       setResult(res);
@@ -209,103 +296,111 @@ export function RequestTester({ resource }: { resource: Resource }) {
   };
 
   const showBody = BODY_METHODS.has(draft.method);
+  const sections: PixelTabItem<ReqSection>[] = [
+    { value: "params", label: "Params" },
+    { value: "headers", label: "Headers" },
+    ...(showBody ? [{ value: "body" as const, label: "Body" }] : []),
+    { value: "code", label: "Code" },
+  ];
+  const activeSection: ReqSection = sections.some((s) => s.value === section) ? section : sections[0].value;
 
   return (
-    <PixelPanel sx={{ mt: 0, p: 0, overflow: "hidden" }}>
-      <Stack
-        direction="row"
-        onClick={() => setOpen((v) => !v)}
-        sx={{ alignItems: "center", justifyContent: "space-between", p: 2, cursor: "pointer", bgcolor: open ? "#F8FAFC" : "#fff" }}
-      >
-        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-          <Box sx={{ width: 28, height: 28, display: "grid", placeItems: "center", bgcolor: "#EEEAFE", border: "1px solid #CFC7FA", boxShadow: "2px 2px 0 #D9D3F7" }}>
-            <ScienceOutlinedIcon sx={{ fontSize: 17, color: "#6D5DD3" }} />
-          </Box>
-          <Typography variant="h2">Try it</Typography>
-          <Typography variant="caption" sx={{ color: "#6B7280" }}>send a live test request</Typography>
-        </Stack>
-        <ExpandMoreIcon sx={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
-      </Stack>
-
-      <Collapse in={open}>
-        <Box sx={{ p: 2, pt: 0 }}>
-          {/* Base URL */}
-          <SectionLabel>Base URL</SectionLabel>
-          <TextField
-            fullWidth
+    <PixelPanel sx={{ p: 0, overflow: "hidden" }}>
+      {/* Request toolbar */}
+      <Box sx={{ p: 1.5, borderBottom: `1px solid ${line}`, bgcolor: "#FAFAFC" }}>
+        <Stack direction="row" spacing={0.75} sx={{ alignItems: "stretch", flexWrap: "wrap", rowGap: 1 }}>
+          <Select
             size="small"
-            placeholder="http://localhost:8080"
+            value={draft.method}
+            onChange={(e) => update({ method: e.target.value as HttpMethod })}
+            renderValue={() => <MethodBadge method={draft.method} />}
+            sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600, minWidth: 108, borderRadius: 0, bgcolor: "#fff" }}
+          >
+            {HTTP_METHODS.map((m) => (
+              <MenuItem key={m} value={m} sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: methodColor[m] }}>{m}</MenuItem>
+            ))}
+          </Select>
+          <PixelactInput
+            value={draft.path}
+            onChange={(e) => update({ path: e.target.value })}
+            placeholder="/api/v1/resource/{id}"
+            className="min-w-[160px] flex-1 font-mono text-sm"
+          />
+          <PixelButton startIcon={<PlayArrowIcon />} onClick={send} disabled={loading} sx={{ flexShrink: 0 }}>
+            {loading ? "Sending…" : "Send"}
+          </PixelButton>
+          <Tooltip title="Reset to the API spec definition">
+            <IconButton onClick={reset} sx={{ border: `1.5px solid ${line}`, borderRadius: "10px", flexShrink: 0 }}>
+              <RestartAltIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+
+        <Stack direction="row" spacing={1} sx={{ mt: 1, alignItems: "center", flexWrap: "wrap", rowGap: 0.5 }}>
+          <Typography variant="caption" sx={{ fontWeight: 700, color: secondaryText, flexShrink: 0 }}>Base URL</Typography>
+          <InputBase
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            slotProps={{ input: { sx: { fontFamily: "var(--font-mono, monospace)", fontSize: 13 } } }}
+            placeholder="http://localhost:8080"
+            sx={{ flex: "1 1 220px", minWidth: 0, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: 0, px: 0.9, py: 0.35, bgcolor: "#fff" }}
           />
+        </Stack>
+        <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: secondaryText, fontFamily: "var(--font-mono, monospace)", wordBreak: "break-all" }}>
+          → {previewUrl || "(set base URL)"}
+        </Typography>
+      </Box>
 
-          {/* Method + path */}
-          <SectionLabel>Request</SectionLabel>
-          <Stack direction="row" spacing={0.75} sx={{ alignItems: "stretch" }}>
-            <Select
-              size="small"
-              value={draft.method}
-              onChange={(e) => update({ method: e.target.value as HttpMethod })}
-              renderValue={() => <MethodBadge method={draft.method} />}
-              sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 600, color: methodColor[draft.method], minWidth: 112, borderRadius: 0 }}
-            >
-              {HTTP_METHODS.map((m) => (
-                <MenuItem key={m} value={m} sx={{ fontFamily: "var(--font-mono, monospace)", fontWeight: 700, color: methodColor[m] }}>{m}</MenuItem>
-              ))}
-            </Select>
-            <PixelactInput
-              value={draft.path}
-              onChange={(e) => update({ path: e.target.value })}
-              placeholder="/api/v1/resource/{id}"
-              className="min-w-0 flex-1 font-mono text-sm"
-            />
-          </Stack>
-          <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: "#6B7280", fontFamily: "var(--font-mono, monospace)", wordBreak: "break-all" }}>
-            → {previewUrl || "(set base URL)"}
-          </Typography>
+      {/* Request sections (left) beside the response (right); stacks on a narrow center panel. */}
+      <Box sx={{ containerType: "inline-size" }}>
+        <Box sx={{ display: "flex", flexDirection: "column", "@container (min-width: 560px)": { flexDirection: "row" } }}>
+          <Box
+            sx={{
+              flex: 1, minWidth: 0, p: 1.5, borderBottom: `1px solid ${line}`,
+              "@container (min-width: 560px)": { borderBottom: "none", borderRight: `1px solid ${line}` },
+            }}
+          >
+            <PixelTabs value={activeSection} onChange={setSection} tabs={sections} sx={{ mb: 1.5 }} />
 
-          {/* Path params */}
-          <SectionLabel>Path parameters</SectionLabel>
-          <RowsEditor rows={draft.pathParams} lockKeys onChange={(rows) => update({ pathParams: rows })} />
+            {activeSection === "params" ? (
+              <Stack spacing={2}>
+                <Box>
+                  <SectionLabel>Path parameters</SectionLabel>
+                  <RowsEditor rows={draft.pathParams} lockKeys onChange={(rows) => update({ pathParams: rows })} />
+                </Box>
+                <Box>
+                  <SectionLabel>Query parameters</SectionLabel>
+                  <RowsEditor rows={draft.queryParams} addLabel="Add query param" onChange={(rows) => update({ queryParams: rows })} />
+                </Box>
+              </Stack>
+            ) : null}
 
-          {/* Query params */}
-          <SectionLabel>Query parameters</SectionLabel>
-          <RowsEditor rows={draft.queryParams} addLabel="Add query param" onChange={(rows) => update({ queryParams: rows })} />
+            {activeSection === "headers" ? (
+              <RowsEditor rows={draft.headers} addLabel="Add header" onChange={(rows) => update({ headers: rows })} />
+            ) : null}
 
-          {/* Headers */}
-          <SectionLabel>Headers</SectionLabel>
-          <RowsEditor rows={draft.headers} addLabel="Add header" onChange={(rows) => update({ headers: rows })} />
-
-          {/* Body */}
-          {showBody ? (
-            <>
-              <SectionLabel>JSON body</SectionLabel>
+            {activeSection === "body" && showBody ? (
               <InputBase
                 value={draft.body}
                 onChange={(e) => update({ body: e.target.value })}
                 multiline
-                minRows={4}
+                minRows={8}
                 sx={{ width: "100%", fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: 0, p: 1.25, bgcolor: "#F8FAFC" }}
               />
-            </>
-          ) : null}
+            ) : null}
 
-          {/* Actions */}
-          <Stack direction="row" spacing={1} sx={{ mt: 2, alignItems: "center" }}>
-            <PixelButton startIcon={<PlayArrowIcon />} onClick={send} disabled={loading}>
-              {loading ? "Sending…" : "Send"}
-            </PixelButton>
-            <Tooltip title="Reset to the API spec definition">
-              <Button variant="outlined" startIcon={<RestartAltIcon sx={{ fontSize: 18 }} />} onClick={reset}>
-                Reset
-              </Button>
-            </Tooltip>
-          </Stack>
+            {activeSection === "code" ? (
+              <CodeSnippets method={draft.method} url={previewUrl} headers={resolveHeaders(draft)} body={draft.body} hasBody={showBody} />
+            ) : null}
+          </Box>
 
-          <ResponseViewer result={result} loading={loading} />
+          <Box sx={{ flex: 1, minWidth: 0, p: 1.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: secondaryText, display: "block", mb: 1, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Response
+            </Typography>
+            <ResponseViewer result={result} loading={loading} />
+          </Box>
         </Box>
-      </Collapse>
+      </Box>
     </PixelPanel>
   );
 }

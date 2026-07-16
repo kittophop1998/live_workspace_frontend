@@ -7,13 +7,11 @@ import CodeIcon from "@mui/icons-material/CodeOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopyOutlined";
 import CheckIcon from "@mui/icons-material/CheckOutlined";
 import DataObjectIcon from "@mui/icons-material/DataObjectOutlined";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { EMPTY_NODES, useSchemaTreeStore } from "@/lib/schemaTree";
 import { mergeExampleIntoNodes, nodesToExample, nodesToTypeScript, seedFromFields } from "@/lib/schemaConvert";
 import { SchemaTreeEditor } from "@/components/schema/SchemaTreeEditor";
 import { JsonView } from "@/components/schema/JsonView";
-import { AskAiPanel } from "@/components/schema/AskAiPanel";
 import { line } from "@/components/theme";
 import type { JsonValue, SchemaField } from "@/lib/types";
 
@@ -196,46 +194,25 @@ function CopyJsonButton({ scope }: { scope: string }) {
 
 export function SchemaWorkbench({ scope, seedFields, typeName = "Schema" }: { scope: string; seedFields: SchemaField[]; typeName?: string }) {
   const ensureSeed = useSchemaTreeStore((s) => s.ensureSeed);
-  const nodes = useSchemaTreeStore((s) => s.trees[scope] ?? EMPTY_NODES);
   const [mode, setMode] = useState<Mode>("visual");
-  const [aiOpen, setAiOpen] = useState(false);
 
   // Seed this scope from the backend's flat fields the first time it opens.
   useEffect(() => {
     ensureSeed(scope, () => seedFromFields(seedFields));
   }, [scope, seedFields, ensureSeed]);
 
-  // The corner mascot's AI menu opens this panel via a window event (only the
-  // currently-mounted workbench — i.e. the active tab's request body — reacts).
-  useEffect(() => {
-    const openAi = () => setAiOpen(true);
-    window.addEventListener("kingdom:ask-ai", openAi);
-    return () => window.removeEventListener("kingdom:ask-ai", openAi);
-  }, []);
-
   return (
     <Box sx={{ position: "relative" }}>
-      {/* Contextual toolbar: view modes on the left, AI assistant on the right. */}
+      {/* Contextual toolbar: view modes on the left, actions on the right. */}
       <Stack direction="row" sx={{ mb: 2, gap: 1, alignItems: "center", flexWrap: "wrap" }}>
         <ModeTabs mode={mode} onChange={setMode} />
         <Box sx={{ flex: 1 }} />
         <CopyJsonButton scope={scope} />
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => setAiOpen(true)}
-          startIcon={<AutoAwesomeIcon sx={{ fontSize: 16, color: "#8B5CF6" }} />}
-          sx={{ color: "#6D28D9", borderColor: "#EDE9FE", bgcolor: "#F5F3FF", "&:hover": { bgcolor: "#EDE9FE", borderColor: "#DDD6FE" } }}
-        >
-          Ask AI
-        </Button>
       </Stack>
 
       {mode === "visual" ? <SchemaTreeEditor scope={scope} /> : null}
       {mode === "example" ? <ExampleMode scope={scope} /> : null}
       {mode === "typescript" ? <TypeScriptMode scope={scope} typeName={typeName} /> : null}
-
-      <AskAiPanel scope={scope} nodes={nodes} open={aiOpen} onClose={() => setAiOpen(false)} />
     </Box>
   );
 }

@@ -2,15 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Box, Collapse, Stack, Typography } from "@mui/material";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesomeOutlined";
-import SearchIcon from "@mui/icons-material/SearchOutlined";
-import DataObjectIcon from "@mui/icons-material/DataObjectOutlined";
 import RateReviewOutlinedIcon from "@mui/icons-material/RateReviewOutlined";
 import { useWorkspaceStore, selectSelected } from "@/lib/store";
 import { useMascotStore, type MascotMood } from "@/lib/mascot";
 import { CHIBI, Confetti, DoodleSparkle, type ChibiName } from "@/components/doodles";
 import { SpeechBubble, type PastelName } from "@/components/common";
-import { ink, pastel, secondaryText } from "@/components/theme";
+import { ink, pastel } from "@/components/theme";
 
 // How each mood renders: which chibi, which animation class, and the bubble tint.
 const MOOD_STYLE: Record<MascotMood, { chibi: ChibiName; anim: string; color: PastelName; confetti?: boolean }> = {
@@ -29,18 +26,13 @@ interface MascotView {
   message: string;
 }
 
-// Fire an "open Ask AI" request; the mounted SchemaWorkbench listens for it.
-function askAi() {
-  window.dispatchEvent(new CustomEvent("kingdom:ask-ai"));
-}
 function openProposals() {
   window.dispatchEvent(new CustomEvent("kingdom:open-proposals"));
 }
 
-// The friendly API-manga assistant. Naps in the corner; reacts to workspace
+// The friendly API-manga assistant. Naps in the corner and reacts to workspace
 // events (proposal created/merged, API errors, empty schemas) with a chibi +
-// speech bubble; and doubles as the AI entry point (replacing the old floating
-// "AI" button — it just opens the existing rule-based Ask AI panel).
+// speech bubble.
 export function AiMascot() {
   const transientMood = useMascotStore((s) => s.mood);
   const transientMessage = useMascotStore((s) => s.message);
@@ -55,7 +47,7 @@ export function AiMascot() {
     if (apiError) return { mood: "panic", message: "This endpoint seems broken — check the last action." };
     if (resource && resource.kind === "endpoint" && resource.fields.length === 0)
       return { mood: "reading", message: "Waiting for your first parameter — let's build this endpoint together!" };
-    return { mood: "idle", message: "Need a hand? Tap me for a little AI help ✨" };
+    return { mood: "idle", message: "All quiet — your API looks happy ✨" };
   }, [transientMood, transientMessage, apiError, resource]);
 
   const style = MOOD_STYLE[view.mood];
@@ -64,9 +56,6 @@ export function AiMascot() {
   const isEndpoint = resource?.kind === "endpoint";
 
   const actions = [
-    { icon: <AutoAwesomeIcon sx={{ fontSize: 16 }} />, label: "Generate request body", onClick: askAi, show: true },
-    { icon: <SearchIcon sx={{ fontSize: 16 }} />, label: "Explain a field", onClick: askAi, show: true },
-    { icon: <DataObjectIcon sx={{ fontSize: 16 }} />, label: "Generate examples", onClick: askAi, show: true },
     { icon: <RateReviewOutlinedIcon sx={{ fontSize: 16 }} />, label: "Review proposals", onClick: openProposals, show: isEndpoint },
   ].filter((a) => a.show);
 
@@ -89,8 +78,8 @@ export function AiMascot() {
           <SpeechBubble color={style.color} tail="none" sx={{ mb: open ? 1 : 0, display: "block" }}>
             {view.message}
           </SpeechBubble>
-          {/* AI action menu — only when poked, and only where it makes sense */}
-          <Collapse in={open} timeout={200} unmountOnExit>
+          {/* Action menu — only when poked, and only where it makes sense */}
+          <Collapse in={open && actions.length > 0} timeout={200} unmountOnExit>
             <Box sx={{ mt: 1, p: 0.75, bgcolor: "#FFFDF8", border: `1.5px solid ${pastel.pink}`, borderRadius: "16px", boxShadow: "0 8px 22px rgba(120,88,44,0.16)" }}>
               <Stack spacing={0.25}>
                 {actions.map((a) => (
@@ -115,9 +104,6 @@ export function AiMascot() {
                     <Typography sx={{ fontSize: 12.5, fontWeight: 600 }}>{a.label}</Typography>
                   </Stack>
                 ))}
-                <Typography sx={{ fontSize: 10, color: secondaryText, px: 1.1, pt: 0.5 }}>
-                  offline assistant · no external AI
-                </Typography>
               </Stack>
             </Box>
           </Collapse>
