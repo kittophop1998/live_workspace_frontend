@@ -20,6 +20,7 @@ import { RightPanel } from "@/components/RightPanel";
 import { FlowTestingPage } from "@/components/flows/FlowTestingPage";
 import { ApiStoryView } from "@/components/story/ApiStoryView";
 import { MergeCelebration } from "@/components/proposals/MergeCelebration";
+import { TaskUpdateAnnouncement } from "@/components/TaskUpdateAnnouncement";
 import { ink, line, secondaryText } from "@/components/theme";
 
 // Persisted collapse state for the side panels (localStorage). WorkspaceLayout
@@ -192,6 +193,10 @@ export function WorkspaceLayout() {
 
       {/* Merge celebration overlay — fired by ProposalReview on a successful merge. */}
       <MergeCelebration />
+
+      {/* Teammate's backend update — fired by useWorkspaceSync off the WS feed.
+          Outside the view switch so it reaches you in flows/story too. */}
+      <TaskUpdateAnnouncement />
     </Box>
   );
 }

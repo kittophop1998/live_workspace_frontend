@@ -19,8 +19,9 @@ import type { TaskLogKind } from "@/lib/types";
 const KINDS: TaskLogKind[] = ["added", "changed", "fixed", "removed", "note"];
 
 // Reuse the notebook pastels so the log sits in the same visual language as the
-// rest of the right panel.
-const kindStyle: Record<TaskLogKind, { bg: string; fg: string; label: string }> = {
+// rest of the right panel. Shared with the announcement overlay so a kind reads
+// the same in the feed and on the popup.
+export const kindStyle: Record<TaskLogKind, { bg: string; fg: string; label: string }> = {
   added: { bg: pastel.mint, fg: pastelInk.mint, label: "Added" },
   changed: { bg: pastel.yellow, fg: pastelInk.yellow, label: "Changed" },
   fixed: { bg: pastel.blue, fg: pastelInk.blue, label: "Fixed" },
