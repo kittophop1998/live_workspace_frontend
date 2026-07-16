@@ -21,6 +21,7 @@ import type {
   HttpMethod,
   JsonValue,
   Presence,
+  PublishedSpec,
   Resource,
   ResourceKind,
   RightTab,
@@ -46,6 +47,9 @@ interface StoreState {
   chat: ChatMessage[];
   // Backend work-update log — append-only, deduped by id (no rev merging).
   taskLogs: TaskLog[];
+  // Current OpenAPI spec published by the CLI (null until the first sync).
+  // Hydrated from GET /api-spec, then kept live by `api_spec.published`.
+  publishedSpec: PublishedSpec | null;
 
   // UI / session
   view: WorkspaceView;
@@ -83,6 +87,7 @@ interface StoreState {
   setTaskLogs: (entries: TaskLog[]) => void;
   pushTaskLog: (entry: TaskLog) => void;
   updateTaskLog: (entry: TaskLog) => void;
+  setPublishedSpec: (spec: PublishedSpec | null) => void;
   upsertPresence: (p: Presence) => void;
   dropPresence: (clientId: string) => void;
   prunePresences: () => void;
@@ -151,6 +156,7 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
     activity: [],
     chat: [],
     taskLogs: [],
+    publishedSpec: null,
 
     view: "workspace",
     selectedId: "",
@@ -315,6 +321,13 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
 
     updateTaskLog: (entry) =>
       set((s) => ({ taskLogs: s.taskLogs.map((t) => (t.id === entry.id ? entry : t)) })),
+
+    // Ignore stale/redelivered revisions — only move forward by revision number.
+    setPublishedSpec: (spec) =>
+      set((s) => {
+        if (spec && s.publishedSpec && spec.revision.number < s.publishedSpec.revision.number) return {};
+        return { publishedSpec: spec };
+      }),
 
     upsertPresence: (p) => set((s) => ({ presences: { ...s.presences, [p.clientId]: p } })),
     dropPresence: (clientId) =>

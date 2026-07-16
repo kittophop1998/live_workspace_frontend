@@ -5,6 +5,7 @@ import { useWorkspaceStore } from "@/lib/store";
 import { connectRealtime, HEARTBEAT_MS, newClientId } from "@/lib/realtime";
 import { apiErrorMessage } from "@/lib/api";
 import { workspaceApi } from "@/services/workspace.service";
+import { apiSpecApi } from "@/services/apiSpec.service";
 import { announceTaskUpdate } from "@/components/TaskUpdateAnnouncement";
 import { postedHere } from "@/lib/localTaskLogs";
 
@@ -20,17 +21,21 @@ export function useWorkspaceSync(): void {
     // 1. Initial hydrate (snapshot + my identity + team chat + task-log history).
     (async () => {
       try {
-        const [snapshot, me, chat, taskLogs] = await Promise.all([
+        const [snapshot, me, chat, taskLogs, publishedSpec] = await Promise.all([
           workspaceApi.getSnapshot(),
           workspaceApi.getMe(),
           workspaceApi.getChat(),
           workspaceApi.getTaskLogs(),
+          // Optional: null until the CLI first syncs; a failure here must not
+          // block the workspace from hydrating.
+          apiSpecApi.getPublished().catch(() => null),
         ]);
         if (cancelled) return;
         store.applySnapshot(snapshot);
         store.setMe(me);
         store.setChat(chat);
         store.setTaskLogs(taskLogs);
+        if (publishedSpec) store.setPublishedSpec(publishedSpec);
         store.setApiError(null);
       } catch (err) {
         if (!cancelled) store.setApiError(apiErrorMessage(err));
@@ -66,6 +71,7 @@ export function useWorkspaceSync(): void {
           if (isNew && !mine) announceTaskUpdate(entry);
         },
         onTaskLogUpdated: (entry) => useWorkspaceStore.getState().updateTaskLog(entry),
+        onSpecPublished: (spec) => useWorkspaceStore.getState().setPublishedSpec(spec),
         onPresence: (presence) => useWorkspaceStore.getState().upsertPresence(presence),
         onPresenceLeave: (id) => useWorkspaceStore.getState().dropPresence(id),
       },

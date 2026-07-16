@@ -493,6 +493,22 @@ Both responses contain `access_token`, `room_code`, `collaborator`, and `session
 > `GET /stories` (on load, or when opening the **API Story** tab); real-time WS push
 > is **optional** and not required for v1.
 
+### Published API spec (CLI registry, read-only for the web)
+| method | path | purpose |
+|--------|------|---------|
+| GET | `/api-spec` | Current published revision → `{ "revision": SpecRevision, "content": "<exact OpenAPI YAML/JSON>" }` (404 until the CLI first syncs) |
+| GET | `/api-spec/revisions` | Revision metadata list (newest first) |
+| GET | `/api-spec/revisions/{revisionId}` | One historical `{ revision, content }` |
+
+> The registry is **written only by `@live-workspace/cli sync`** through separate
+> API-key endpoints (`/projects/{projectId}/api-spec/…`, key scope
+> `api-spec:write`; keys are minted on `/api-keys` with projectID == workspaceID).
+> These web routes use the normal collaborator JWT and are read-only — the browser
+> never holds an API key. Responses are **unenveloped and camelCase**
+> (`SpecRevision = { id, number, status, contentHash, sourceFilename, format,
+> createdAt }`), matching the CLI endpoints. Each successful (non-duplicate) sync
+> broadcasts `api_spec.published` (§4) so open tabs update without a refetch.
+
 ---
 
 ## 4. Real-time (WebSocket)
@@ -520,6 +536,7 @@ All payloads reuse the §2 models. Clients merge by `rev` (ignore `rev <= local`
 | `comment.created` / `comment.deleted` | `{ "rev", "comment": Comment }` / `{ "rev", "comment_id" }` |
 | `activity.created` | `{ "activity": ActivityEvent }` |
 | `chat.created` | `{ "message": ChatMessage }` (no `rev` — chat is outside the rev'd aggregate) |
+| `api_spec.published` | `{ "revision": SpecRevision, "content": "…" }` — a CLI `sync` landed a new revision; payload mirrors `GET /api-spec` (camelCase, no `rev`) so clients apply it without a refetch |
 | `presence.update` | `Presence` (a peer's heartbeat) |
 | `presence.leave` | `{ "client_id" }` |
 

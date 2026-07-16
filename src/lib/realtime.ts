@@ -12,7 +12,8 @@ import {
   nSnapshot,
   nTaskLog,
 } from "@/services/workspace.service";
-import type { ActivityEvent, ChatMessage, Comment, Presence, Resource, TaskLog, WorkspaceSnapshot } from "@/lib/types";
+import { nPublishedSpec } from "@/services/apiSpec.service";
+import type { ActivityEvent, ChatMessage, Comment, Presence, PublishedSpec, Resource, TaskLog, WorkspaceSnapshot } from "@/lib/types";
 
 export const HEARTBEAT_MS = 3000;
 export const PRESENCE_TTL_MS = 8000;
@@ -34,6 +35,7 @@ export interface RealtimeHandlers {
   onChatMessage: (message: ChatMessage) => void;
   onTaskLog: (entry: TaskLog) => void;
   onTaskLogUpdated: (entry: TaskLog) => void;
+  onSpecPublished: (spec: PublishedSpec) => void;
   onPresence: (presence: Presence) => void;
   onPresenceLeave: (clientId: string) => void;
   onStatus?: (connected: boolean) => void;
@@ -111,6 +113,10 @@ export function connectRealtime(opts: RealtimeOptions): RealtimeConnection {
         break;
       case "task_log.updated":
         handlers.onTaskLogUpdated(nTaskLog(payload.task_log as never));
+        break;
+      case "api_spec.published":
+        // CLI `sync` landed a new revision — payload mirrors GET /api-spec.
+        handlers.onSpecPublished(nPublishedSpec(payload as never));
         break;
       case "presence.update":
         handlers.onPresence(nPresence(payload as never));
