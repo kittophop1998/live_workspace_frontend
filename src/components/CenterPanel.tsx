@@ -387,12 +387,9 @@ export function CenterPanel() {
         {activeTab === "request" ? (
           <Box sx={{ animation: "fade-in .2s ease" }}>
             <PixelPanel>
-              <Box sx={{ mb: 2.5, display: "flex", alignItems: "flex-start", gap: 2 }}>
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="h2" sx={{ fontSize: 18 }}>{bodyLabel}</Typography>
-                  <Typography sx={{ fontSize: 13, color: secondaryText, mt: 0.5 }}>{bodyDescription}</Typography>
-                </Box>
-                <PixelButton size="small" variant="outlined" startIcon={<AutoAwesomeOutlinedIcon />}>Generate with AI</PixelButton>
+              <Box sx={{ mb: 2.5 }}>
+                <Typography variant="h2" sx={{ fontSize: 18 }}>{bodyLabel}</Typography>
+                <Typography sx={{ fontSize: 13, color: secondaryText, mt: 0.5 }}>{bodyDescription}</Typography>
               </Box>
               <SchemaWorkbench
                 key={`${resource.id}::req`}
