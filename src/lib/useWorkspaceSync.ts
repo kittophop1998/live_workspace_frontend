@@ -6,6 +6,7 @@ import { connectRealtime, HEARTBEAT_MS, newClientId } from "@/lib/realtime";
 import { apiErrorMessage } from "@/lib/api";
 import { workspaceApi } from "@/services/workspace.service";
 import { announceTaskUpdate } from "@/components/TaskUpdateAnnouncement";
+import { postedHere } from "@/lib/localTaskLogs";
 
 // Boot the workspace: hydrate from the backend (REST), then keep it live over
 // the WebSocket. The server is the single source of truth — every change (ours
@@ -53,14 +54,16 @@ export function useWorkspaceSync(): void {
         onCommentDelete: (rev, id) => useWorkspaceStore.getState().removeComment(rev, id, true),
         onActivity: (event) => useWorkspaceStore.getState().pushActivity(event),
         onChatMessage: (message) => useWorkspaceStore.getState().pushChatMessage(message),
-        // A teammate's update gets announced center-screen. Own posts are the WS
-        // echo of what we just wrote, and an id we already hold is a redelivery —
-        // neither is news, so both only reach pushTaskLog (which dedupes by id).
+        // Someone else's update gets announced center-screen. The echo of a post
+        // made in *this tab* isn't news, and an id we already hold is a
+        // redelivery — neither announces, but both still reach pushTaskLog
+        // (which dedupes by id).
         onTaskLog: (entry) => {
           const s = useWorkspaceStore.getState();
           const isNew = !s.taskLogs.some((t) => t.id === entry.id);
+          const mine = postedHere(entry);
           s.pushTaskLog(entry);
-          if (isNew && entry.authorId !== s.me?.id) announceTaskUpdate(entry);
+          if (isNew && !mine) announceTaskUpdate(entry);
         },
         onTaskLogUpdated: (entry) => useWorkspaceStore.getState().updateTaskLog(entry),
         onPresence: (presence) => useWorkspaceStore.getState().upsertPresence(presence),

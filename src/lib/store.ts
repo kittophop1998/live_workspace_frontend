@@ -6,6 +6,7 @@ import { dResponseSchema, workspaceApi, type RoomSession } from "@/services/work
 import { inferField } from "@/lib/codegen";
 import { buildResponseSchemas, useResponseSchemaStore } from "@/lib/responseSchemas";
 import { seedSchemaTreesFromResources } from "@/lib/schemaTreeSync";
+import { clearPending, markPending, markPosted, taskLogSignature } from "@/lib/localTaskLogs";
 import type { ImportedOperation } from "@/lib/specImport";
 import type { FieldDiff } from "@/lib/proposalDiff";
 import type {
@@ -565,12 +566,18 @@ export const useWorkspaceStore = create<StoreState>((set, get) => {
     },
 
     // The WS `task_log.created` echo is deduped by id in pushTaskLog, so applying
-    // the REST response here never double-inserts.
+    // the REST response here never double-inserts. The fingerprint is recorded
+    // before the request because that echo can arrive first — it keeps the
+    // announcement popup quiet for our own post (see lib/localTaskLogs).
     addTaskLog: async (input) => {
+      const signature = taskLogSignature(input);
+      markPending(signature);
       try {
         const entry = await workspaceApi.postTaskLog(input);
+        markPosted(entry.id, signature);
         get().pushTaskLog(entry);
       } catch (err) {
+        clearPending(signature);
         fail(err);
       }
     },
