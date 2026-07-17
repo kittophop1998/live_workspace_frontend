@@ -10,7 +10,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import ContentCopyIcon from "@mui/icons-material/ContentCopyOutlined";
 import CheckIcon from "@mui/icons-material/Check";
-import { useApiTesterStore, extractPathParams, type KeyValueRow, type RequestDraft } from "@/lib/apiTester";
+import { useApiTesterStore, extractPathParams, extractAccessToken, type KeyValueRow, type RequestDraft } from "@/lib/apiTester";
 import { sendTest, type TestResult } from "@/services/testerService";
 import { seedFromFields, nodesToExample } from "@/lib/schemaConvert";
 import { EMPTY_NODES, useSchemaTreeStore, type SchemaNode } from "@/lib/schemaTree";
@@ -52,7 +52,7 @@ function draftFromResource(resource: Resource, reqNodes: SchemaNode[]): RequestD
     path,
     pathParams: extractPathParams(path).map((name) => row(name)),
     queryParams,
-    headers: [row("Content-Type", "application/json"), row("Authorization", "Bearer <token>"), row("Accept-Encoding", "gzip, deflate")],
+    headers: [row("Content-Type", "application/json"), row("Accept-Encoding", "gzip, deflate")],
     body,
     bearerToken: "",
   };
@@ -66,13 +66,20 @@ function reconcilePathParams(path: string, existing: KeyValueRow[]): KeyValueRow
 }
 
 // Enabled headers merged with the bearer token — shared by the live send() call
-// and the generated code snippets, so both stay in sync.
-function resolveHeaders(draft: RequestDraft): Record<string, string> {
+// and the generated code snippets, so both stay in sync. Precedence for
+// Authorization: explicit header row > per-draft bearerToken > workspace
+// authToken (auto-captured from the login response). Placeholder rows left over
+// from old drafts ("Bearer <token>") don't count as explicit.
+function resolveHeaders(draft: RequestDraft, authToken: string): Record<string, string> {
   const headers: Record<string, string> = {};
-  for (const h of draft.headers) if (h.enabled && h.key) headers[h.key] = h.value;
-  const token = draft.bearerToken?.trim();
-  if (token && !Object.keys(headers).some((k) => k.toLowerCase() === "authorization")) {
-    headers.Authorization = `Bearer ${token}`;
+  for (const h of draft.headers) {
+    if (!h.enabled || !h.key) continue;
+    if (h.key.toLowerCase() === "authorization" && (!h.value.trim() || h.value.includes("<token>"))) continue;
+    headers[h.key] = h.value;
+  }
+  if (!Object.keys(headers).some((k) => k.toLowerCase() === "authorization")) {
+    const token = draft.bearerToken?.trim() || authToken;
+    if (token) headers.Authorization = `Bearer ${token}`;
   }
   return headers;
 }
@@ -232,6 +239,8 @@ type ReqSection = "params" | "headers" | "body" | "code";
 export function RequestTester({ resource }: { resource: Resource }) {
   const baseUrl = useApiTesterStore((s) => s.baseUrl);
   const setBaseUrl = useApiTesterStore((s) => s.setBaseUrl);
+  const authToken = useApiTesterStore((s) => s.authToken);
+  const setAuthToken = useApiTesterStore((s) => s.setAuthToken);
   const savedDraft = useApiTesterStore((s) => s.drafts[resource.id]);
   const saveDraft = useApiTesterStore((s) => s.saveDraft);
   const reqNodes = useSchemaTreeStore((s) => s.trees[`${resource.id}::req`] ?? EMPTY_NODES);
@@ -243,6 +252,7 @@ export function RequestTester({ resource }: { resource: Resource }) {
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [section, setSection] = useState<ReqSection>("params");
+  const [tokenCaptured, setTokenCaptured] = useState(false);
 
   const update = (patch: Partial<RequestDraft>) => {
     setDraft((prev) => {
@@ -284,10 +294,20 @@ export function RequestTester({ resource }: { resource: Resource }) {
       const res = await sendTest({
         method: draft.method,
         url: previewUrl,
-        headers: resolveHeaders(draft),
+        headers: resolveHeaders(draft, authToken),
         body: BODY_METHODS.has(draft.method) ? draft.body : undefined,
       });
       setResult(res);
+      // Auto-capture: any 2xx body carrying data.accessToken (the login
+      // response) becomes the workspace token for every subsequent request.
+      if (res.status >= 200 && res.status < 300) {
+        const token = extractAccessToken(res.body);
+        if (token) {
+          setAuthToken(token);
+          setTokenCaptured(true);
+          setTimeout(() => setTokenCaptured(false), 2500);
+        }
+      }
     } catch (err) {
       setResult({ status: 0, durationMs: 0, headers: {}, body: "", size: 0, truncated: false, error: err instanceof Error ? err.message : "Request failed" });
     } finally {
@@ -344,6 +364,31 @@ export function RequestTester({ resource }: { resource: Resource }) {
             placeholder="http://localhost:8080"
             sx={{ flex: "1 1 220px", minWidth: 0, fontFamily: "var(--font-mono, monospace)", fontSize: 12.5, border: `1px solid ${line}`, borderRadius: 0, px: 0.9, py: 0.35, bgcolor: "#fff" }}
           />
+          {authToken ? (
+            <Tooltip title={`Auto-attached as "Authorization: Bearer …" to every request without its own Authorization header. Captured from the last login response.`}>
+              <Stack
+                direction="row"
+                spacing={0.5}
+                sx={{
+                  alignItems: "center", flexShrink: 0, px: 0.9, py: 0.25,
+                  border: `1px solid ${tokenCaptured ? "#16A34A" : line}`,
+                  bgcolor: tokenCaptured ? "#F0FDF4" : "#F8FAFC",
+                  transition: "background-color 0.4s, border-color 0.4s",
+                }}
+              >
+                <Typography variant="caption" sx={{ fontFamily: "var(--font-mono, monospace)", color: tokenCaptured ? "#16A34A" : "#4B5563", fontWeight: 600 }}>
+                  {tokenCaptured ? "🔑 token captured" : `🔑 ${authToken.slice(0, 10)}…`}
+                </Typography>
+                <IconButton size="small" aria-label="Clear auth token" onClick={() => setAuthToken("")} sx={{ p: 0.2 }}>
+                  <CloseIcon sx={{ fontSize: 13 }} />
+                </IconButton>
+              </Stack>
+            </Tooltip>
+          ) : (
+            <Typography variant="caption" sx={{ color: "#94A3B8", flexShrink: 0, fontStyle: "italic" }}>
+              🔓 no token — call login to capture
+            </Typography>
+          )}
         </Stack>
         <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: secondaryText, fontFamily: "var(--font-mono, monospace)", wordBreak: "break-all" }}>
           → {previewUrl || "(set base URL)"}
@@ -389,7 +434,7 @@ export function RequestTester({ resource }: { resource: Resource }) {
             ) : null}
 
             {activeSection === "code" ? (
-              <CodeSnippets method={draft.method} url={previewUrl} headers={resolveHeaders(draft)} body={draft.body} hasBody={showBody} />
+              <CodeSnippets method={draft.method} url={previewUrl} headers={resolveHeaders(draft, authToken)} body={draft.body} hasBody={showBody} />
             ) : null}
           </Box>
 

@@ -33,33 +33,39 @@ export interface RequestDraft {
 interface Persisted {
   baseUrl: string;
   drafts: Record<string, RequestDraft>;
+  // Workspace-wide auth token, auto-captured from any test response whose body
+  // carries `data.accessToken` (the login endpoint). Attached as
+  // `Authorization: Bearer <token>` to every request that doesn't set its own.
+  authToken: string;
 }
 
 function load(): Persisted {
-  if (typeof window === "undefined") return { baseUrl: "", drafts: {} };
+  if (typeof window === "undefined") return { baseUrl: "", drafts: {}, authToken: "" };
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? (JSON.parse(raw) as Partial<Persisted>) : {};
-    return { baseUrl: parsed.baseUrl ?? "", drafts: parsed.drafts ?? {} };
+    return { baseUrl: parsed.baseUrl ?? "", drafts: parsed.drafts ?? {}, authToken: parsed.authToken ?? "" };
   } catch {
-    return { baseUrl: "", drafts: {} };
+    return { baseUrl: "", drafts: {}, authToken: "" };
   }
 }
 
 interface ApiTesterState {
   baseUrl: string;
   drafts: Record<string, RequestDraft>;
+  authToken: string;
   hydrate: () => void;
   setBaseUrl: (url: string) => void;
   saveDraft: (resourceId: string, draft: RequestDraft) => void;
+  setAuthToken: (token: string) => void;
 }
 
 export const useApiTesterStore = create<ApiTesterState>((set, get) => {
   const persist = () => {
     if (typeof window === "undefined") return;
     try {
-      const { baseUrl, drafts } = get();
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ baseUrl, drafts }));
+      const { baseUrl, drafts, authToken } = get();
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ baseUrl, drafts, authToken }));
     } catch {
       /* quota / serialization — non-fatal for a local convenience cache */
     }
@@ -67,6 +73,7 @@ export const useApiTesterStore = create<ApiTesterState>((set, get) => {
   return {
     baseUrl: "",
     drafts: {},
+    authToken: "",
     hydrate: () => set(load()),
     setBaseUrl: (url) => {
       set({ baseUrl: url });
@@ -76,8 +83,24 @@ export const useApiTesterStore = create<ApiTesterState>((set, get) => {
       set((s) => ({ drafts: { ...s.drafts, [resourceId]: draft } }));
       persist();
     },
+    setAuthToken: (token) => {
+      set({ authToken: token });
+      persist();
+    },
   };
 });
+
+// Pull an access token out of a test-response body. The login endpoint always
+// returns it at `data.accessToken`; anything else yields null.
+export function extractAccessToken(body: string): string | null {
+  try {
+    const parsed = JSON.parse(body) as { data?: { accessToken?: unknown } };
+    const token = parsed?.data?.accessToken;
+    return typeof token === "string" && token.length > 0 ? token : null;
+  } catch {
+    return null;
+  }
+}
 
 // Extract path-parameter names from a templated path: both `{id}` (OpenAPI) and
 // `:id` (Express-style) are recognized.
