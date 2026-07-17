@@ -14,6 +14,7 @@ import NotesIcon from "@mui/icons-material/NotesOutlined";
 import TitleIcon from "@mui/icons-material/Title";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import ContentCopyIcon from "@mui/icons-material/ContentCopyOutlined";
+import FileDownloadIcon from "@mui/icons-material/FileDownloadOutlined";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import SouthIcon from "@mui/icons-material/South";
@@ -21,6 +22,7 @@ import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import AutoStoriesOutlinedIcon from "@mui/icons-material/AutoStoriesOutlined";
 import { useWorkspaceStore } from "@/lib/store";
 import { useApiStoryStore, type Story, type StoryStep } from "@/lib/apiStory";
+import { downloadMarkdownStory } from "@/lib/storyExport";
 import { PixelEmptyState } from "@/components/pixel/PixelEmptyState";
 import { ink, line, methodColor, pastel, secondaryText, wash } from "@/components/theme";
 import type { Resource } from "@/lib/types";
@@ -140,7 +142,10 @@ function StoryDetail({ story }: { story: Story }) {
         >
           {isSaving ? "Saving…" : isDirty ? "Save" : "Saved"}
         </Button>
-        <Tooltip title="Duplicate flow">
+        <Tooltip title="Export as Markdown">
+        <IconButton onClick={() => downloadMarkdownStory(story, resources)}><FileDownloadIcon sx={{ fontSize: 19 }} /></IconButton>
+      </Tooltip>
+      <Tooltip title="Duplicate flow">
           <IconButton onClick={() => duplicateStory(story.id)}><ContentCopyIcon sx={{ fontSize: 18 }} /></IconButton>
         </Tooltip>
         <Tooltip title="Delete flow">
