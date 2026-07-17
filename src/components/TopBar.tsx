@@ -13,6 +13,7 @@ import { useWorkspaceStore } from "@/lib/store";
 import { Avatar } from "@/components/common";
 import { ImportApiDialog } from "@/components/ImportApiDialog";
 import { ExportSpecButton } from "@/components/ExportSpecButton";
+import { SyncedSpecDialog } from "@/components/SyncedSpecDialog";
 import { FeedbackDialog } from "@/components/feedback/FeedbackDialog";
 import { ink, line, pastel, pastelInk, secondaryText } from "@/components/theme";
 
@@ -148,6 +149,7 @@ export function TopBar({ onOpenLeft, onOpenRight }: { onOpenLeft?: () => void; o
       <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 1 }}>
         {view === "workspace" ? (
           <>
+            <SyncedSpecDialog />
             <ExportSpecButton />
             <ImportApiDialog />
           </>

@@ -180,6 +180,25 @@ export interface ResponseSchema {
 export type ExportFormat = "typescript" | "json";
 export type RightTab = "activity" | "comments" | "chat" | "updates";
 
+// ---- Published API spec (synced by @live-workspace/cli) --------------------
+// Immutable OpenAPI revision the backend registry holds for this workspace.
+// Read via GET /api-spec; a CLI `sync` pushes `api_spec.published` over the
+// stream so every open tab sees the new revision immediately.
+export interface SpecRevision {
+  id: string;
+  number: number;
+  status: string; // "current" | "superseded"
+  contentHash: string;
+  sourceFilename: string;
+  format: "yaml" | "json";
+  createdAt: string;
+}
+
+export interface PublishedSpec {
+  revision: SpecRevision;
+  content: string; // exact uploaded OpenAPI YAML/JSON
+}
+
 // Top-level app view — the workspace (schema collab), the E2E flow tester, and
 // the additive API Story view. Endpoint editing always lives in
 // "workspace"; story navigates away and back without replacing it.
